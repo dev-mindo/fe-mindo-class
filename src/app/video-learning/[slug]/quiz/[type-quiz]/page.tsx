@@ -2,14 +2,13 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
   Table,
-  TableBody,
-  TableCaption,
+  TableBody,  
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Info, Terminal } from "lucide-react";
+import { Info } from "lucide-react";
 
 const Page = () => {
   return (

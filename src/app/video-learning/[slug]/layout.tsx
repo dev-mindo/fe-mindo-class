@@ -1,22 +1,12 @@
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
-import Image from "next/image";
+import { Sidebar } from "../_component/sidebar/sidebar";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex">
-      <div className="h-screen bg-white w-[20%]">
-        <div className="flex items-center gap-2 ml-2 mt-3">
-          <Image
-            height={100}
-            width={30}
-            src="/logo/mindo-logo.svg"
-            alt="logo mindo"
-          ></Image>
-          Mindo Class
-        </div>
-      </div>
+      <Sidebar/>
       <div className="flex flex-col justify-between h-screen w-full">
         <div className="flex items-center justify-between bg-white h-16 pl-4">
           <div className="mr-2 flex items-center">
