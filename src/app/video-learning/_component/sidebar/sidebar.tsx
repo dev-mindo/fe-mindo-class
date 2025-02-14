@@ -1,11 +1,8 @@
 import {
-    ArrowLeftFromLine,
-  Check,
+  ArrowLeftFromLine,
   CircleCheckBig,
   ClipboardList,
-  DoorOpen,
   FileBadge,
-  House,
   Info,
   ListTodo,
   Lock,
@@ -66,17 +63,17 @@ export const Sidebar = () => {
       isLocked: true,
       isDone: false,
     },
-  ];  
+  ];
 
   const menu = [
     {
-        title: "Left Class",
-        icon: <ArrowLeftFromLine strokeWidth={1.5} size={20} />,
-        link: "/",
-        isLocked: false,
-        isDone: false,
-      },
-  ]
+      title: "Left Class",
+      icon: <ArrowLeftFromLine strokeWidth={1.5} size={20} />,
+      link: "/",
+      isLocked: false,
+      isDone: false,
+    },
+  ];
 
   return (
     <div className="h-screen bg-white w-[20%] flex flex-col justify-between">
@@ -121,7 +118,7 @@ export const Sidebar = () => {
               }`}
             >
               <div className="mr-2">{item.icon}</div>
-              <div>{item.title}</div>              
+              <div>{item.title}</div>
             </div>
           </Link>
         ))}
