@@ -6,7 +6,7 @@ import { Sidebar } from "../_component/sidebar/sidebar";
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex">
-      <Sidebar/>
+      <Sidebar />
       <div className="flex flex-col justify-between h-screen w-full">
         <div className="flex items-center justify-between bg-white h-16 pl-4">
           <div className="mr-2 flex items-center">
@@ -22,8 +22,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </div>
           </div>
         </div>
-        <div className="h-full">
-          <div className="mx-auto w-[95%] my-10">{children}</div>
+        <div className="overflow-y-auto h-[calc(100%-4rem)]">          
+            <div className="mx-auto w-[95%] my-10">{children}</div>          
         </div>
         <div className="flex justify-between items-center bg-white h-16">
           <div className="ml-8">
