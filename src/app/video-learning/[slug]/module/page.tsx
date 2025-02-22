@@ -1,5 +1,6 @@
 "use client";
 import QuillEditor from "@/components/base/EditorQuill";
+import { Button } from "@/components/ui/button";
 
 export default function Page() {
   const modules = {
@@ -58,6 +59,11 @@ export default function Page() {
           bisnis makanan dapat meningkatkan kualitas, kepercayaan konsumen, dan
           kepatuhan terhadap regulasi industri.
         </p>
+      </div>
+      <div className="w-full mt-4">
+        <Button className="w-full">
+          Akses Materi
+        </Button>
       </div>
     </div>
   );

@@ -1,9 +1,17 @@
+'use client'
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Sidebar } from "../_component/sidebar/sidebar";
+import { usePathname } from "next/navigation";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname()
+
+  if(pathname === '/video-learning/food-safety-management-system/quiz/pretest-quiz/1'){
+    return (<>{children}</>)
+  }
+
   return (
     <div className="flex">
       <Sidebar />
