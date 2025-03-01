@@ -1,3 +1,6 @@
+'use client'
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   ArrowLeftFromLine,
   CircleCheckBig,
@@ -11,8 +14,16 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useTheme } from "next-themes";
+import { useEffect } from "react";
+import { Moon, Sun } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export const Sidebar = () => {
+  const { setTheme, theme } = useTheme();
+  useEffect(() => {
+    console.log(theme);
+  }, []);
   const modules = [
     {
       title: "Introduction",
@@ -76,16 +87,31 @@ export const Sidebar = () => {
   ];
 
   return (
-    <div className="h-screen bg-white w-[20%] flex flex-col justify-between">
+    <div className="h-screen bg-sidebar w-[20%] flex flex-col justify-between">
       <div>
-        <div className="flex items-center gap-2 ml-2 mt-3">
-          <Image
-            height={100}
-            width={30}
-            src="/logo/mindo-logo.svg"
-            alt="logo mindo"
-          ></Image>
-          Mindo Class
+        <div className="flex items-center mx-4 mt-3 justify-between">
+          <div className="flex items-center gap-2">
+            <Image
+              height={100}
+              width={30}
+              src="/logo/mindo-logo.svg"
+              alt="logo mindo"
+            ></Image>
+            Mindo Class
+          </div>
+          <div className="">
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={() => {
+                theme === "system" || theme === "light"
+                  ? setTheme("dark")
+                  : setTheme("light");
+              }}
+            >
+              {theme === "system" || theme === "light" ? (<Moon />) : (<Sun />)}
+            </Button>
+          </div>
         </div>
         <div className="flex flex-col gap-2 mt-5">
           {modules.map((item, index) => (

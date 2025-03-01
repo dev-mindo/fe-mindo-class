@@ -1,5 +1,6 @@
 "use client";
 import QuillEditor from "@/components/base/EditorQuill";
+import ICard from "@/components/base/ICard";
 import { Button } from "@/components/ui/button";
 
 export default function Page() {
@@ -38,7 +39,7 @@ export default function Page() {
           </div>
         </div>
         <div>
-          <div className="p-4 bg-white h-[100%] rounded-lg">
+          <div className="p-4 bg-card h-[100%] rounded-lg">
             <QuillEditor
               className="h-[40vh]"
               placeholder="Start ty ping..."
@@ -48,8 +49,10 @@ export default function Page() {
           </div>
         </div>
       </div>
-      <div className="p-4 bg-white h-[100%] rounded-lg mt-4">
-        <h1 className="mb-2 text-xl font-bold">Food Safety Management System</h1>
+      <div className="p-4 bg-card h-[100%] rounded-lg mt-4">
+        <h1 className="mb-2 text-xl font-bold">
+          Food Safety Management System
+        </h1>
         <p>
           Food Safety Management System (FSMS) adalah sistem yang memastikan
           keamanan pangan melalui identifikasi, pencegahan, dan pengendalian
@@ -61,9 +64,7 @@ export default function Page() {
         </p>
       </div>
       <div className="w-full mt-4">
-        <Button className="w-full">
-          Akses Materi
-        </Button>
+        <Button className="w-full">Akses Materi</Button>
       </div>
     </div>
   );
