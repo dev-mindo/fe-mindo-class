@@ -14,6 +14,7 @@ import { Info, Loader2 } from "lucide-react";
 import { ErrorDialogAttempt } from "./ErrorDialogAttempt";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 type Props = {
   quiz: {
@@ -29,6 +30,7 @@ export const AttemptQuiz = ({ quiz }: Props) => {
   const [errorMessageAttempt, setMessageAttempt] = useState("");
   const [attemptLoading, setAttemptLoading] = useState<boolean>(false);
   const router = useRouter();
+
   const attemptQuiz = async () => {
     setAttemptLoading(true);
     const attempt: ApiResponse = await fetchApi(`/attempt-quiz/${quiz.id}`, {
@@ -36,7 +38,7 @@ export const AttemptQuiz = ({ quiz }: Props) => {
     });
     if (attempt.success) {
       router.push(
-        `${process.env.NEXT_PUBLIC_URL}/video-learning/food-safety-management-system/quiz/pretest/${attempt.data.signatureQuiz}&page=1`
+        `${process.env.NEXT_PUBLIC_URL}/video-learning/food-safety-management-system/quiz/pretest/${attempt.data.signatureQuiz}?page=1`
       );
     } else {
       setIsOpenErrorAttempt(true);
@@ -84,7 +86,7 @@ export const AttemptQuiz = ({ quiz }: Props) => {
                 ) : (
                   "Mulai Quiz"
                 )}
-              </Button>
+              </Button>              
             </div>
           </div>
         </div>
