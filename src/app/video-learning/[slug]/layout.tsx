@@ -1,14 +1,15 @@
 'use client'
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Regex } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Sidebar } from "../_component/sidebar/sidebar";
 import { usePathname } from "next/navigation";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-
-  if(pathname === '/video-learning/food-safety-management-system/quiz/pretest-quiz/1'){
+  const urlPath = new RegExp(/^\/video-learning\/([^/]+)\/quiz\/([^/]+)\/([^/]+)$/)
+  
+  if(pathname.match(urlPath)){
     return (<>{children}</>)
   }
 
@@ -16,7 +17,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     <div className="flex">
       <Sidebar />
       <div className="flex flex-col justify-between h-screen w-full">
-        <div className="flex items-center justify-between bg-white h-16 pl-4">
+        <div className="flex items-center justify-between bg-sidebar h-16 pl-4">
           <div className="mr-2 flex items-center">
             {/* <Button size="icon" variant="ghost">
               <ChevronLeft />
@@ -33,7 +34,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <div className="overflow-y-auto h-[calc(100%-4rem)]">          
             <div className="mx-auto w-[95%] my-10">{children}</div>          
         </div>
-        <div className="flex justify-between items-center bg-white h-16">
+        <div className="flex justify-between items-center bg-sidebar h-16">
           <div className="ml-8">
             <Button>
               <ChevronLeft />
