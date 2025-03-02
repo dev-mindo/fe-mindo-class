@@ -27,3 +27,18 @@ export function getDurationTimeNow(timeLimit: string) {
   const seconds = duration.seconds();
   return `${hours}:${minutes}:${seconds}`
 }
+
+export function convertTimeToWords(time: string) {
+  const match = time.match(/^(\d+):(\d+)$/);
+  if (match) {
+    const hours = parseInt(match[1], 10); // Jam
+    const minutes = parseInt(match[2], 10); // Menit
+    let result = '' 
+    if(hours > 0) result += `${hours} jam`
+    if(minutes > 0) result += `${minutes} menit`
+    return result
+  } else {
+    console.log("Format waktu tidak valid");
+    throw new Error("Format waktu tidak valid");
+  }
+}
