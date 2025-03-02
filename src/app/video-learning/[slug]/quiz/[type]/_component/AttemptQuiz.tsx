@@ -80,7 +80,7 @@ export const AttemptQuiz = ({ quiz, slug, type }: Props) => {
                   <TableCell>{item.score}</TableCell>
                   <TableCell>
                     <Button asChild>
-                      <Link href={`${process.env.NEXT_PUBLIC_URL}/video-learning/${slug}/quiz/pretest/evaluation/1`}>Evaluasi</Link>
+                      <Link href={`${process.env.NEXT_PUBLIC_URL}/video-learning/${slug}/quiz/pretest/evaluation/${item.id}`}>Evaluasi</Link>
                     </Button>
                   </TableCell>
                 </TableRow>
