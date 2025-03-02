@@ -15,16 +15,17 @@ import { ErrorDialogAttempt } from "./ErrorDialogAttempt";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { convertTimeToWords } from "@/lib/utils";
+import { TQuiz } from "../page";
+import Link from "next/link";
 
 type Props = {
-  quiz: {
-    title: string;
-    time: string;
-    id: number;
-  };
+  quiz: TQuiz;
+  slug: string;
+  type: string;
 };
 
-export const AttemptQuiz = ({ quiz }: Props) => {
+export const AttemptQuiz = ({ quiz, slug, type }: Props) => {
   // const {toast} = useToast()
   const [isOpenErrorAttempt, setIsOpenErrorAttempt] = useState(false);
   const [errorMessageAttempt, setMessageAttempt] = useState("");
@@ -33,12 +34,12 @@ export const AttemptQuiz = ({ quiz }: Props) => {
 
   const attemptQuiz = async () => {
     setAttemptLoading(true);
-    const attempt: ApiResponse = await fetchApi(`/attempt-quiz/${quiz.id}`, {
+    const attempt: ApiResponse = await fetchApi(`/attempt-quiz/${quiz?.id}`, {
       method: "POST",
     });
     if (attempt.success) {
       router.push(
-        `${process.env.NEXT_PUBLIC_URL}/video-learning/food-safety-management-system/quiz/pretest/${attempt.data.signatureQuiz}?page=1`
+        `${process.env.NEXT_PUBLIC_URL}/video-learning/${slug}/quiz/${type}/${attempt.data.signatureQuiz}?page=1`
       );
     } else {
       setIsOpenErrorAttempt(true);
@@ -50,13 +51,14 @@ export const AttemptQuiz = ({ quiz }: Props) => {
   return (
     <div className="w-full">
       <div className="mx-auto w-[80%]">
-        <h1>{quiz.title}</h1>
+        <h1>{quiz?.title}</h1>
         <div className="mt-4">
           <Alert>
             <Info className="h-4 w-4" />
             <AlertTitle>Info</AlertTitle>
             <AlertDescription>
-              Soal Berjumlah 5 soal dengan waktu 10 menit
+              Soal Berjumlah {quiz?._count.question} soal dengan waktu{" "}
+              {convertTimeToWords(quiz?.limitTime || "")}
             </AlertDescription>
           </Alert>
           <Table className="my-4">
@@ -69,11 +71,20 @@ export const AttemptQuiz = ({ quiz }: Props) => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              <TableRow>
-                <TableCell className="font-medium">Percobaan ke 1</TableCell>
-                <TableCell>4</TableCell>
-                <TableCell>80</TableCell>
-              </TableRow>
+              {quiz?.quizAttempt.map((item, index) => (
+                <TableRow>
+                  <TableCell className="font-medium">
+                    Percobaan ke {index + 1}
+                  </TableCell>
+                  <TableCell>{item._count.UserAnswer}</TableCell>
+                  <TableCell>{item.score}</TableCell>
+                  <TableCell>
+                    <Button asChild>
+                      <Link href={`${process.env.NEXT_PUBLIC_URL}/video-learning/${slug}/quiz/pretest/evaluation/1`}>Evaluasi</Link>
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
             </TableBody>
           </Table>
           <div className="flex justify-center">
@@ -86,7 +97,7 @@ export const AttemptQuiz = ({ quiz }: Props) => {
                 ) : (
                   "Mulai Quiz"
                 )}
-              </Button>              
+              </Button>
             </div>
           </div>
         </div>

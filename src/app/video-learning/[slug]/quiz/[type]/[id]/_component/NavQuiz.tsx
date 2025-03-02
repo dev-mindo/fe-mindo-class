@@ -8,7 +8,6 @@ import React, { useEffect, useState } from "react";
 import { AlertTimeEnd } from "./AlertTimeEnd";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { TQuizData } from "../page";
 import { ApiResponse, fetchApi } from "@/lib/utils/fetchApi";
 import { AlertDialogCompleted } from "./AlertDialogCompleted";
 
@@ -19,6 +18,15 @@ type Props = {
   time: string;
   children: React.ReactNode;
   pagination: TQuizData["pagination"] | undefined;
+  resultQuiz?: {
+    score: number;
+    totalCorrect: number;
+  };
+  options: {
+    redirectPagination: string;
+    redirectCompleted: string;
+    pathType: string;
+  };
 };
 
 export function NavQuiz({
@@ -28,6 +36,8 @@ export function NavQuiz({
   children,
   time,
   pagination,
+  options,
+  resultQuiz,
 }: Props) {
   const params = useParams<{
     slug: string;
@@ -56,47 +66,51 @@ export function NavQuiz({
   });
 
   function handlePagination(page: number | undefined = 1) {
-    const pageUrl = `${process.env.NEXT_PUBLIC_URL}/video-learning/${params.slug}/quiz/${params.type}/${params.id}?page=${page}`;
-    router.push(pageUrl);
+    router.push(options.redirectPagination + `?page=${page}`);
   }
 
   async function handleBackAnswer() {
     handlePagination(pagination?.back);
   }
 
-  async function handleNextAnswer() {    
-    if (selectedAnswer.questionId !== 0 && selectedAnswer.answerId !== 0) {
-      setLoading(true);
-      const resAnswer: ApiResponse = await fetchApi(
-        `/classroom/${params.slug}/quiz?token=${params.id}`,
-        {
-          method: "POST",
-          body: {
-            ...selectedAnswer,
-          },
+  async function handleNextAnswer() {
+    if (options.pathType === "quiz") {
+      if (selectedAnswer.questionId !== 0 && selectedAnswer.answerId !== 0) {
+        setLoading(true);
+        const resAnswer: ApiResponse = await fetchApi(
+          `/classroom/${params.slug}/quiz?token=${params.id}`,
+          {
+            method: "POST",
+            body: {
+              ...selectedAnswer,
+            },
+          }
+        );
+        if (resAnswer && !resAnswer.success) {
+          toast.error(`Error Code ${resAnswer.errorCode}`, {
+            description: resAnswer.message,
+          });
         }
-      );
-      if (resAnswer && !resAnswer.success) {
-        toast.error(`Error Code ${resAnswer.errorCode}`, {
-          description: resAnswer.message,
-        });
+        setLoading(false);
       }
-      if (
-        pagination?.current ===
-        pagination?.page[pagination.page.length - 1].number
-      ) {
-        setIsOpenDialogCompleted(true);      
-        console.log(true)  
-      }
-      setLoading(false);
     }
-    if (!loading) {
-      handlePagination(pagination?.next);
+    if (
+      pagination?.current ===
+      pagination?.page[pagination.page.length - 1].number
+    ) {
+      if (options.pathType === "quiz") {
+        setIsOpenDialogCompleted(true);
+      }      
+      router.push(options.redirectCompleted);
+    }else{
+      if (!loading) {
+        handlePagination(pagination?.next);
+      }
     }
   }
 
   function HandleRedirectTimeEnd() {
-    router.push(`/video-learning/${params.slug}/quiz/${params.type}`);
+    router.push(options.redirectCompleted);
   }
 
   function setAlertTime(time: number) {
@@ -116,16 +130,16 @@ export function NavQuiz({
   }
 
   async function handleCompletedQuiz() {
-    console.log('completed')
+    console.log("completed");
     const resCompleted: ApiResponse = await fetchApi(
       `/classroom/completed?token=${params.id}`,
       {
-        method: 'POST'
+        method: "POST",
       }
     );
-    console.log(resCompleted)
+    console.log(resCompleted);
     if (resCompleted && resCompleted.success) {
-      router.push(`/video-learning/${params.slug}/quiz/${params.type}`);
+      router.push(options.redirectCompleted);
     }
   }
 
@@ -140,13 +154,24 @@ export function NavQuiz({
       <div className="flex items-center bg-sidebar h-16 p-4 justify-between">
         <div className="flex items-center">
           <div className="mr-2">
-            {/* <Button size="icon" variant="ghost">
-              <ChevronLeft />
-            </Button> */}
+            {options.pathType !== "quiz" && (
+                <Button onClick={() => {
+                  router.push(options.redirectCompleted);
+                }} variant="ghost">
+                  <ChevronLeft />
+                  Kembali
+                </Button>                              
+            )}
           </div>
           <h1>{title}</h1>
         </div>
         <div className="flex gap-10 w-[20%] mr-4">
+          <div>
+            <div>
+              Jawaban Benar {resultQuiz?.totalCorrect || 0}/{totalQuestion}
+            </div>
+            <div>Score {resultQuiz?.score || 0}/100</div>
+          </div>
           <div className="ml-auto">
             Menyelesaikan {completed}/{totalQuestion}
             <div className="w-[100%] mt-2">
@@ -155,17 +180,19 @@ export function NavQuiz({
               />
             </div>
           </div>
-          <div>
-            {targetTime !== "00:00:00" ? (
-              <Countdown
-                setAlertTime={setAlertTime}
-                setTimeEnd={setTimeEnd}
-                targetTime={targetTime}
-              />
-            ) : (
-              targetTime
-            )}
-          </div>
+          {options.pathType === "quiz" && (
+            <div>
+              {targetTime !== "00:00:00" ? (
+                <Countdown
+                  setAlertTime={setAlertTime}
+                  setTimeEnd={setTimeEnd}
+                  targetTime={targetTime}
+                />
+              ) : (
+                targetTime
+              )}
+            </div>
+          )}
         </div>
       </div>
       <div className="h-full">
