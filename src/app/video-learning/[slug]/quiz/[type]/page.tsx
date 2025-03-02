@@ -18,6 +18,7 @@ export type TQuiz =
       pagination: boolean;
       random: boolean;
       quizAttempt: Array<{
+        id: number
         score: number;
         _count: {
           UserAnswer: number;
