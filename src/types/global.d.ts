@@ -7,8 +7,8 @@ declare global {
       totalQuestion: number;
       timeLimit: string;
       eventType: string;
-      score: number,
-      totalCorrect: number
+      score?: number,
+      totalCorrect?: number
     };
     pagination: {
       next: number;
@@ -18,6 +18,7 @@ declare global {
         number: number;
         current: boolean;
         completed: boolean;
+        isCorrect?: boolean
       }>;
     };
     question: {

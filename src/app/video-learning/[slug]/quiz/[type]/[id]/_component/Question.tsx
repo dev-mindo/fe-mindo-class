@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { SquareCheckBig, SquareX } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 
@@ -19,6 +20,11 @@ type Props = {
   };
 };
 
+type TUserAnswer = {
+  answerId: number;
+  isCorrect: boolean;
+};
+
 export const Question = ({
   onSelectedPagination,
   onDataFromQuestion,
@@ -27,6 +33,25 @@ export const Question = ({
   options,
 }: Props) => {
   const [selectedAnswer, setSelectedAnswer] = useState<string>("");
+  const [selectedUserAnswer, setSelectedUserAnswer] = useState<TUserAnswer>({
+    answerId: 0,
+    isCorrect: false,
+  });
+
+  useEffect(() => {
+    const getUserAnswer = question?.userAnswer.at(0) as {
+      answerId: number;
+      answer: {
+        isCorrect: boolean;
+      };
+    };
+    if (getUserAnswer) {
+      setSelectedUserAnswer({
+        answerId: getUserAnswer.answerId,
+        isCorrect: getUserAnswer.answer.isCorrect,
+      });
+    }
+  }, [question]);
 
   function stylePagination(item: { current: boolean; completed: boolean }) {
     if (options.pathType === "quiz") {
@@ -76,14 +101,47 @@ export const Question = ({
           </div>
           <div className="mt-5">
             <div className="flex flex-col">
-              {
-                options.pathType === 'evaluation' &&
+              {options.pathType === "evaluation" && (
                 <div>
-                  
+                  {question?.Answer.map((it, index) => (
+                    <div>
+                      {selectedUserAnswer.answerId !== 0 &&
+                      selectedUserAnswer.answerId === it.id ? (
+                        <div
+                          className={`my-4 rounded-xl p-4 bg-[#616161] border-2 ${
+                            selectedUserAnswer.isCorrect
+                              ? "border-green-500"
+                              : "border-red-500"
+                          }`}
+                        >
+                          <div className="flex justify-between items-center text-2xl">
+                            <div>{it.answerText}</div>
+                            <div>
+                              {selectedUserAnswer.isCorrect ? (
+                                <SquareCheckBig className="text-green-500" />
+                              ) : (
+                                <SquareX className="text-red-500" />
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div
+                          className={`my-4 rounded-xl p-4                             
+                            bg-[#424242] border border-[#757575]
+                          `}
+                        >
+                          <div className="flex justify-between">
+                            <div className="text-2xl">{it.answerText}</div>
+                            <div className="w-md"></div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
-              }
-              {
-                options.pathType === 'quiz' &&
+              )}
+              {options.pathType === "quiz" && (
                 <RadioGroup
                   value={selectedAnswer}
                   onValueChange={(e) => {
@@ -109,7 +167,7 @@ export const Question = ({
                     </div>
                   ))}
                 </RadioGroup>
-              }
+              )}
             </div>
           </div>
         </div>
@@ -122,10 +180,14 @@ export const Question = ({
               <Button
                 key={item.number}
                 onClick={() => onSelectedPagination?.(item.number)}
-                className={`m-0 bg-[#2E2E2E] border 
+                className={`relative m-0 bg-[#2E2E2E] border 
                   ${stylePagination(item)} }`}
               >
-                
+                {options.pathType === "evaluation" && item.isCorrect ? (
+                  <SquareCheckBig className="absolute top-0 right-0 text-green-500" />
+                ) : (
+                  <SquareX className="absolute top-0 right-0 text-red-500" />
+                )}
                 {item.number}
               </Button>
             )
