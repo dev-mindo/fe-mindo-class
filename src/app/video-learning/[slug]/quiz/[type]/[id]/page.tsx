@@ -8,37 +8,6 @@ export const metadata: Metadata = {
   title: "Mindo Class | Attempt Quiz",
 };
 
-export type TQuizData = {
-  status: string;
-  quiz: {
-    title: string;
-    completed: number;
-    totalQuestion: number;
-    timeLimit: string;
-    eventType: string;
-  };
-  pagination: {
-    next: number;
-    back: number;
-    current: number;
-    page: Array<{
-      number: number;
-      current: boolean;
-      completed: boolean;
-    }>;
-  };
-  question: {
-    id: number;
-    image: string;
-    questionText: string;
-    userAnswer: Array<any>;
-    Answer: Array<{
-      id: number;
-      answerText: string;
-    }>;
-  };
-};
-
 type Props = {
   params: {
     [key: string]: string;
@@ -49,11 +18,21 @@ type Props = {
 };
 
 export default async function Page(props: Props) {
+  const getSlug = (props.params.slug as string) || "";
+  const getType = (props.params.type as string) || "";
   const getToken = (props.params.id as string) || "";
   const getPage = (props.searchParams.page as string) || "";
   const getQuestion: ApiResponse<TQuizData> = await fetchApi(
     `/classroom/product-slug/quiz?token=${getToken}&page=${getPage}`
   );
+
+  const urlQuiz = `${process.env.NEXT_PUBLIC_URL}/video-learning/${getSlug}/quiz/${getType}`
+
+  const optionsQuiz = {
+    redirectPagination: `${urlQuiz}/${getToken}`,
+    redirectCompleted: urlQuiz,
+    pathType: `quiz`,
+  };
 
   if (!getQuestion || (getQuestion && !getQuestion.success)) {
     notFound();
@@ -62,6 +41,7 @@ export default async function Page(props: Props) {
   return (
     <>
       <NavQuiz
+        options={optionsQuiz}
         completed={getQuestion.data?.quiz.completed || 0}
         time={getQuestion.data?.quiz.timeLimit || ""}
         title={getQuestion.data?.quiz.title || ""}
@@ -69,6 +49,7 @@ export default async function Page(props: Props) {
         pagination={getQuestion.data?.pagination}
       >
         <Question
+          options={optionsQuiz}
           quizData={getQuestion.data}
           question={getQuestion.data?.question}
           eventType={getQuestion.data?.quiz.eventType || ""}
