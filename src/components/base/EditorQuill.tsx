@@ -10,19 +10,22 @@ type QuillEditorProps = {
   modules?: object;
   formats?: string[];
   className?: string;
+  setEditorContent?: (content: string) => void
 };
 
-const QuillEditor: React.FC<QuillEditorProps> = ({
+const QuillEditor: React.FC<QuillEditorProps> = ({  
   placeholder = "Write something...",
   theme = "snow",
   modules = {},
   formats = [],
-  className = ""
+  className = "",  
+  setEditorContent = () => {}
 }) => {
   const [content, setContent] = useState<string>("");
 
   const handleChange = (value: string) => {
     setContent(value);
+    setEditorContent?.(value)
   };
 
   return (
