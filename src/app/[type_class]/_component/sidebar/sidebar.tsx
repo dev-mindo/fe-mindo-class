@@ -100,6 +100,7 @@ export const Sidebar = () => {
             Mindo Class
           </div>
           <div className="">
+            {/* TODO fitur hide side bar */}
             <Button
               size="icon"
               variant="ghost"
