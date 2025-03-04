@@ -15,7 +15,7 @@ declare global {
       back: number;
       current: number;
       page: Array<{
-        number: number;
+      number: number;
         current: boolean;
         completed: boolean;
         isCorrect?: boolean
@@ -33,7 +33,16 @@ declare global {
     };
   };
 
-  
+  type TModuleMaterial = {
+    id: number
+    productId: number
+    title: string
+    type: string
+    description: string
+    videoUrl: string
+    file: string
+    userNote: string
+  }
 }
 
 export {};

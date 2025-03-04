@@ -10,19 +10,24 @@ type QuillEditorProps = {
   modules?: object;
   formats?: string[];
   className?: string;
+  setEditorContent?: (content: string) => void
+  getEditorContent?: string
 };
 
-const QuillEditor: React.FC<QuillEditorProps> = ({
+const QuillEditor: React.FC<QuillEditorProps> = ({  
   placeholder = "Write something...",
   theme = "snow",
   modules = {},
   formats = [],
-  className = ""
+  className = "",  
+  setEditorContent = () => {},
+  getEditorContent = ""
 }) => {
-  const [content, setContent] = useState<string>("");
+  const [content, setContent] = useState<string>(getEditorContent);
 
   const handleChange = (value: string) => {
     setContent(value);
+    setEditorContent?.(value)
   };
 
   return (
@@ -34,7 +39,7 @@ const QuillEditor: React.FC<QuillEditorProps> = ({
         placeholder={placeholder}
         theme={theme}
         modules={modules}
-        formats={formats}
+        formats={formats}        
       />
       {/* <div className="mt-4 border p-4">
         <h2 className="text-xl font-bold mb-2">Preview:</h2>
