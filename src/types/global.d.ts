@@ -43,6 +43,19 @@ declare global {
     file: string
     userNote: string
   }
+
+  type TClassroom = {
+    id: number
+    productId: number
+    productType: string
+    publish: boolean
+    publishTime: string
+    thumbnail: string
+    title: string
+    slug: string
+    createdAt: string
+    updatedAt: string
+  }
 }
 
 export {};
