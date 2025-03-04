@@ -5,6 +5,10 @@ const nextConfig = {
       {
         hostname: "miro.medium.com",
       },
+      {
+        protocol: 'https',
+        hostname: 'classroom-mindo.b-cdn.net'
+      }
     ],
   },
   // experimental: {
