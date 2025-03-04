@@ -12,7 +12,9 @@ type Props = {
 };
 
 export const ModuleMaterial = ({ materialData }: Props) => {
-  const [userNote, setUserNote ] = useState<string>('')
+  const [userNote, setUserNote] = useState<string>(
+    materialData?.userNote || ""
+  );
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
@@ -20,10 +22,12 @@ export const ModuleMaterial = ({ materialData }: Props) => {
     const timer = setTimeout(() => {
       if (userNote.trim() !== "") {
         //TODO save ke backend
-        toast.info('Menyimpan Catatan...')
-        saveData(userNote);
+        if (userNote !== materialData?.userNote) {
+          toast.info("Menyimpan Catatan...");
+          saveData(userNote);
+        }
       }
-    }, 1000);    
+    }, 1000);
     return () => clearTimeout(timer); // Cleanup timer
   }, [userNote]);
 
@@ -31,13 +35,13 @@ export const ModuleMaterial = ({ materialData }: Props) => {
     setIsSaving(true);
     try {
       await fetchApi(`/classroom/save-notes`, {
-        method: 'POST',
+        method: "POST",
         body: {
           productId: materialData?.productId,
           moduleId: materialData?.id,
-          notes: content
-        }
-      })
+          notes: content,
+        },
+      });
     } catch (error) {
       console.error("Gagal menyimpan:", error);
     } finally {
@@ -82,11 +86,12 @@ export const ModuleMaterial = ({ materialData }: Props) => {
         <div>
           <div className="p-4 bg-card h-[100%] rounded-lg">
             <QuillEditor
+              getEditorContent={userNote}
               setEditorContent={setUserNote}
               className="h-[40vh]"
               placeholder="Start ty ping..."
               modules={modules}
-              formats={formats}              
+              formats={formats}
             />
           </div>
         </div>

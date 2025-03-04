@@ -34,11 +34,14 @@ declare global {
   };
 
   type TModuleMaterial = {
+    id: number
+    productId: number
     title: string
     type: string
     description: string
     videoUrl: string
     file: string
+    userNote: string
   }
 }
 
