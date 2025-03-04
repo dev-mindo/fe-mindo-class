@@ -25,7 +25,7 @@ export function getDurationTimeNow(timeLimit: string) {
   const hours = duration.hours();
   const minutes = duration.minutes();
   const seconds = duration.seconds();
-  return `${hours}:${minutes}:${seconds}`
+  return `${hours}:${minutes}:${seconds}`;
 }
 
 export function convertTimeToWords(time: string) {
@@ -33,12 +33,24 @@ export function convertTimeToWords(time: string) {
   if (match) {
     const hours = parseInt(match[1], 10); // Jam
     const minutes = parseInt(match[2], 10); // Menit
-    let result = '' 
-    if(hours > 0) result += `${hours} jam`
-    if(minutes > 0) result += `${minutes} menit`
-    return result
+    let result = "";
+    if (hours > 0) result += `${hours} jam`;
+    if (minutes > 0) result += `${minutes} menit`;
+    return result;
   } else {
     console.log("Format waktu tidak valid");
     throw new Error("Format waktu tidak valid");
   }
 }
+
+export function convertSnakeToTitleCase(text: string): string {
+  return text
+    .toLowerCase() // Step 1: Ubah ke huruf kecil
+    .split("_") // Step 2: Pisahkan berdasarkan "_"
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1)) // Step 3: Kapitalisasi
+    .join(" "); // Step 4: Gabungkan dengan spasi
+}
+
+export function convertSnakeToKebab (text: string): string {
+  return text.toLowerCase().split("_").join("-");
+};
