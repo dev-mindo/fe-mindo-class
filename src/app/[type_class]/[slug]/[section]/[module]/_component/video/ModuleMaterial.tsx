@@ -1,6 +1,7 @@
 "use client";
 import QuillEditor from "@/components/base/EditorQuill";
 import { Button } from "@/components/ui/button";
+import { fetchApi } from "@/lib/utils/fetchApi";
 import parse from "html-react-parser";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -28,13 +29,20 @@ export const ModuleMaterial = ({ materialData }: Props) => {
 
   const saveData = async (content: string) => {
     setIsSaving(true);
-    // try {
-    //   await axios.post("http://localhost:5000/api/save", { content });
-    // } catch (error) {
-    //   console.error("Gagal menyimpan:", error);
-    // } finally {
-    //   setIsSaving(false);
-    // }
+    try {
+      await fetchApi(`/classroom/save-notes`, {
+        method: 'POST',
+        body: {
+          productId: materialData?.productId,
+          moduleId: materialData?.id,
+          notes: content
+        }
+      })
+    } catch (error) {
+      console.error("Gagal menyimpan:", error);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const modules = {

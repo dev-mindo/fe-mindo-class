@@ -27,5 +27,6 @@ export default async function Page({ params, searchParams }: Props) {
   );
   if ((getModule && !getModule.success) || !getModule) notFound();
 
+  // TODO return berdasarkan type
   return <ModuleMaterial materialData={getModule.data} />;
 }
