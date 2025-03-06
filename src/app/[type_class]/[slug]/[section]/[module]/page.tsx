@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import { ModuleMaterial } from "./_component/video/ModuleMaterial";
+import { ModuleMaterial } from "./_component/video/ModuleVideo";
 import { ApiResponse, fetchApi } from "@/lib/utils/fetchApi";
 import { notFound } from "next/navigation";
 
