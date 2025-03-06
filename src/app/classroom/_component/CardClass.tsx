@@ -32,7 +32,7 @@ export const CardClass = (props: Props) => {
           <Link
             href={`${process.env.NEXT_PUBLIC_URL}/${convertSnakeToKebab(
               props.type
-            )}/${props.slug}/section/video-learning`}
+            )}/${props.slug}/section/introduction`}
           >
             Mulai
           </Link>
