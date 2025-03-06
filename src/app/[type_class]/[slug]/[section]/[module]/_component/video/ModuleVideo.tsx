@@ -72,33 +72,42 @@ export const ModuleMaterial = ({ materialData }: Props) => {
   return (
     <div>
       <div className="flex gap-4">
-        <div className="w-[70%]">
-          <div className="relative pt-[56.25%] absolute top-0 left-0 w-full h-full">
-            <iframe
-              src={`${materialData?.videoUrl}&autoplay=false&loop=false&muted=false&preload=true&responsive=true`}
-              loading="lazy"
-              className="border-0 absolute top-0 h-full w-full"
-              allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture;"
-              allowFullScreen
-            ></iframe>
+        {/* {materialData?.type === 'discussion' && (
+          
+        )} */}
+        {materialData?.videoUrl && (
+          <div className="w-[70%]">
+            <div className="relative pt-[56.25%] absolute top-0 left-0 w-full h-full">
+              <iframe
+                src={`${materialData?.videoUrl}&autoplay=false&loop=false&muted=false&preload=true&responsive=true`}
+                loading="lazy"
+                className="border-0 absolute top-0 h-full w-full"
+                allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture;"
+                allowFullScreen
+              ></iframe>
+            </div>
           </div>
-        </div>
-        <div>
-          <div className="p-4 bg-card h-[100%] rounded-lg">
-            <QuillEditor
-              getEditorContent={userNote}
-              setEditorContent={setUserNote}
-              className="h-[40vh]"
-              placeholder="Start ty ping..."
-              modules={modules}
-              formats={formats}
-            />
+        )}
+        {materialData?.videoUrl && (
+          <div>
+            <div className="p-4 bg-card h-[100%] rounded-lg">
+              <QuillEditor
+                getEditorContent={userNote}
+                setEditorContent={setUserNote}
+                className="h-[40vh]"
+                placeholder="Start ty ping..."
+                modules={modules}
+                formats={formats}
+              />
+            </div>
           </div>
+        )}
+      </div>
+      {materialData?.description && (
+        <div className="p-4 bg-card h-[100%] rounded-lg mt-4">
+          {parse(materialData?.description || "")}
         </div>
-      </div>
-      <div className="p-4 bg-card h-[100%] rounded-lg mt-4">
-        {parse(materialData?.description || "")}
-      </div>
+      )}      
       <div className="w-full mt-4">
         {materialData?.file !== "" && (
           <Button asChild className="w-full">
