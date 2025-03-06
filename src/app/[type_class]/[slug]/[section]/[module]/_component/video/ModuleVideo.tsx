@@ -11,7 +11,7 @@ type Props = {
   materialData: TModuleMaterial | undefined;
 };
 
-export const ModuleMaterial = ({ materialData }: Props) => {
+export const ModuleVideo = ({ materialData }: Props) => {
   const [userNote, setUserNote] = useState<string>(
     materialData?.userNote || ""
   );
@@ -71,10 +71,7 @@ export const ModuleMaterial = ({ materialData }: Props) => {
   ];
   return (
     <div>
-      <div className="flex gap-4">
-        {/* {materialData?.type === 'discussion' && (
-          
-        )} */}
+      <div className="flex gap-4">    
         {materialData?.videoUrl && (
           <div className="w-[70%]">
             <div className="relative pt-[56.25%] absolute top-0 left-0 w-full h-full">
