@@ -39,9 +39,9 @@ declare global {
     title: string
     type: string
     description: string
-    videoUrl: string
-    file: string
-    userNote: string
+    videoUrl?: string
+    file?: string
+    userNote?: string
   }
 
   type TClassroom = {
