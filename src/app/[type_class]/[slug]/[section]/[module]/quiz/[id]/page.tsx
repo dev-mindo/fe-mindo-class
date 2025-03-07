@@ -26,7 +26,7 @@ export default async function Page({params, searchParams}: Props) {
   const getToken = (params.id as string) || "";
   const getPage = (searchParams.page as string) || "";
   const getQuestion: ApiResponse<TQuizData> = await fetchApi(
-    `/classroom/quiz?token=${getToken}`
+    `/classroom/quiz?token=${getToken}&page=${getPage}`
   );
 
   const urlQuiz = `${process.env.NEXT_PUBLIC_URL}/${getTypeClass}/${getSlug}/${getSection}/${getModuleSlug}`;

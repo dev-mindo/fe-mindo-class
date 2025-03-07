@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { ApiResponse, fetchApi } from "../utils/fetchApi";
 
 export const getQuiz = async (slug: string, type: string) => {
@@ -22,3 +23,15 @@ export const attemptQuiz = async (id: number) => {
     console.log(error);
   }
 };
+
+export const clearCachesByServerAction = async  (path: string) => {
+  try {
+    if (path) {revalidatePath(path)} 
+  else {
+    revalidatePath("/")
+    revalidatePath("/[lang]")
+  }
+  } catch (error) {
+    console.error("clearCachesByServerAction=> ", error)
+  }
+}
