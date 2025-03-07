@@ -11,21 +11,22 @@ import {
 } from "@/components/ui/table";
 import { ApiResponse, fetchApi } from "@/lib/utils/fetchApi";
 import { Info, Loader2 } from "lucide-react";
-import { ErrorDialogAttempt } from "./ErrorDialogAttempt";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { convertTimeToWords } from "@/lib/utils";
-import { TQuiz } from "../page";
 import Link from "next/link";
+import { ErrorDialogAttempt } from "./ErrorDialogAttempt";
 
 type Props = {
-  quiz: TQuiz;
-  slug: string;
-  type: string;
+  quiz: TQuizAll;  
+  params: {
+    [key: string]: string;
+  };
+  baseUrl: string
 };
 
-export const AttemptQuiz = ({ quiz, slug, type }: Props) => {
+export const AttemptQuiz = ({ quiz, params, baseUrl }: Props) => {
   // const {toast} = useToast()
   const [isOpenErrorAttempt, setIsOpenErrorAttempt] = useState(false);
   const [errorMessageAttempt, setMessageAttempt] = useState("");
@@ -39,7 +40,7 @@ export const AttemptQuiz = ({ quiz, slug, type }: Props) => {
     });
     if (attempt.success) {
       router.push(
-        `${process.env.NEXT_PUBLIC_URL}/video-learning/${slug}/quiz/${type}/${attempt.data.signatureQuiz}?page=1`
+        `${baseUrl}/quiz/${attempt.data.signatureQuiz}?page=1`
       );
     } else {
       setIsOpenErrorAttempt(true);
@@ -80,7 +81,7 @@ export const AttemptQuiz = ({ quiz, slug, type }: Props) => {
                   <TableCell>{item.score}</TableCell>
                   <TableCell>
                     <Button asChild>
-                      <Link href={`${process.env.NEXT_PUBLIC_URL}/video-learning/${slug}/quiz/pretest/evaluation/${item.id}`}>Evaluasi</Link>
+                      <Link href={`${baseUrl}/quiz/evaluation/${item.id}`}>Evaluasi</Link>
                     </Button>
                   </TableCell>
                 </TableRow>

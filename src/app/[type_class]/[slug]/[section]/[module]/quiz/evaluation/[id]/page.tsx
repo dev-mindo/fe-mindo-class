@@ -1,7 +1,7 @@
 import { Metadata } from "next";
+import { ApiResponse, fetchApi } from "@/lib/utils/fetchApi";
 import { NavQuiz } from "../../[id]/_component/NavQuiz";
 import { Question } from "../../[id]/_component/Question";
-import { ApiResponse, fetchApi } from "@/lib/utils/fetchApi";
 
 export const metadata: Metadata = {
   title: "Mindo Class | Evaluation Quiz",
@@ -17,18 +17,21 @@ type Props = {
 };
 
 export default async function Page({ params, searchParams }: Props) {
-  const getSlug = (params.slug as string) || "";
-  const getType = (params.type as string) || "";
+  const getTypeClass = params.type_class;
+  let getSection = params.section;
+  const getSlug = params.slug;
+  if (getTypeClass === "video-learning") getSection = 'section';
+  const getModuleSlug = params.module;
   const getAttemptId = (params.id as string) || "";
   const getPage = (searchParams.page as string) || "";
   const getQuestion: ApiResponse<TQuizData> = await fetchApi(
-    `/attempt-quiz/${getSlug}/quiz/${getType}/evaluation/${getAttemptId}?page=${getPage}`
+    `/attempt-quiz/evaluation/${getAttemptId}?page=${getPage}`
   );
 
-  const urlQuiz = `${process.env.NEXT_PUBLIC_URL}/video-learning/${getSlug}/quiz/${getType}`;
+  const urlQuiz = `${process.env.NEXT_PUBLIC_URL}/${getTypeClass}/${getSlug}/${getSection}/${getModuleSlug}`;
 
   const optionsQuiz = {
-    redirectPagination: `${urlQuiz}/evaluation/${getAttemptId}`,
+    redirectPagination: `${urlQuiz}/quiz/evaluation/${getAttemptId}`,
     redirectCompleted: urlQuiz,
     pathType: `evaluation`,
   };

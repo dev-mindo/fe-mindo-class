@@ -77,8 +77,9 @@ export function NavQuiz({
     if (options.pathType === "quiz") {
       if (selectedAnswer.questionId !== 0 && selectedAnswer.answerId !== 0) {
         setLoading(true);
+        //save answer
         const resAnswer: ApiResponse = await fetchApi(
-          `/classroom/${params.slug}/quiz?token=${params.id}`,
+          `/classroom/quiz?token=${params.id}`,
           {
             method: "POST",
             body: {
@@ -132,7 +133,7 @@ export function NavQuiz({
   async function handleCompletedQuiz() {
     console.log("completed");
     const resCompleted: ApiResponse = await fetchApi(
-      `/classroom/completed?token=${params.id}`,
+      `/classroom/quiz/completed?token=${params.id}`,
       {
         method: "POST",
       }
