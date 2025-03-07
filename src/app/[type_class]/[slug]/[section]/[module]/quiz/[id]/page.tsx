@@ -17,19 +17,22 @@ type Props = {
   };
 };
 
-export default async function Page(props: Props) {
-  const getSlug = (props.params.slug as string) || "";
-  const getType = (props.params.type as string) || "";
-  const getToken = (props.params.id as string) || "";
-  const getPage = (props.searchParams.page as string) || "";
+export default async function Page({params, searchParams}: Props) {
+  const getTypeClass = params.type_class;
+  let getSection = params.section;
+  const getSlug = params.slug;
+  if (getTypeClass === "video-learning") getSection = 'section';
+  const getModuleSlug = params.module;
+  const getToken = (params.id as string) || "";
+  const getPage = (searchParams.page as string) || "";
   const getQuestion: ApiResponse<TQuizData> = await fetchApi(
-    `/classroom/product-slug/quiz?token=${getToken}&page=${getPage}`
+    `/classroom/quiz?token=${getToken}`
   );
 
-  const urlQuiz = `${process.env.NEXT_PUBLIC_URL}/video-learning/${getSlug}/quiz/${getType}`
+  const urlQuiz = `${process.env.NEXT_PUBLIC_URL}/${getTypeClass}/${getSlug}/${getSection}/${getModuleSlug}`;
 
   const optionsQuiz = {
-    redirectPagination: `${urlQuiz}/${getToken}`,
+    redirectPagination: `${urlQuiz}/quiz/${getToken}`,
     redirectCompleted: urlQuiz,
     pathType: `quiz`,
   };
