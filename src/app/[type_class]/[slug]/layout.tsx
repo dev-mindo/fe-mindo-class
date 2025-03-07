@@ -7,7 +7,7 @@ import { usePathname } from "next/navigation";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-  const urlPath = new RegExp(/^\/video-learning\/([^/]+)\/quiz\/([^/]+)\/([^/]+|evaluation\/[^/]+)$/)
+  const urlPath = new RegExp(/(\/[^/]+\/[^/]+\/[^/]+\/[^/]+\/quiz\/[^/?]+|\/evaluation\/[^/]+)$/)
   
   if(pathname.match(urlPath)){
     return (<>{children}</>)
