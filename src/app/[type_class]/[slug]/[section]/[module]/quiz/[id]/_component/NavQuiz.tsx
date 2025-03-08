@@ -10,6 +10,7 @@ import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { ApiResponse, fetchApi } from "@/lib/utils/fetchApi";
 import { AlertDialogCompleted } from "./AlertDialogCompleted";
+import { clearCachesByServerAction } from "@/lib/action/quiz";
 
 type Props = {
   title: string;
@@ -93,6 +94,7 @@ export function NavQuiz({
           });
         }
         setLoading(false);
+        clearCachesByServerAction(options.redirectPagination + `?page=${pagination?.next}`)        
       }
     }
     if (
@@ -101,9 +103,10 @@ export function NavQuiz({
     ) {
       if (options.pathType === "quiz") {
         setIsOpenDialogCompleted(true);
-      }      
-      router.push(options.redirectCompleted);
-    }else{
+      } else {
+        router.push(options.redirectCompleted);
+      }
+    } else {
       if (!loading) {
         handlePagination(pagination?.next);
       }
@@ -156,23 +159,28 @@ export function NavQuiz({
         <div className="flex items-center">
           <div className="mr-2">
             {options.pathType !== "quiz" && (
-                <Button onClick={() => {
+              <Button
+                onClick={() => {
                   router.push(options.redirectCompleted);
-                }} variant="ghost">
-                  <ChevronLeft />
-                  Kembali
-                </Button>                              
+                }}
+                variant="ghost"
+              >
+                <ChevronLeft />
+                Kembali
+              </Button>
             )}
           </div>
           <h1>{title}</h1>
         </div>
         <div className="flex gap-10 w-[20%] mr-4">
-          <div>
+          {options.pathType === "evaluation" && (
             <div>
-              Jawaban Benar {resultQuiz?.totalCorrect || 0}/{totalQuestion}
+              <div>
+                Jawaban Benar {resultQuiz?.totalCorrect || 0}/{totalQuestion}
+              </div>
+              <div>Score {resultQuiz?.score || 0}/100</div>
             </div>
-            <div>Score {resultQuiz?.score || 0}/100</div>
-          </div>
+          )}
           <div className="ml-auto">
             Menyelesaikan {completed}/{totalQuestion}
             <div className="w-[100%] mt-2">
@@ -236,7 +244,7 @@ export function NavQuiz({
         isOpen={isOpenAlertTimeEnd}
         message={alertMessageTimeEnd.message}
         title={alertMessageTimeEnd.title}
-        handleRedirectUrl={HandleRedirectTimeEnd}
+        handleRedirectUrl={handleCompletedQuiz}
       />
       <AlertDialogCompleted
         isOpen={IsOpenDialogCompleted}
