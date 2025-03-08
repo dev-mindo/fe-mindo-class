@@ -13,6 +13,8 @@ declare global {
         _count: {
           UserAnswer: number;
         };
+        onProcess: boolean;
+        signatureQuiz: string;
       }>;
       _count: {
         question: number;
