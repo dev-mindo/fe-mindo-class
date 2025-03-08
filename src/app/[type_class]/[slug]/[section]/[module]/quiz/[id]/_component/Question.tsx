@@ -48,7 +48,7 @@ export const Question = ({
     if (getUserAnswer) {
       setSelectedUserAnswer({
         answerId: getUserAnswer.answerId,
-        isCorrect: getUserAnswer.answer.isCorrect,
+        isCorrect: getUserAnswer.answer && getUserAnswer.answer.isCorrect,
       });
     }
   }, [question]);
@@ -183,11 +183,14 @@ export const Question = ({
                 className={`relative m-0 bg-[#2E2E2E] border 
                   ${stylePagination(item)} }`}
               >
-                {options.pathType === "evaluation" && item.isCorrect ? (
-                  <SquareCheckBig className="absolute top-0 right-0 text-green-500" />
-                ) : (
-                  <SquareX className="absolute top-0 right-0 text-red-500" />
-                )}
+                {
+                  options.pathType === "evaluation" ?
+                    item.isCorrect ? (
+                      <SquareCheckBig className="absolute top-0 right-0 text-green-500" />
+                    ) : (
+                      <SquareX className="absolute top-0 right-0 text-red-500" />
+                    ) : (<></>)
+                }
                 {item.number}
               </Button>
             )

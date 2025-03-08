@@ -19,11 +19,11 @@ import Link from "next/link";
 import { ErrorDialogAttempt } from "./ErrorDialogAttempt";
 
 type Props = {
-  quiz: TQuizAll;  
+  quiz: TQuizAll;
   params: {
     [key: string]: string;
   };
-  baseUrl: string
+  baseUrl: string;
 };
 
 export const AttemptQuiz = ({ quiz, params, baseUrl }: Props) => {
@@ -39,9 +39,7 @@ export const AttemptQuiz = ({ quiz, params, baseUrl }: Props) => {
       method: "POST",
     });
     if (attempt.success) {
-      router.push(
-        `${baseUrl}/quiz/${attempt.data.signatureQuiz}?page=1`
-      );
+      router.push(`${baseUrl}/quiz/${attempt.data.signatureQuiz}?page=1`);
     } else {
       setIsOpenErrorAttempt(true);
       setMessageAttempt(attempt.message);
@@ -77,12 +75,24 @@ export const AttemptQuiz = ({ quiz, params, baseUrl }: Props) => {
                   <TableCell className="font-medium">
                     Percobaan ke {index + 1}
                   </TableCell>
-                  <TableCell>{item._count.UserAnswer}</TableCell>
+                  <TableCell>
+                    {item.onProcess ? 0 : item._count.UserAnswer}
+                  </TableCell>
                   <TableCell>{item.score}</TableCell>
                   <TableCell>
-                    <Button asChild>
-                      <Link href={`${baseUrl}/quiz/evaluation/${item.id}`}>Evaluasi</Link>
-                    </Button>
+                    {item.onProcess ? (
+                      <Button asChild>
+                        <Link href={`${baseUrl}/quiz/${item.signatureQuiz}`}>
+                          Lanjutkan
+                        </Link>
+                      </Button>
+                    ) : (
+                      <Button asChild>
+                        <Link href={`${baseUrl}/quiz/evaluation/${item.id}`}>
+                          Evaluasi
+                        </Link>
+                      </Button>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}
