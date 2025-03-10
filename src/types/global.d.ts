@@ -78,6 +78,21 @@ declare global {
     createdAt: string;
     updatedAt: string;
   };
+
+  type TCreateToken = {
+    accessToken: string
+  }
+
+  type TCurrentPage = {
+    typeClass: string
+    classSlug: string
+    sectionSlug: string
+    module: {
+      slug: string
+      id: number
+    }
+    checkCurrentPage: boolean
+  }
 }
 
 export {};
