@@ -2,13 +2,11 @@
 import {
   Card,
   CardContent,
-  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import { useForm } from "react-hook-form";
-import IInput from "../base/IInput";
 import { Form } from "../ui/form";
 import ISelect from "../base/ISelect";
 import ISwitch from "../base/ISwitch";
@@ -41,9 +39,7 @@ const ManageQuiz = (props: Props) => {
       publish: true,
       random: true,
     },
-  });
-
-  const onSubmit = () => {};
+  });  
 
   return (
     <Card>

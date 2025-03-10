@@ -1,13 +1,13 @@
 'use client'
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Regex } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Sidebar } from "../_component/sidebar/sidebar";
 import { usePathname } from "next/navigation";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-  const urlPath = new RegExp(/(\/[^/]+\/[^/]+\/[^/]+\/[^/]+\/quiz\/[^/?]+|\/evaluation\/[^/]+)$/)
+  const urlPath = new RegExp(/(\/[^/]+\/[^/]+\/[^/]+\/[^/]+\/quiz\/[^/?]+|\/evaluation\/[^/]+)$/);
   
   if(pathname.match(urlPath)){
     return (<>{children}</>)

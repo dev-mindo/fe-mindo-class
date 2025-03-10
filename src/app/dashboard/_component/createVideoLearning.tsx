@@ -32,7 +32,7 @@ type Props = {
   setProductId: (productId: string) => void;
 };
 
-const CreateVideoLearning = (props: Props) => {
+const CreateVideoLearning = () => {
   const form = useForm({
     defaultValues: {
       product: "",

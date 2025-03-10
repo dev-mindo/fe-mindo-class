@@ -10,7 +10,7 @@ export interface ApiResponse<T = any> {
 
 interface FetchOptions {
   method?: FetchMethod;
-  body?: any;
+  body?: any
   headers?: HeadersInit;
 }
 

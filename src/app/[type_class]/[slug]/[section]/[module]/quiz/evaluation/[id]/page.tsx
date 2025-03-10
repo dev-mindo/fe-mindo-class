@@ -1,7 +1,7 @@
 import { Metadata } from "next";
 import { ApiResponse, fetchApi } from "@/lib/utils/fetchApi";
-import { NavQuiz } from "../../[id]/_component/NavQuiz";
-import { Question } from "../../[id]/_component/Question";
+import { NavQuiz } from "../../_component/NavQuiz";
+import { Question } from "../../_component/Question";
 
 export const metadata: Metadata = {
   title: "Mindo Class | Evaluation Quiz",

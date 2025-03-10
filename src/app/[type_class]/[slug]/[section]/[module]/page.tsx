@@ -18,7 +18,7 @@ type Props = {
   };
 };
 
-export default async function Page({ params, searchParams }: Props) {
+export default async function Page({ params }: Props) {
   const getTypeClass = params.type_class;
   let getSection = params.section;
   const getSlug = params.slug;
