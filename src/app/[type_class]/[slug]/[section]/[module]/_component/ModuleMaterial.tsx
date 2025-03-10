@@ -1,11 +1,7 @@
 "use client";
-import QuillEditor from "@/components/base/EditorQuill";
 import { Button } from "@/components/ui/button";
-import { fetchApi } from "@/lib/utils/fetchApi";
 import parse from "html-react-parser";
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { toast } from "sonner";
 
 type Props = {
   materialData: TModuleMaterial | undefined;

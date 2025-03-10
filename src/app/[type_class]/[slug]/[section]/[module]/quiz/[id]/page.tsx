@@ -1,6 +1,6 @@
 import { ApiResponse, fetchApi } from "@/lib/utils/fetchApi";
-import { NavQuiz } from "./_component/NavQuiz";
-import { Question } from "./_component/Question";
+import { NavQuiz } from "../_component/NavQuiz";
+import { Question } from "../_component/Question";
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 

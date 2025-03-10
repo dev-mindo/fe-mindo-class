@@ -21,7 +21,7 @@ export function getDurationTimeNow(timeLimit: string) {
   const duration = moment.duration(targetTime.diff(now));
 
   // Ambil selisih dalam hari, jam, menit, dan detik
-  const days = duration.days();
+  // const days = duration.days();
   const hours = duration.hours();
   const minutes = duration.minutes();
   const seconds = duration.seconds();
