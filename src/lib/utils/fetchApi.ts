@@ -1,4 +1,7 @@
 "use server";
+
+import { getAuthToken } from "../action/auth";
+
 export type FetchMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
 
 export interface ApiResponse<T = any> {
@@ -19,12 +22,14 @@ export async function fetchApi<ApiResponse>(
   options: FetchOptions = {}
 ): Promise<ApiResponse> {
   const API_URL = process.env.API_URL;
+  const authToken = getAuthToken();
 
   try {
     const response = await fetch(`${API_URL}${endpoint}`, {
       method: options.method || "GET",
       headers: {
         "Content-Type": "application/json",
+        ...(authToken ? { authorization: `Bearer ${authToken}` } : {}),
         ...options.headers,
       },
       body: options.body ? JSON.stringify(options.body) : undefined,
