@@ -11,9 +11,8 @@ import {
 } from "@/components/ui/table";
 import { ApiResponse, fetchApi } from "@/lib/utils/fetchApi";
 import { Info, Loader2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import {useState } from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
 import { convertTimeToWords } from "@/lib/utils";
 import Link from "next/link";
 import { ErrorDialogAttempt } from "./ErrorDialogAttempt";
@@ -26,7 +25,7 @@ type Props = {
   baseUrl: string;
 };
 
-export const AttemptQuiz = ({ quiz, params, baseUrl }: Props) => {
+export const AttemptQuiz = ({ quiz, baseUrl }: Props) => {
   // const {toast} = useToast()
   const [isOpenErrorAttempt, setIsOpenErrorAttempt] = useState(false);
   const [errorMessageAttempt, setMessageAttempt] = useState("");
@@ -71,7 +70,7 @@ export const AttemptQuiz = ({ quiz, params, baseUrl }: Props) => {
             </TableHeader>
             <TableBody>
               {quiz?.quizAttempt.map((item, index) => (
-                <TableRow>
+                <TableRow key={index}>
                   <TableCell className="font-medium">
                     Percobaan ke {index + 1}
                   </TableCell>

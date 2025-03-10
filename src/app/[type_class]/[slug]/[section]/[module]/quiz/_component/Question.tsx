@@ -71,7 +71,7 @@ export const Question = ({
     return "";
   }
 
-  function styleAnswer() {}
+  // function styleAnswer() {}
 
   // Sinkronisasi state jika question berubah
   useEffect(() => {
@@ -103,8 +103,8 @@ export const Question = ({
             <div className="flex flex-col">
               {options.pathType === "evaluation" && (
                 <div>
-                  {question?.Answer.map((it, index) => (
-                    <div>
+                  {question?.Answer.map((it) => (
+                    <div key={it.id}>
                       {selectedUserAnswer.answerId !== 0 &&
                       selectedUserAnswer.answerId === it.id ? (
                         <div

@@ -1,15 +1,14 @@
+import { Control } from "react-hook-form";
 import {
-  FormControl,
-  FormDescription,
+  FormControl,  
   FormField,
   FormItem,
   FormLabel,
 } from "../ui/form";
-import { Label } from "../ui/label";
 import { Switch } from "../ui/switch";
 
 type Props = {
-  control: any;
+  control: Control<any>;
   name: string;
   label?: string;
 };

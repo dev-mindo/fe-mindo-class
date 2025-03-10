@@ -5,11 +5,11 @@ import { Progress } from "@/components/ui/progress";
 import { getDurationTimeNow } from "@/lib/utils";
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import React, { useEffect, useState } from "react";
-import { AlertTimeEnd } from "./AlertTimeEnd";
+import { AlertTimeEnd } from "../[id]/_component/AlertTimeEnd";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { ApiResponse, fetchApi } from "@/lib/utils/fetchApi";
-import { AlertDialogCompleted } from "./AlertDialogCompleted";
+import { AlertDialogCompleted } from "../[id]/_component/AlertDialogCompleted";
 import { clearCachesByServerAction } from "@/lib/action/quiz";
 
 type Props = {

@@ -1,7 +1,5 @@
-import Link from "next/link";
 import {
-  FormControl,
-  FormDescription,
+  FormControl,  
   FormField,
   FormItem,
   FormLabel,
@@ -14,9 +12,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
+import { Control } from "react-hook-form";
 
 type Props = {
-  control: any;
+  control: Control<any>;
   name: string;
   label?: string;
   placeholder?: string;
@@ -41,8 +40,8 @@ const ISelect = (props: Props) => {
               </SelectTrigger>
             </FormControl>
             <SelectContent>
-              {props.options.map((option) => (
-                <SelectItem value={option.value}>{option.label}</SelectItem>
+              {props.options.map((option, index) => (
+                <SelectItem key={index} value={option.value}>{option.label}</SelectItem>
               ))}
             </SelectContent>
           </Select>
