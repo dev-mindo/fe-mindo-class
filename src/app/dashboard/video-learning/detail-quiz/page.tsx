@@ -48,8 +48,7 @@ const Page = () => {
 
   const {
     fields: questionField,
-    append: questionAppend,
-    remove,
+    append: questionAppend,    
     update,
   } = useFieldArray({
     control: form.control,
@@ -128,7 +127,7 @@ const Page = () => {
               </div>
               <div className="col-span-2 flex flex-col gap-4 overflow-y-auto max-h-[80vh]">
                 {questionField.map((field, index) => (
-                  <Card>
+                  <Card key={index}>
                     <CardHeader>
                       <CardTitle>Question {index}</CardTitle>
                     </CardHeader>

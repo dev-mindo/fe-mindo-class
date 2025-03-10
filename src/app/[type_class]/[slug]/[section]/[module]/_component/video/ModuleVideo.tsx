@@ -15,7 +15,6 @@ export const ModuleVideo = ({ materialData }: Props) => {
   const [userNote, setUserNote] = useState<string>(
     materialData?.userNote || ""
   );
-  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     // Auto-save dengan debounce (1 detik setelah user berhenti mengetik)
@@ -31,8 +30,7 @@ export const ModuleVideo = ({ materialData }: Props) => {
     return () => clearTimeout(timer); // Cleanup timer
   }, [userNote]);
 
-  const saveData = async (content: string) => {
-    setIsSaving(true);
+  const saveData = async (content: string) => {  
     try {
       await fetchApi(`/classroom/save-notes`, {
         method: "POST",
@@ -44,8 +42,6 @@ export const ModuleVideo = ({ materialData }: Props) => {
       });
     } catch (error) {
       console.error("Gagal menyimpan:", error);
-    } finally {
-      setIsSaving(false);
     }
   };
 

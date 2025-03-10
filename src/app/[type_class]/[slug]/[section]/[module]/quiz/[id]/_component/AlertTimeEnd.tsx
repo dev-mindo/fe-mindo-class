@@ -1,13 +1,10 @@
 import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
+    AlertDialog,    
     AlertDialogContent,
     AlertDialogDescription,
     AlertDialogFooter,
     AlertDialogHeader,
-    AlertDialogTitle,
-    AlertDialogTrigger,
+    AlertDialogTitle,    
   } from "@/components/ui/alert-dialog";
   import { Button } from "@/components/ui/button";
   

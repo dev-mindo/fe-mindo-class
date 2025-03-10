@@ -1,9 +1,5 @@
-import {
-  Calendar,
+import {  
   Home,
-  Inbox,
-  Search,
-  Settings,
   TvMinimalPlay,
 } from "lucide-react";
 
