@@ -7,6 +7,7 @@ export type FetchMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
 export interface ApiResponse<T = any> {
   success: boolean;
   message: string;
+  statusCode: number;
   data?: T;
   errorCode?: number;
 }

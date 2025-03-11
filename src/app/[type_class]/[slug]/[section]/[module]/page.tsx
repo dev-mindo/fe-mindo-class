@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { ModuleVideo } from "./_component/video/ModuleVideo";
 import { ModuleMaterial } from "./_component/ModuleMaterial";
 import { AttemptQuiz } from "./quiz/_component/AttemptQuiz";
+import { Discussion } from "./_component/Discussion";
 
 export const metadata: Metadata = {
   title: "Mindo Class | Module",
@@ -44,7 +45,7 @@ export default async function Page({ params }: Props) {
         if ((quiz && !quiz.success) || !quiz) notFound();                
         return <AttemptQuiz quiz={quiz?.data} params={params} baseUrl={baseUrl} />;
       case "DISCUSSION":
-        break;
+        return <Discussion/>        
       case "EVALUATION":
         break;
       case "CERTIFICATE":

@@ -21,7 +21,7 @@ export default async function Page({params, searchParams}: Props) {
   const getTypeClass = params.type_class;
   let getSection = params.section;
   const getSlug = params.slug;
-  if (getTypeClass === "video-learning") getSection = getSlug;
+  // if (getTypeClass === "video-learning") getSection = getSlug;
   const getModuleSlug = params.module;
   const getToken = (params.id as string) || "";
   const getPage = (searchParams.page as string) || "";
