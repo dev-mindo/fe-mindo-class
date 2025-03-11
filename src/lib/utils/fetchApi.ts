@@ -22,7 +22,7 @@ export async function fetchApi<ApiResponse>(
   options: FetchOptions = {}
 ): Promise<ApiResponse> {
   const API_URL = process.env.API_URL;
-  const authToken = getAuthToken();
+  const authToken = await getAuthToken();
 
   try {
     const response = await fetch(`${API_URL}${endpoint}`, {
@@ -35,6 +35,8 @@ export async function fetchApi<ApiResponse>(
       body: options.body ? JSON.stringify(options.body) : undefined,
       cache: "no-store",
     });
+
+    console.log((authToken ? { authorization: `Bearer ${authToken}` } : {}))
 
     // if (!response.ok) {
     //   return

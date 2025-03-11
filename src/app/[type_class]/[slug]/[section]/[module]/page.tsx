@@ -22,16 +22,16 @@ export default async function Page({ params }: Props) {
   const getTypeClass = params.type_class;
   let getSection = params.section;
   const getSlug = params.slug;
-  if (getTypeClass === "video-learning") getSection = getSlug;
+  // if (getTypeClass === "video-learning") getSection = getSlug;
   const getModuleSlug = params.module;
   const getModule: ApiResponse<TModuleMaterial> = await fetchApi(
     `/classroom/${getSection}/${getModuleSlug}`
-  );
+  );  
   
   const baseUrl = `${process.env.NEXT_PUBLIC_URL}/${getTypeClass}/${getSlug}/${getSection}/${getModuleSlug}`
 
   if (getModule && getModule.success && getModule.data) {
-    metadata.title = getModule.data.title;
+    metadata.title = `Mindo Class | ${params.module}`
     switch (getModule.data.type) {
       case "VIDEO":
         return <ModuleVideo materialData={getModule.data} />;

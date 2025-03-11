@@ -93,6 +93,36 @@ declare global {
     }
     checkCurrentPage: boolean
   }
+
+  type TNavClass = {
+    progress: number
+    totalModules: number
+    sectionMenu: Array<{
+      title: string
+      slug: string
+      position: number
+      modules: Array<{
+        id: number
+        sectionId: number
+        type: string
+        step: number
+        title: string
+        menuTitle: string
+        slug: string
+        description: string
+        UserModule: Array<{
+          productId: number
+          userId: number
+          moduleId: number
+          status: string
+          createdAt: string
+          updatedAt: string
+        }>
+        status: string
+        current: boolean
+      }>
+    }>
+  }
 }
 
 export {};
