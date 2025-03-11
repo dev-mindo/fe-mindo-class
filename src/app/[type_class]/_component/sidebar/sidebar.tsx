@@ -14,9 +14,11 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { useTheme } from "next-themes";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAppContext } from "../navProvider";
+import { usePathname } from "next/navigation";
 
 type Props = {
   dataSection: TNavClass["sectionMenu"] | null;
@@ -25,9 +27,17 @@ type Props = {
 
 export const Sidebar = ({ dataSection, baseUrl }: Props) => {
   const { setTheme, theme } = useTheme();
+  const [getCurrentTheme, setCurrentTheme] = useState<string>("");
+  const { hideAll, hideSidebar } = useAppContext();
+
   useEffect(() => {
-    console.log(theme);
-  }, []);
+    console.log(hideAll);
+    setCurrentTheme(theme || "");
+  }, [theme]);
+
+  if (hideAll || hideSidebar) {
+    return <></>;
+  }
 
   const iconModule = [
     {
@@ -92,29 +102,22 @@ export const Sidebar = ({ dataSection, baseUrl }: Props) => {
   const setStyleSidebar = (
     module: SectionMenuType[number]["modules"][number]
   ) => {
-    switch (theme) {
-      case "light":
-        return `hover:bg-[#E2E2E2] 
-        ${module.current && "bg-primary hover:bg-primary text-white"}
-        ${
-          module.isLocked &&
-          "cursor-not-allowed opacity-50 hover:bg-white hover:bg-sidebar"
-        } `;
-      case "dark":
-        return `hover:bg-[#3A3A3A] 
-        ${module.current && "bg-primary hover:bg-primary text-white"}
-        ${
-          module.isLocked &&
-          "cursor-not-allowed opacity-50 hover:bg-white hover:bg-sidebar"
-        } ${module.current && "bg-primary hover:bg-primary"}`;
-      case "system":
-        return `hover:bg-[#E2E2E2] 
-        ${module.current && "bg-primary hover:bg-primary text-white"}
-        ${
-          module.isLocked &&
-          "cursor-not-allowed opacity-50 hover:bg-white hover:bg-sidebar"
-        } `;
-    }
+    const baseClasses = module.current
+      ? "bg-primary hover:bg-primary text-white"
+      : "";
+    const lockedClasses = module.isLocked
+      ? "cursor-not-allowed opacity-50 hover:bg-white hover:bg-sidebar"
+      : "";
+
+    return theme === "light"
+      ? `${baseClasses} ${lockedClasses}`
+      : theme === "dark"
+      ? `${baseClasses} ${lockedClasses} ${
+          module.current ? "bg-primary hover:bg-primary" : ""
+        }`
+      : theme === "system"
+      ? `${baseClasses} ${lockedClasses}`
+      : "";
   };
 
   return (
@@ -162,9 +165,45 @@ export const Sidebar = ({ dataSection, baseUrl }: Props) => {
                     }}
                   >
                     <div
-                      className={`flex gap-2 items-center px-2 py-2 rounded-lg ${setStyleSidebar(
-                        module
-                      )}`}
+                      className={`flex gap-2 items-center px-2 py-2 rounded-lg hover:bg-[#3A3A3A] ${
+                        getCurrentTheme === "light"
+                          ? `${
+                              module.current
+                                ? "bg-primary hover:bg-primary text-white"
+                                : ""
+                            } 
+                           ${
+                             module.isLocked
+                               ? "cursor-not-allowed opacity-50 hover:bg-sidebar"
+                               : ""
+                           }`
+                          : getCurrentTheme === "dark"
+                          ? `${
+                              module.current
+                                ? "bg-primary hover:bg-primary text-white"
+                                : ""
+                            } 
+                           ${
+                             module.isLocked
+                               ? "cursor-not-allowed opacity-50 hover:bg-sidebar"
+                               : ""
+                           } 
+                           ${
+                             module.current ? "bg-primary hover:bg-primary" : ""
+                           }`
+                          : getCurrentTheme === "system"
+                          ? `${
+                              module.current
+                                ? "bg-primary hover:bg-primary text-white"
+                                : ""
+                            } 
+                           ${
+                             module.isLocked
+                               ? "cursor-not-allowed opacity-50 hover:bg-sidebar"
+                               : ""
+                           }`
+                          : ""
+                      }`}
                     >
                       <div className="mr-2">{module.icon}</div>
                       <div>{module.title}</div>

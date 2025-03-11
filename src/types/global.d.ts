@@ -1,25 +1,27 @@
 declare global {
-  type TQuizAll = {
-      id: number;
-      title: string;
-      limitTrial: number;
-      limitTime: string;
-      type: string;
-      pagination: boolean;
-      random: boolean;
-      quizAttempt: Array<{
+  type TQuizAll =
+    | {
         id: number;
-        score: number;
+        title: string;
+        limitTrial: number;
+        limitTime: string;
+        type: string;
+        pagination: boolean;
+        random: boolean;
+        quizAttempt: Array<{
+          id: number;
+          score: number;
+          _count: {
+            UserAnswer: number;
+          };
+          onProcess: boolean;
+          signatureQuiz: string;
+        }>;
         _count: {
-          UserAnswer: number;
+          question: number;
         };
-        onProcess: boolean;
-        signatureQuiz: string;
-      }>;
-      _count: {
-        question: number;
-      };
-    } | undefined;
+      }
+    | undefined;
 
   type TQuizData = {
     status: string;
@@ -80,49 +82,70 @@ declare global {
   };
 
   type TCreateToken = {
-    accessToken: string
-  }
+    accessToken: string;
+  };
 
   type TCurrentPage = {
-    typeClass: string
-    classSlug: string
-    sectionSlug: string
+    typeClass: string;
+    classSlug: string;
+    sectionSlug: string;
     module: {
-      slug: string
-      id: number
-    }
-    checkCurrentPage: boolean
-  }
+      slug: string;
+      id: number;
+    };
+    checkCurrentPage: boolean;
+  };
 
   type TNavClass = {
-    progress: number
-    totalModules: number
+    progress: number;
+    totalModules: number;
     sectionMenu: Array<{
-      title: string
-      slug: string
-      position: number
+      title: string;
+      slug: string;
+      position: number;
       modules: Array<{
-        id: number
-        sectionId: number
-        type: string
-        step: number
-        title: string
-        menuTitle: string
-        slug: string
-        description: string
+        id: number;
+        sectionId: number;
+        type: string;
+        step: number;
+        title: string;
+        menuTitle: string;
+        slug: string;
+        description: string;
         UserModule: Array<{
-          productId: number
-          userId: number
-          moduleId: number
-          status: string
-          createdAt: string
-          updatedAt: string
-        }>
-        status: string
-        current: boolean
-      }>
-    }>
-  }
+          productId: number;
+          userId: number;
+          moduleId: number;
+          status: string;
+          createdAt: string;
+          updatedAt: string;
+        }>;
+        status: string;
+        current: boolean;
+      }>;
+    }>;
+  };
+
+  type TCurrentPageNav = {
+    id: number;
+    sectionId: number;
+    type: string;
+    step: number;
+    title: string;
+    menuTitle: string;
+    slug: string;
+    description: string;
+    UserModule: Array<{
+        productId: number;
+        userId: number;
+        moduleId: number;
+        status: string;
+        createdAt: string;
+        updatedAt: string;
+    }>;
+    status: string;
+    current: boolean;
+} | undefined
 }
 
 export {};
