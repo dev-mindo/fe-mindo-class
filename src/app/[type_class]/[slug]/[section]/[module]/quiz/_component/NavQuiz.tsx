@@ -94,7 +94,9 @@ export function NavQuiz({
           });
         }
         setLoading(false);
-        clearCachesByServerAction(options.redirectPagination + `?page=${pagination?.next}`)        
+        clearCachesByServerAction(
+          options.redirectPagination + `?page=${pagination?.next}`
+        );
       }
     }
     if (
@@ -154,8 +156,8 @@ export function NavQuiz({
   }, [time]);
 
   return (
-    <div className="flex flex-col justify-between h-screen">
-      <div className="flex items-center bg-sidebar h-16 p-4 justify-between">
+    <div className="flex flex-col lg:justify-between h-screen">
+      <div className="flex flex-col justify-center lg:flex-row items-center bg-sidebar lg:h-16 p-4 lg:justify-between">
         <div className="flex items-center">
           <div className="mr-2">
             {options.pathType !== "quiz" && (
@@ -170,9 +172,9 @@ export function NavQuiz({
               </Button>
             )}
           </div>
-          <h1>{title}</h1>
+          <h1 className="mb-4 lg:mb-0">{title}</h1>
         </div>
-        <div className="flex gap-10 w-[20%] mr-4">
+        <div className="flex gap-10 items-center lg:w-[30%] xl:w-[20%] mr-4">
           {options.pathType === "evaluation" && (
             <div>
               <div>
@@ -181,7 +183,7 @@ export function NavQuiz({
               <div>Score {resultQuiz?.score || 0}/100</div>
             </div>
           )}
-          <div className="ml-auto">
+          <div className="lg:ml-auto">
             Menyelesaikan {completed}/{totalQuestion}
             <div className="w-[100%] mt-2">
               <Progress
@@ -204,7 +206,7 @@ export function NavQuiz({
           )}
         </div>
       </div>
-      <div className="h-full">
+      <div className="h-full overflow-y-auto h-[calc(100%-10rem)]">
         <div className="mx-auto w-[95%] my-10">
           {children && typeof children === "object"
             ? React.cloneElement(children as React.ReactElement, {
