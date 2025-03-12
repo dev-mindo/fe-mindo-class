@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { ModuleVideo } from "./_component/video/ModuleVideo";
 import { ModuleMaterial } from "./_component/ModuleMaterial";
 import { AttemptQuiz } from "./quiz/_component/AttemptQuiz";
+import { Discussion } from "./_component/Discussion";
 
 export const metadata: Metadata = {
   title: "Mindo Class | Module",
@@ -22,16 +23,16 @@ export default async function Page({ params }: Props) {
   const getTypeClass = params.type_class;
   let getSection = params.section;
   const getSlug = params.slug;
-  if (getTypeClass === "video-learning") getSection = getSlug;
+  // if (getTypeClass === "video-learning") getSection = getSlug;
   const getModuleSlug = params.module;
   const getModule: ApiResponse<TModuleMaterial> = await fetchApi(
     `/classroom/${getSection}/${getModuleSlug}`
-  );
+  );  
   
   const baseUrl = `${process.env.NEXT_PUBLIC_URL}/${getTypeClass}/${getSlug}/${getSection}/${getModuleSlug}`
 
   if (getModule && getModule.success && getModule.data) {
-    metadata.title = getModule.data.title;
+    metadata.title = `Mindo Class | ${params.module}`
     switch (getModule.data.type) {
       case "VIDEO":
         return <ModuleVideo materialData={getModule.data} />;
@@ -44,7 +45,7 @@ export default async function Page({ params }: Props) {
         if ((quiz && !quiz.success) || !quiz) notFound();                
         return <AttemptQuiz quiz={quiz?.data} params={params} baseUrl={baseUrl} />;
       case "DISCUSSION":
-        break;
+        return <Discussion/>        
       case "EVALUATION":
         break;
       case "CERTIFICATE":

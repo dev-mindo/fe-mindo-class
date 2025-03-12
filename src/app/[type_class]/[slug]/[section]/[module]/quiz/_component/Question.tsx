@@ -1,9 +1,16 @@
 "use client";
 
+import { useAppContext } from "@/app/[type_class]/_component/navProvider";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { SquareCheckBig, SquareX } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  SquareCheckBig,
+  SquareX,
+} from "lucide-react";
+import { useTheme } from "next-themes";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 
@@ -32,11 +39,13 @@ export const Question = ({
   quizData,
   options,
 }: Props) => {
+  const { theme } = useTheme();
   const [selectedAnswer, setSelectedAnswer] = useState<string>("");
   const [selectedUserAnswer, setSelectedUserAnswer] = useState<TUserAnswer>({
     answerId: 0,
     isCorrect: false,
   });
+  const { hidePagination, setHidePagination } = useAppContext();
 
   useEffect(() => {
     const getUserAnswer = question?.userAnswer.at(0) as {
@@ -88,8 +97,8 @@ export const Question = ({
   }, [question]);
 
   return (
-    <div className="grid grid-cols-4">
-      <div className="flex col-span-3 justify-center item-center gap-4">
+    <div className="grid grid-cols-4 w-[90%] mx-auto lg:w-[100%]">
+      <div className="flex col-span-4 lg:col-span-3 justify-center item-center gap-4">
         {question?.image && (
           <div className="mr-5">
             <Image width={200} height={200} src={question?.image} alt="" />
@@ -153,13 +162,30 @@ export const Question = ({
                   }}
                 >
                   {question?.Answer.map((it, index) => (
-                    <div key={it.id} className="flex items-center space-x-2">
+                    <div
+                      key={it.id}
+                      className={`flex items-center space-x-2 my-1 rounded-xl
+                              ${
+                                selectedAnswer === it.id.toString()
+                                  ? `border-primary ${
+                                      theme === "dark"
+                                        ? "bg-[#616161] border-4"
+                                        : "bg-[#e0e0e0] border-2"
+                                    } `
+                                  : `border border-[#757575] ${
+                                      theme === "light" || theme === "system"
+                                        ? "bg-[#f5f5f5] hover:bg-[#e0e0e0]"
+                                        : "bg-[#424242] hover:bg-[#616161]"
+                                    }`
+                              }`}
+                    >
                       <RadioGroupItem
+                        className="ml-4"
                         value={it.id.toString()}
                         id={"r" + index}
                       />
                       <Label
-                        className="text-2xl my-4 w-full"
+                        className="py-4 pl-1 pr-4 text-2xl w-full"
                         htmlFor={"r" + index}
                       >
                         <div className="cursor-pointer">{it.answerText}</div>
@@ -173,28 +199,46 @@ export const Question = ({
         </div>
       </div>
       {/* pagination */}
-      <div className="justify-self-end">
-        <div className="grid grid-cols-4 gap-2 bg-card p-4 rounded-xl max-w-fit">
-          {quizData?.pagination.page.map(
-            (item: TQuizData["pagination"]["page"][number]) => (
-              <Button
-                key={item.number}
-                onClick={() => onSelectedPagination?.(item.number)}
-                className={`relative m-0 bg-[#2E2E2E] border 
-                  ${stylePagination(item)} }`}
+      <div className="justify-self-end w-full">
+        <div className="flex lg:pl-5 xl:pl-10 justify-center static">
+          <div className="flex fixed right-0 lg:right-auto top-0 lg:top-auto">            
+              <Button                
+                onClick={() => {
+                  hidePagination
+                    ? setHidePagination(false)
+                    : setHidePagination(true);
+                }}
+                size="icon"
+                className="mt-4 lg:hidden"
               >
-                {
-                  options.pathType === "evaluation" ?
-                    item.isCorrect ? (
-                      <SquareCheckBig className="absolute top-0 right-0 text-green-500" />
-                    ) : (
-                      <SquareX className="absolute top-0 right-0 text-red-500" />
-                    ) : (<></>)
-                }
-                {item.number}
-              </Button>
-            )
-          )}
+                {hidePagination ? <ChevronLeft /> : <ChevronRight />}
+              </Button>            
+            <div className={`${hidePagination ? "hidden" : "block"}`}>
+              <div className="grid grid-cols-4 gap-2 bg-card p-4 rounded-xl max-w-fit">
+                {quizData?.pagination.page.map(
+                  (item: TQuizData["pagination"]["page"][number]) => (
+                    <Button
+                      key={item.number}
+                      onClick={() => onSelectedPagination?.(item.number)}
+                      className={`relative m-0 bg-[#2E2E2E] border 
+                  ${stylePagination(item)} }`}
+                    >
+                      {options.pathType === "evaluation" ? (
+                        item.isCorrect ? (
+                          <SquareCheckBig className="absolute top-0 right-0 text-green-500" />
+                        ) : (
+                          <SquareX className="absolute top-0 right-0 text-red-500" />
+                        )
+                      ) : (
+                        <></>
+                      )}
+                      {item.number}
+                    </Button>
+                  )
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

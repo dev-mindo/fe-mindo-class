@@ -31,11 +31,12 @@ const QuillEditor: React.FC<QuillEditorProps> = ({
   };
 
   return (
-    <div className="w-full max-w-xl mx-auto p-4">
-      <ReactQuill    
+    <div className="w-full h-full flex flex-col">
+      <ReactQuill          
+        style={{ height: "100%" }}
         value={content}
         onChange={handleChange}
-        className={className}
+        className={` ${className}`}
         placeholder={placeholder}
         theme={theme}
         modules={modules}

@@ -20,7 +20,7 @@ export default async function Page({ params, searchParams }: Props) {
   const getTypeClass = params.type_class;
   let getSection = params.section;
   const getSlug = params.slug;
-  if (getTypeClass === "video-learning") getSection = 'section';
+  // if (getTypeClass === "video-learning") getSection = 'section';
   const getModuleSlug = params.module;
   const getAttemptId = (params.id as string) || "";
   const getPage = (searchParams.page as string) || "";

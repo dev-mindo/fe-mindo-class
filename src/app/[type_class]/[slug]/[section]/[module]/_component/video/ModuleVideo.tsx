@@ -67,12 +67,12 @@ export const ModuleVideo = ({ materialData }: Props) => {
   ];
   return (
     <div>
-      <div className="flex gap-4">    
+      <div className="flex lg:flex-row flex-col gap-4">    
         {materialData?.videoUrl && (
-          <div className="w-[70%]">
+          <div className="lg:w-[70%]">
             <div className="relative pt-[56.25%] absolute top-0 left-0 w-full h-full">
               <iframe
-                src={`${materialData?.videoUrl}&autoplay=false&loop=false&muted=false&preload=true&responsive=true`}
+                src={`${materialData?.videoUrl}&autoplay=false&loop=false&muted=false&preload=true&responsive=false`}
                 loading="lazy"
                 className="border-0 absolute top-0 h-full w-full"
                 allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture;"
@@ -82,12 +82,12 @@ export const ModuleVideo = ({ materialData }: Props) => {
           </div>
         )}
         {materialData?.videoUrl && (
-          <div>
-            <div className="p-4 bg-card h-[100%] rounded-lg">
+          <div className="">
+            <div className="p-4 min-h-[40vh] bg-card rounded-lg">
               <QuillEditor
                 getEditorContent={userNote}
                 setEditorContent={setUserNote}
-                className="h-[40vh]"
+                className=""
                 placeholder="Start ty ping..."
                 modules={modules}
                 formats={formats}
