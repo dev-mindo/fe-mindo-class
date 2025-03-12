@@ -40,7 +40,7 @@ export default async function Layout({ params, children }: Props) {
     .filter((item) => item.current)[0];
 
   return (
-    <div className="flex">
+    <div>
       <NavProvider>
         <Sidebar
           baseUrl={baseUrl}
