@@ -48,7 +48,7 @@ export const AttemptQuiz = ({ quiz, baseUrl }: Props) => {
 
   return (
     <div className="w-full">
-      <div className="mx-auto w-[80%]">
+      <div className="mx-auto w-[100%] md:w-[90%] xl:w-[80%]">
         <h1>{quiz?.title}</h1>
         <div className="mt-4">
           <Alert>

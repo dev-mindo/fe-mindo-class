@@ -10,6 +10,7 @@ import {
   Lock,
   MessagesSquare,
   SquarePlay,
+  X,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -28,7 +29,7 @@ type Props = {
 export const Sidebar = ({ dataSection, baseUrl }: Props) => {
   const { setTheme, theme } = useTheme();
   const [getCurrentTheme, setCurrentTheme] = useState<string>("");
-  const { hideAll, hideSidebar } = useAppContext();
+  const { hideAll, hideSidebar, setHideSidebar } = useAppContext();
 
   useEffect(() => {
     console.log(hideAll);
@@ -121,7 +122,11 @@ export const Sidebar = ({ dataSection, baseUrl }: Props) => {
   };
 
   return (
-    <div className="h-screen bg-sidebar w-[20%] flex flex-col justify-between">
+    <div
+      className={`h-screen bg-sidebar w-[100%] lg:w-[30%] xl:w-[20%] flex flex-col justify-between ${
+        hideSidebar ? "hidden" : ""
+      }`}
+    >
       <div>
         <div className="flex items-center mx-4 mt-3 justify-between">
           <div className="flex items-center gap-2">
@@ -145,6 +150,16 @@ export const Sidebar = ({ dataSection, baseUrl }: Props) => {
               }}
             >
               {theme === "system" || theme === "light" ? <Moon /> : <Sun />}
+            </Button>
+            <Button
+              className="lg:hidden"
+              size="icon"
+              variant="ghost"
+              onClick={() => {
+                hideSidebar ? setHideSidebar(false) : setHideSidebar(true);
+              }}
+            >
+              <X/>
             </Button>
           </div>
         </div>

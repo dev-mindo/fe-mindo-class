@@ -18,7 +18,7 @@ export const Navbar = (props: Props) => {
   }
 
   return (
-    <div className="flex items-center justify-between bg-sidebar h-16 pl-4">
+    <div className={`flex items-center justify-between bg-sidebar h-16 pl-4`}>
       <div className="mr-2 flex items-center gap-2">
         <Button
           onClick={() => {
@@ -31,7 +31,7 @@ export const Navbar = (props: Props) => {
         </Button>
         <h1>{props.title}</h1>
       </div>
-      <div className="w-[20%] mr-4">
+      <div className="w-[40%] sm:w-[30%] lg:w-[20%] mr-4">
         Progress {Math.round((100 / props.totalModules) * props.progress)}%
         <div className="w-[100%] mt-2">
           <Progress
