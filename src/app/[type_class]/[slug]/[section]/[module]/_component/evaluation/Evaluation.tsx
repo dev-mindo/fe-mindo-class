@@ -1,21 +1,32 @@
-'use client'
+"use client";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
-import { Badge } from "@/components/ui/badge"
+import { useEffect, useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import { ApiResponse, fetchApi } from "@/lib/utils/fetchApi";
+import { useRouter } from "next/navigation";
 
 type Props = {
-    title: string
-    description: string
-}
+  title: string;
+  description: string;
+  evaluation: TModuleMaterial["evaluation"];
+  baseUrl: string
+};
 
+const Evaluation = ({ title, description, evaluation, baseUrl }: Props) => {
+    const router = useRouter()
+  const [feedbackDone, setFeedbackDone] = useState(!!evaluation?.feedbackUser && evaluation?.feedbackUser.length > 0 || false);
 
-const Evaluation = ({title, description}: Props) => {
-  const [feedbackDone, setFeedbackDone] = useState(false);
-
-  const handleStartFeedback = () => {
-    alert("Mulai mengisi feedback...");
-    setFeedbackDone(true);
-  };
+  const handleStartFeedback = async () => {
+    // alert("Mulai mengisi feedback...");
+    // setFeedbackDone(true);
+    const createEvaluation: ApiResponse = await fetchApi(`/evaluation/${evaluation?.id}/feedback/attempt`, {
+        method: 'POST',
+        body: {}
+    })
+    if(createEvaluation && createEvaluation.success){
+        router.push(`${baseUrl}/feedback-form/${evaluation?.id}`)
+    }
+  };  
 
   return (
     <div className="max-w-[90%] mx-auto p-6 bg-card rounded-lg">
@@ -24,17 +35,17 @@ const Evaluation = ({title, description}: Props) => {
       </h2>
 
       {/* Kata-kata untuk pengguna */}
-      <p className="text-gray-600 dark:text-gray-300 mt-2">
-        {description}
-      </p>
+      <p className="text-gray-600 dark:text-gray-300 mt-2">{description}</p>
 
       {/* Status Feedback */}
       <div className="mt-4">
-        Status Pengisian :  
+        Status Pengisian :
         <Badge
-            className="ml-2"
-            variant={feedbackDone ? 'default' : 'destructive'}
-        >{feedbackDone ? "Sudah Mengisi" : "Belum Mengisi"}</Badge>        
+          className="ml-2"
+          variant={feedbackDone ? "default" : "destructive"}
+        >
+          {feedbackDone ? "Sudah Mengisi" : "Belum Mengisi"}
+        </Badge>
       </div>
 
       {/* Tombol Aksi */}
@@ -46,7 +57,6 @@ const Evaluation = ({title, description}: Props) => {
       >
         Mulai Feedback
       </Button>
-       
     </div>
   );
 };
