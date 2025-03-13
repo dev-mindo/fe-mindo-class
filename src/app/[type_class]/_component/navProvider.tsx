@@ -25,8 +25,12 @@ export const NavProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState<boolean>(true)  
   const [hidePagination, setHidePagination] = useState<boolean>(false)
 
-  const urlPath = new RegExp(
+  const urlPathQuiz = new RegExp(
     /(\/[^/]+\/[^/]+\/[^/]+\/[^/]+\/quiz\/[^/?]+|\/evaluation\/[^/]+)$/
+  );  
+
+  const urlPathEvaluation = new RegExp(
+    /(\/[^/]+\/[^/]+\/[^/]+\/evaluation\/feedback-form\/\d+)$/
   );  
 
   useEffect(() => {
@@ -47,7 +51,7 @@ export const NavProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     console.log('change pathname ', pathname)
-    if(pathname.match(urlPath)){
+    if(pathname.match(urlPathQuiz) || pathname.match(urlPathEvaluation)){
       setHideAll(true)      
     }else{
       setHideAll(false)
