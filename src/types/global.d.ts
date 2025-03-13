@@ -66,6 +66,10 @@ declare global {
     videoUrl?: string;
     file?: string;
     userNote?: string;
+    evaluation?: {
+      id: number;
+      feedbackUser: Array<any>;
+    };
   };
 
   type TClassroom = {
@@ -126,26 +130,52 @@ declare global {
     }>;
   };
 
-  type TCurrentPageNav = {
-    id: number;
-    sectionId: number;
-    type: string;
-    step: number;
-    title: string;
-    menuTitle: string;
-    slug: string;
-    description: string;
-    UserModule: Array<{
-        productId: number;
-        userId: number;
-        moduleId: number;
+  type TCurrentPageNav =
+    | {
+        id: number;
+        sectionId: number;
+        type: string;
+        step: number;
+        title: string;
+        menuTitle: string;
+        slug: string;
+        description: string;
+        UserModule: Array<{
+          productId: number;
+          userId: number;
+          moduleId: number;
+          status: string;
+          createdAt: string;
+          updatedAt: string;
+        }>;
         status: string;
-        createdAt: string;
-        updatedAt: string;
+        current: boolean;
+      }
+    | undefined;
+
+  type TFormFeedback = {
+    id: number;
+    formFeedback: Array<{
+      position: number;
+      type: string;
+      title: string;
+      name: string;
+      required: boolean;
+      value:
+        | Array<{
+            id: string | number;
+            label: string;
+          }>
+        | undefined;
     }>;
-    status: string;
-    current: boolean;
-} | undefined
+    feetbackUser: Array<{
+      id: number;
+      evaluationId: number;
+      userId: number;
+      productId: number;
+      done: boolean;
+    }>;
+  };
 }
 
 export {};
