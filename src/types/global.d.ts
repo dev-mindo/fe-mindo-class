@@ -146,6 +146,20 @@ declare global {
     status: string;
     current: boolean;
 } | undefined
+
+  type TFormFeedback = {
+    position: number
+    type: string
+    title: string
+    name: string
+    required: boolean
+    value: Array<{
+      id: string | number
+      label: string
+    }> | undefined
+  }
+  
+
 }
 
 export {};

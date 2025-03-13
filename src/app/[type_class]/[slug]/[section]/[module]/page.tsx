@@ -5,6 +5,7 @@ import { ModuleVideo } from "./_component/video/ModuleVideo";
 import { ModuleMaterial } from "./_component/ModuleMaterial";
 import { AttemptQuiz } from "./quiz/_component/AttemptQuiz";
 import { Discussion } from "./_component/Discussion";
+import Evaluation from "./_component/evaluation/Evaluation";
 
 export const metadata: Metadata = {
   title: "Mindo Class | Module",
@@ -27,12 +28,12 @@ export default async function Page({ params }: Props) {
   const getModuleSlug = params.module;
   const getModule: ApiResponse<TModuleMaterial> = await fetchApi(
     `/classroom/${getSection}/${getModuleSlug}`
-  );  
-  
-  const baseUrl = `${process.env.NEXT_PUBLIC_URL}/${getTypeClass}/${getSlug}/${getSection}/${getModuleSlug}`
+  );
+
+  const baseUrl = `${process.env.NEXT_PUBLIC_URL}/${getTypeClass}/${getSlug}/${getSection}/${getModuleSlug}`;
 
   if (getModule && getModule.success && getModule.data) {
-    metadata.title = `Mindo Class | ${params.module}`
+    metadata.title = `Mindo Class | ${params.module}`;
     switch (getModule.data.type) {
       case "VIDEO":
         return <ModuleVideo materialData={getModule.data} />;
@@ -41,17 +42,29 @@ export default async function Page({ params }: Props) {
       case "MATERIAL":
         return <ModuleMaterial materialData={getModule.data} />;
       case "QUIZ":
-        const quiz: ApiResponse<TQuizAll> = await fetchApi(`/quiz/${getModule.data.id}`);
-        if ((quiz && !quiz.success) || !quiz) notFound();                
-        return <AttemptQuiz quiz={quiz?.data} params={params} baseUrl={baseUrl} />;
+        const quiz: ApiResponse<TQuizAll> = await fetchApi(
+          `/quiz/${getModule.data.id}`
+        );
+        if ((quiz && !quiz.success) || !quiz) notFound();
+        return (
+          <AttemptQuiz quiz={quiz?.data} params={params} baseUrl={baseUrl} />
+        );
       case "DISCUSSION":
-        return <Discussion/>        
+        return <Discussion />;
       case "EVALUATION":
-        break;
+        console.log(getModule.data);
+        return (
+          <Evaluation
+            title={getModule.data.title}
+            description={getModule.data.description}
+            
+          />
+        );
       case "CERTIFICATE":
+        //TODO bikin page sertifikat
         break;
     }
   }
-    
+
   notFound();
 }
