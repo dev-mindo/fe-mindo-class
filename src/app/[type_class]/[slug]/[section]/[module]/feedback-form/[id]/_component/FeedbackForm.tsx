@@ -6,27 +6,50 @@ import { Textarea } from "@/components/ui/textarea";
 import { IRating } from "./IRating";
 import { Form } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
-import { useEffect, useLayoutEffect } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { watch } from "fs";
 import ITextArea from "@/components/base/ITextArea";
 import ICheckbox from "@/components/base/ICheckbox";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { formFeedbackSchema } from "@/schemas/formFeedback";
+import { z } from "zod";
+import { ApiResponse, fetchApi } from "@/lib/utils/fetchApi";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
 type Props = {
-  showFormFeedback: TFormFeedback[];
-  dataFormFeedback: Record<string, string | string[]>
+  evaluationId: string
+  feedbackUserId: string
+  showFormFeedback: TFormFeedback["formFeedback"];
+  dataFormFeedback: Record<string, string | string[]>;
+  // formFeedbackSchema: any
+  baseUrl: string;
 };
 
-export const FeedbackForm = ({ showFormFeedback, dataFormFeedback }: Props) => {
-
+export const FeedbackForm = ({
+  evaluationId,
+  feedbackUserId,
+  showFormFeedback,
+  dataFormFeedback,
+  baseUrl,
+}: Props) => {
+  const router = useRouter();
+  const [loading, setLoading] = useState<boolean>(false);
+  const feedbackSchema = formFeedbackSchema.dynamicSchema(
+    dataFormFeedback,
+    showFormFeedback
+  );
   const form = useForm({
+    resolver: zodResolver(feedbackSchema),
     defaultValues: {
       ...dataFormFeedback,
     },
   });
-  
+
   useEffect(() => {
-    console.log(dataFormFeedback)
-  }, [])
+    console.log(dataFormFeedback);
+  }, []);
 
   useEffect(() => {
     const subscription = form.watch((value) => {
@@ -36,7 +59,31 @@ export const FeedbackForm = ({ showFormFeedback, dataFormFeedback }: Props) => {
     return () => subscription.unsubscribe();
   }, [form.watch]);
 
-  const onSubmit = async (data: any) => {};
+  const onSubmit = async (data: z.infer<typeof feedbackSchema>) => {
+    setLoading(true);
+    const formattedData = Object.entries(data).map(([key, value]) => ({
+      name: key,
+      answer: Array.isArray(value) ? `${value}` : value,
+    }));
+    console.log(formattedData);
+    const saveFeedback: ApiResponse = await fetchApi(
+      `/evaluation/${evaluationId}/feedback/${feedbackUserId}/save`,
+      {
+        method: "POST",
+        body: {
+          allAnswer: formattedData,
+        },
+      }
+    );
+    if (saveFeedback && saveFeedback.success) {
+      router.push(baseUrl);
+    } else {
+      if (saveFeedback.errorCode === 500) {
+        toast.error("Server Error");
+      }
+      toast.error(saveFeedback.message);
+    }
+  };
 
   return (
     <Form {...form}>
@@ -47,7 +94,7 @@ export const FeedbackForm = ({ showFormFeedback, dataFormFeedback }: Props) => {
               <h1 className="text-3xl">Evaluasi</h1>
             </div>
             {showFormFeedback.map((item, index) => (
-              <>               
+              <>
                 {
                   <div key={index} className="bg-card p-4 rounded-lg">
                     <h1 className="text-2xl">{item.title}</h1>
@@ -85,8 +132,15 @@ export const FeedbackForm = ({ showFormFeedback, dataFormFeedback }: Props) => {
             ))}
 
             <div className="w-full">
-              <Button type="submit" className="w-full">
-                Selesai
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? (
+                  <>
+                    <Loader2 className="animate-spin" />
+                    Please wait
+                  </>
+                ) : (
+                  "Selesai"
+                )}
               </Button>
             </div>
           </div>

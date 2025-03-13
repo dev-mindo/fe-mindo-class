@@ -55,9 +55,10 @@ export default async function Page({ params }: Props) {
         console.log(getModule.data);
         return (
           <Evaluation
+            baseUrl={baseUrl}
             title={getModule.data.title}
             description={getModule.data.description}
-            
+            evaluation={getModule.data.evaluation}
           />
         );
       case "CERTIFICATE":
