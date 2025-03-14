@@ -97,74 +97,75 @@ export const Question = ({
   }, [question]);
 
   return (
-    <div className="grid grid-cols-4 w-[90%] mx-auto lg:w-[100%]">
-      <div className="flex col-span-4 lg:col-span-3 justify-center item-center gap-4">
-        {question?.image && (
-          <div className="mr-5">
-            <Image width={200} height={200} src={question?.image} alt="" />
-          </div>
-        )}
-        <div>
-          <div className="mt-5 text-3xl">
-            <h1>{question?.questionText}</h1>
-          </div>
-          <div className="mt-5">
-            <div className="flex flex-col">
-              {options.pathType === "evaluation" && (
-                <div>
-                  {question?.Answer.map((it) => (
-                    <div key={it.id}>
-                      {selectedUserAnswer.answerId !== 0 &&
-                      selectedUserAnswer.answerId === it.id ? (
-                        <div
-                          className={`my-4 rounded-xl p-4 bg-[#616161] border-2 ${
-                            selectedUserAnswer.isCorrect
-                              ? "border-green-500"
-                              : "border-red-500"
-                          }`}
-                        >
-                          <div className="flex justify-between items-center text-2xl">
-                            <div>{it.answerText}</div>
-                            <div>
-                              {selectedUserAnswer.isCorrect ? (
-                                <SquareCheckBig className="text-green-500" />
-                              ) : (
-                                <SquareX className="text-red-500" />
-                              )}
+    <div className="">
+      <div className="grid grid-cols-4 w-[90%] mx-auto lg:w-[100%]">
+        <div className="flex col-span-4 lg:col-span-3 justify-center item-center gap-4">
+          {question?.image && (
+            <div className="mr-5">
+              <Image width={200} height={200} src={question?.image} alt="" />
+            </div>
+          )}
+          <div>
+            <div className="mt-5 text-3xl">
+              <h1>{question?.questionText}</h1>
+            </div>
+            <div className="mt-5">
+              <div className="flex flex-col">
+                {options.pathType === "evaluation" && (
+                  <div>
+                    {question?.Answer.map((it) => (
+                      <div key={it.id}>
+                        {selectedUserAnswer.answerId !== 0 &&
+                        selectedUserAnswer.answerId === it.id ? (
+                          <div
+                            className={`my-4 rounded-xl p-4 bg-[#616161] border-2 ${
+                              selectedUserAnswer.isCorrect
+                                ? "border-green-500"
+                                : "border-red-500"
+                            }`}
+                          >
+                            <div className="flex justify-between items-center text-2xl">
+                              <div>{it.answerText}</div>
+                              <div>
+                                {selectedUserAnswer.isCorrect ? (
+                                  <SquareCheckBig className="text-green-500" />
+                                ) : (
+                                  <SquareX className="text-red-500" />
+                                )}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ) : (
-                        <div
-                          className={`my-4 rounded-xl p-4                             
+                        ) : (
+                          <div
+                            className={`my-4 rounded-xl p-4                             
                             bg-[#424242] border border-[#757575]
                           `}
-                        >
-                          <div className="flex justify-between">
-                            <div className="text-2xl">{it.answerText}</div>
-                            <div className="w-md"></div>
+                          >
+                            <div className="flex justify-between">
+                              <div className="text-2xl">{it.answerText}</div>
+                              <div className="w-md"></div>
+                            </div>
                           </div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-              {options.pathType === "quiz" && (
-                <RadioGroup
-                  value={selectedAnswer}
-                  onValueChange={(e) => {
-                    setSelectedAnswer(e);
-                    onDataFromQuestion?.({
-                      questionId: question?.id || 0,
-                      answerId: parseInt(e),
-                    });
-                  }}
-                >
-                  {question?.Answer.map((it, index) => (
-                    <div
-                      key={it.id}
-                      className={`flex items-center space-x-2 my-1 rounded-xl
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {options.pathType === "quiz" && (
+                  <RadioGroup
+                    value={selectedAnswer}
+                    onValueChange={(e) => {
+                      setSelectedAnswer(e);
+                      onDataFromQuestion?.({
+                        questionId: question?.id || 0,
+                        answerId: parseInt(e),
+                      });
+                    }}
+                  >
+                    {question?.Answer.map((it, index) => (
+                      <div
+                        key={it.id}
+                        className={`flex items-center space-x-2 my-1 rounded-xl
                               ${
                                 selectedAnswer === it.id.toString()
                                   ? `border-primary ${
@@ -178,31 +179,31 @@ export const Question = ({
                                         : "bg-[#424242] hover:bg-[#616161]"
                                     }`
                               }`}
-                    >
-                      <RadioGroupItem
-                        className="ml-4"
-                        value={it.id.toString()}
-                        id={"r" + index}
-                      />
-                      <Label
-                        className="py-4 pl-1 pr-4 text-2xl w-full"
-                        htmlFor={"r" + index}
                       >
-                        <div className="cursor-pointer">{it.answerText}</div>
-                      </Label>
-                    </div>
-                  ))}
-                </RadioGroup>
-              )}
+                        <RadioGroupItem
+                          className="ml-4"
+                          value={it.id.toString()}
+                          id={"r" + index}
+                        />
+                        <Label
+                          className="py-4 pl-1 pr-4 text-2xl w-full"
+                          htmlFor={"r" + index}
+                        >
+                          <div className="cursor-pointer">{it.answerText}</div>
+                        </Label>
+                      </div>
+                    ))}
+                  </RadioGroup>
+                )}
+              </div>
             </div>
           </div>
         </div>
-      </div>
-      {/* pagination */}
-      <div className="justify-self-end w-full">
-        <div className="flex lg:pl-5 xl:pl-10 justify-center static">
-          <div className="flex fixed right-0 lg:right-auto top-0 lg:top-auto">            
-              <Button                
+        {/* pagination */}
+        <div className="justify-self-end w-full">
+          <div className="flex lg:pl-5 xl:pl-10 justify-center static">
+            <div className="flex fixed right-0 lg:right-auto top-0 lg:top-auto">
+              <Button
                 onClick={() => {
                   hidePagination
                     ? setHidePagination(false)
@@ -212,30 +213,31 @@ export const Question = ({
                 className="mt-4 lg:hidden"
               >
                 {hidePagination ? <ChevronLeft /> : <ChevronRight />}
-              </Button>            
-            <div className={`${hidePagination ? "hidden" : "block"}`}>
-              <div className="grid grid-cols-4 gap-2 bg-card p-4 rounded-xl max-w-fit">
-                {quizData?.pagination.page.map(
-                  (item: TQuizData["pagination"]["page"][number]) => (
-                    <Button
-                      key={item.number}
-                      onClick={() => onSelectedPagination?.(item.number)}
-                      className={`relative m-0 bg-[#2E2E2E] border 
+              </Button>
+              <div className={`${hidePagination ? "hidden" : "block"}`}>
+                <div className="grid grid-cols-4 gap-2 bg-card p-4 rounded-xl max-w-fit">
+                  {quizData?.pagination.page.map(
+                    (item: TQuizData["pagination"]["page"][number]) => (
+                      <Button
+                        key={item.number}
+                        onClick={() => onSelectedPagination?.(item.number)}
+                        className={`relative m-0 bg-[#2E2E2E] border 
                   ${stylePagination(item)} }`}
-                    >
-                      {options.pathType === "evaluation" ? (
-                        item.isCorrect ? (
-                          <SquareCheckBig className="absolute top-0 right-0 text-green-500" />
+                      >
+                        {options.pathType === "evaluation" ? (
+                          item.isCorrect ? (
+                            <SquareCheckBig className="absolute top-0 right-0 text-green-500" />
+                          ) : (
+                            <SquareX className="absolute top-0 right-0 text-red-500" />
+                          )
                         ) : (
-                          <SquareX className="absolute top-0 right-0 text-red-500" />
-                        )
-                      ) : (
-                        <></>
-                      )}
-                      {item.number}
-                    </Button>
-                  )
-                )}
+                          <></>
+                        )}
+                        {item.number}
+                      </Button>
+                    )
+                  )}
+                </div>
               </div>
             </div>
           </div>
