@@ -10,10 +10,9 @@ type Props = {
 };
 
 export const Portal = ({ token, redirectUrl }: Props) => {
-  const router = useRouter()
   useEffect(() => {
-    setCookiesdata(token);
-    router.push(redirectUrl)
+    setCookiesdata(token);    
+    window.location.href = redirectUrl
   }, []);
 
   // const getCookiesdata = async () => {
