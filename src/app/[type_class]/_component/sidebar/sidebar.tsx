@@ -180,7 +180,7 @@ export const Sidebar = ({ dataSection, baseUrl }: Props) => {
                     }}
                   >
                     <div
-                      className={`flex gap-2 items-center px-2 py-2 rounded-lg hover:bg-[#3A3A3A] ${
+                      className={`flex gap-2 items-center px-2 py-2 rounded-lg dark:hover:bg-[#3A3A3A] hover:bg-[#E2E2E2] ${
                         getCurrentTheme === "light"
                           ? `${
                               module.current

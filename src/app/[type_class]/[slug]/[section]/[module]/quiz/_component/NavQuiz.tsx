@@ -206,7 +206,7 @@ export function NavQuiz({
           )}
         </div>
       </div>
-      <div className="h-full overflow-y-auto h-[calc(100%-10rem)]">
+      <div className="h-full overflow-y-auto h-[calc(100%-10rem)] bg-[url(/image/background_quiz.png)] bg-[auto_100vh] bg-center bg-no-repeat">
         <div className="mx-auto w-[95%] my-10">
           {children && typeof children === "object"
             ? React.cloneElement(children as React.ReactElement, {
