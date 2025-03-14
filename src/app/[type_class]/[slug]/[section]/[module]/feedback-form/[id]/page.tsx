@@ -2,7 +2,7 @@ import { ApiResponse, fetchApi } from "@/lib/utils/fetchApi";
 import { FeedbackForm } from "./_component/FeedbackForm";
 import { notFound } from "next/navigation";
 import { z } from "zod";
-import { formFeedbackSchema } from "@/schemas/formFeedback";
+import { formFeedbackSchema } from "@/schemas/FormFeedback";
 
 type Props = {
   params: {
