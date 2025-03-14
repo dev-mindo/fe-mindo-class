@@ -11,7 +11,7 @@ import { watch } from "fs";
 import ITextArea from "@/components/base/ITextArea";
 import ICheckbox from "@/components/base/ICheckbox";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { formFeedbackSchema } from "@/schemas/formFeedback";
+import { formFeedbackSchema } from "@/schemas/FormFeedback";
 import { z } from "zod";
 import { ApiResponse, fetchApi } from "@/lib/utils/fetchApi";
 import { useRouter } from "next/navigation";
