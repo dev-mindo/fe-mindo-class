@@ -11,8 +11,7 @@ type Props = {
 
 export const Portal = ({ token, redirectUrl }: Props) => {
   useEffect(() => {
-    setCookiesdata(token);    
-    window.location.href = redirectUrl
+    setCookiesdata(token);        
   }, []);
 
   // const getCookiesdata = async () => {
@@ -30,6 +29,9 @@ export const Portal = ({ token, redirectUrl }: Props) => {
           method: "POST",
         }
       );
+      if(response){
+        window.location.href = redirectUrl
+      }
     }    
   };
 
