@@ -5,7 +5,7 @@ export const Certificate = () => {
   return (
     <>
       <div className="mx-auto w-[80%]">
-        <Alert variant="destructive">
+        <Alert>
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Info</AlertTitle>
           <AlertDescription>
