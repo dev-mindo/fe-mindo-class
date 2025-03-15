@@ -6,6 +6,7 @@ import { ModuleMaterial } from "./_component/ModuleMaterial";
 import { AttemptQuiz } from "./quiz/_component/AttemptQuiz";
 import { Discussion } from "./_component/Discussion";
 import Evaluation from "./_component/evaluation/Evaluation";
+import { Certificate } from "./_component/Certificate";
 
 export const metadata: Metadata = {
   title: "Mindo Class | Module",
@@ -63,7 +64,7 @@ export default async function Page({ params }: Props) {
         );
       case "CERTIFICATE":
         //TODO bikin page sertifikat
-        break;
+        return <Certificate/>        
     }
   }
 
