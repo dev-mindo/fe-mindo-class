@@ -106,7 +106,7 @@ export const Question = ({
             </div>
           )}
           <div>
-            <div className="mt-5 text-3xl">
+            <div className="mt-5 text-xl md:text-2xl lg:text-3xl">
               <h1>{question?.questionText}</h1>
             </div>
             <div className="mt-5">
@@ -124,7 +124,7 @@ export const Question = ({
                                 : "border-red-500"
                             }`}
                           >
-                            <div className="flex justify-between items-center text-2xl">
+                            <div className="flex justify-between items-center text-md sm:text-lg lg:text-2xl">
                               <div>{it.answerText}</div>
                               <div>
                                 {selectedUserAnswer.isCorrect ? (
@@ -137,12 +137,12 @@ export const Question = ({
                           </div>
                         ) : (
                           <div
-                            className={`my-4 rounded-xl p-4                             
+                            className={`my-4 rounded-xl p-4
                             bg-[#424242] border border-[#757575]
                           `}
                           >
                             <div className="flex justify-between">
-                              <div className="text-2xl">{it.answerText}</div>
+                              <div className="text-md sm:text-lg lg:text-2xl">{it.answerText}</div>
                               <div className="w-md"></div>
                             </div>
                           </div>
@@ -165,19 +165,11 @@ export const Question = ({
                     {question?.Answer.map((it, index) => (
                       <div
                         key={it.id}
-                        className={`flex items-center space-x-2 my-1 rounded-xl
+                        className={`flex items-center space-x-2 my-1 rounded-xl 
                               ${
                                 selectedAnswer === it.id.toString()
-                                  ? `border-primary ${
-                                      theme === "dark"
-                                        ? "bg-[#616161] border-4"
-                                        : "bg-[#e0e0e0] border-2"
-                                    } `
-                                  : `border border-[#757575] ${
-                                      theme === "light" || theme === "system"
-                                        ? "bg-[#f5f5f5] hover:bg-[#e0e0e0]"
-                                        : "bg-[#424242] hover:bg-[#616161]"
-                                    }`
+                                  ? `border-primary bg-[#e0e0e0] border-2 dark:bg-[#616161] border-4`
+                                  : `border border-[#757575] bg-[#f5f5f5] hover:bg-[#e0e0e0] dark:bg-[#424242] dark:hover:bg-[#616161]`
                               }`}
                       >
                         <RadioGroupItem
@@ -186,7 +178,7 @@ export const Question = ({
                           id={"r" + index}
                         />
                         <Label
-                          className="py-4 pl-1 pr-4 text-2xl w-full"
+                          className="py-4 pl-1 pr-4 text-md sm:text-lg lg:text-2xl w-full"
                           htmlFor={"r" + index}
                         >
                           <div className="cursor-pointer">{it.answerText}</div>

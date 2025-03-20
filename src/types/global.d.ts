@@ -176,6 +176,43 @@ declare global {
       done: boolean;
     }>;
   };
+
+  type TEvaluationAttemptQuiz = Array<{
+    id: number
+    title: string
+    data: Array<{
+      id: number
+      userId: number
+      quizId: number
+      score: number
+      status: string
+      startedAt: string
+      completeAt: string
+      quiz: {
+        id: number
+        moduleId: number
+        title: string
+        minimumScore: number
+        limitTime: string
+        limitTrial: number
+        pagination: boolean
+        random: boolean
+        publish: boolean
+        createdAt: string
+        updatedAt: string
+        module: {
+          id: number
+          sectionId: number
+          type: string
+          step: number
+          title: string
+          menuTitle: string
+          slug: string
+          description: string
+        }
+      }
+    }>
+  }>
 }
 
 export {};
