@@ -157,53 +157,55 @@ export function NavQuiz({
 
   return (
     <div className="flex flex-col lg:justify-between h-screen">
-      <div className="flex flex-col justify-center lg:flex-row items-center bg-sidebar lg:h-16 p-4 lg:justify-between">
-        <div className="flex items-center">
-          <div className="mr-2">
-            {options.pathType !== "quiz" && (
-              <Button
-                onClick={() => {
-                  router.push(options.redirectCompleted);
-                }}
-                variant="ghost"
-              >
-                <ChevronLeft />
-                Kembali
-              </Button>
+      <div className="flex flex-col sm:flex-row items-center bg-sidebar">
+        <div className="mr-2 mr-auto w-0 lg:w-fit">
+          {options.pathType !== "quiz" && (
+            <Button
+              onClick={() => {
+                router.push(options.redirectCompleted);
+              }}
+              variant="ghost"
+            >
+              <ChevronLeft />
+              Kembali
+            </Button>
+          )}
+        </div>
+        <div className="flex flex-col lg:flex-row justify-center items-center lg:h-16 p-4 w-full lg:justify-between">
+          <div className="flex items-center">
+            <h1 className="mb-4 lg:mb-0">{title}</h1>
+          </div>
+          <div className="flex gap-10 items-center lg:w-[35%] xl:w-[20%] mr-4">
+            {options.pathType === "evaluation" && (
+              <div>
+                <div>
+                  Jawaban Benar {resultQuiz?.totalCorrect || 0}/{totalQuestion}
+                </div>
+                <div>Score {resultQuiz?.score || 0}/100</div>
+              </div>
+            )}
+            <div className="lg:ml-auto">
+              Menyelesaikan {completed}/{totalQuestion}
+              <div className="w-[100%] mt-2">
+                <Progress
+                  value={Math.round((100 / totalQuestion) * completed) || 1}
+                />
+              </div>
+            </div>
+            {options.pathType === "quiz" && (
+              <div>
+                {targetTime !== "00:00:00" ? (
+                  <Countdown
+                    setAlertTime={setAlertTime}
+                    setTimeEnd={setTimeEnd}
+                    targetTime={targetTime}
+                  />
+                ) : (
+                  targetTime
+                )}
+              </div>
             )}
           </div>
-          <h1 className="mb-4 lg:mb-0">{title}</h1>
-        </div>
-        <div className="flex gap-10 items-center lg:w-[30%] xl:w-[20%] mr-4">
-          {options.pathType === "evaluation" && (
-            <div>
-              <div>
-                Jawaban Benar {resultQuiz?.totalCorrect || 0}/{totalQuestion}
-              </div>
-              <div>Score {resultQuiz?.score || 0}/100</div>
-            </div>
-          )}
-          <div className="lg:ml-auto">
-            Menyelesaikan {completed}/{totalQuestion}
-            <div className="w-[100%] mt-2">
-              <Progress
-                value={Math.round((100 / totalQuestion) * completed) || 1}
-              />
-            </div>
-          </div>
-          {options.pathType === "quiz" && (
-            <div>
-              {targetTime !== "00:00:00" ? (
-                <Countdown
-                  setAlertTime={setAlertTime}
-                  setTimeEnd={setTimeEnd}
-                  targetTime={targetTime}
-                />
-              ) : (
-                targetTime
-              )}
-            </div>
-          )}
         </div>
       </div>
       <div className="h-full overflow-y-auto h-[calc(100%-10rem)] bg-[url(/image/background_quiz.png)] bg-[auto_100vh] bg-center bg-no-repeat">

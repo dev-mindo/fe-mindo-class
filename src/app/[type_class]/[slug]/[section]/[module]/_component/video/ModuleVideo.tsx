@@ -14,7 +14,7 @@ type Props = {
 export const ModuleVideo = ({ materialData }: Props) => {
   const [userNote, setUserNote] = useState<string>(
     materialData?.userNote || ""
-  );
+  );  
 
   useEffect(() => {
     // Auto-save dengan debounce (1 detik setelah user berhenti mengetik)
@@ -30,7 +30,7 @@ export const ModuleVideo = ({ materialData }: Props) => {
     return () => clearTimeout(timer); // Cleanup timer
   }, [userNote]);
 
-  const saveData = async (content: string) => {  
+  const saveData = async (content: string) => {
     try {
       await fetchApi(`/classroom/save-notes`, {
         method: "POST",
@@ -50,7 +50,6 @@ export const ModuleVideo = ({ materialData }: Props) => {
       [{ header: [1, 2, false] }],
       ["bold", "italic", "underline", "strike"],
       [{ list: "ordered" }, { list: "bullet" }],
-      ["link", "image"],
     ],
   };
 
@@ -62,12 +61,10 @@ export const ModuleVideo = ({ materialData }: Props) => {
     "strike",
     "list",
     "bullet",
-    "link",
-    "image",
   ];
   return (
     <div>
-      <div className="flex lg:flex-row flex-col gap-4">    
+      <div className="flex lg:flex-row flex-col gap-4">
         {materialData?.videoUrl && (
           <div className="lg:w-[70%]">
             <div className="relative pt-[56.25%] absolute top-0 left-0 w-full h-full">
@@ -82,16 +79,18 @@ export const ModuleVideo = ({ materialData }: Props) => {
           </div>
         )}
         {materialData?.videoUrl && (
-          <div className="">
-            <div className="p-4 min-h-[40vh] bg-card rounded-lg">
-              <QuillEditor
-                getEditorContent={userNote}
-                setEditorContent={setUserNote}
-                className=""
-                placeholder="Start ty ping..."
-                modules={modules}
-                formats={formats}
-              />
+          <div className="lg:w-[30%]">
+            <div className="p-4 bg-card rounded-lg">
+              <div className="h-[85%]">
+                <QuillEditor
+                  getEditorContent={userNote}
+                  setEditorContent={setUserNote}
+                  className=""
+                  placeholder="Start ty ping..."
+                  modules={modules}
+                  formats={formats}
+                />
+              </div>
             </div>
           </div>
         )}
@@ -100,7 +99,7 @@ export const ModuleVideo = ({ materialData }: Props) => {
         <div className="p-4 bg-card h-[100%] rounded-lg mt-4">
           {parse(materialData?.description || "")}
         </div>
-      )}      
+      )}
       <div className="w-full mt-4">
         {materialData?.file !== "" && (
           <Button asChild className="w-full">
