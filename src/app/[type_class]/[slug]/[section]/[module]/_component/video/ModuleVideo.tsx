@@ -81,11 +81,11 @@ export const ModuleVideo = ({ materialData }: Props) => {
         {materialData?.videoUrl && (
           <div className="lg:w-[30%]">
             <div className="p-4 bg-card rounded-lg">
-              <div className="h-[85%]">
+              <div className="h-[65vh]">
                 <QuillEditor
                   getEditorContent={userNote}
                   setEditorContent={setUserNote}
-                  className=""
+                  className="h-[55vh]"
                   placeholder="Start ty ping..."
                   modules={modules}
                   formats={formats}

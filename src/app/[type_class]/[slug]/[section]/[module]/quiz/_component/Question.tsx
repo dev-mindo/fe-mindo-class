@@ -20,11 +20,16 @@ type Props = {
   eventType: string;
   onDataFromQuestion?: (data: { questionId: number; answerId: number }) => void;
   onSelectedPagination?: (page: number | undefined) => void;
+  handleNextAnswer?: (data?: {
+    questionId: number;
+    answerId: number;
+  }) => void,
   options: {
     redirectPagination: string;
     redirectCompleted: string;
     pathType: string;
   };
+  hideNavigation: boolean;
 };
 
 type TUserAnswer = {
@@ -35,9 +40,11 @@ type TUserAnswer = {
 export const Question = ({
   onSelectedPagination,
   onDataFromQuestion,
+  handleNextAnswer,
   question,
   quizData,
   options,
+  hideNavigation,
 }: Props) => {
   const { theme } = useTheme();
   const [selectedAnswer, setSelectedAnswer] = useState<string>("");
@@ -78,7 +85,7 @@ export const Question = ({
     }
 
     return "";
-  }
+  }  
 
   // function styleAnswer() {}
 
@@ -142,7 +149,9 @@ export const Question = ({
                           `}
                           >
                             <div className="flex justify-between">
-                              <div className="text-md sm:text-lg lg:text-2xl">{it.answerText}</div>
+                              <div className="text-md sm:text-lg lg:text-2xl">
+                                {it.answerText}
+                              </div>
                               <div className="w-md"></div>
                             </div>
                           </div>
@@ -154,12 +163,17 @@ export const Question = ({
                 {options.pathType === "quiz" && (
                   <RadioGroup
                     value={selectedAnswer}
-                    onValueChange={(e) => {
-                      setSelectedAnswer(e);
-                      onDataFromQuestion?.({
+                    onValueChange={(e) => {                      
+                      setSelectedAnswer(e);     
+                      const getResultAnswer = {
                         questionId: question?.id || 0,
                         answerId: parseInt(e),
-                      });
+                      }              
+                      if(hideNavigation){
+                        handleNextAnswer?.(getResultAnswer)
+                      }else{
+                        onDataFromQuestion?.(getResultAnswer);
+                      }
                     }}
                   >
                     {question?.Answer.map((it, index) => (
@@ -192,48 +206,50 @@ export const Question = ({
           </div>
         </div>
         {/* pagination */}
-        <div className="justify-self-end w-full">
-          <div className="flex lg:pl-5 xl:pl-10 justify-center static">
-            <div className="flex fixed right-0 lg:right-auto top-0 lg:top-auto">
-              <Button
-                onClick={() => {
-                  hidePagination
-                    ? setHidePagination(false)
-                    : setHidePagination(true);
-                }}
-                size="icon"
-                className="mt-4 lg:hidden"
-              >
-                {hidePagination ? <ChevronLeft /> : <ChevronRight />}
-              </Button>
-              <div className={`${hidePagination ? "hidden" : "block"}`}>
-                <div className="grid grid-cols-4 gap-2 bg-card p-4 rounded-xl max-w-fit">
-                  {quizData?.pagination.page.map(
-                    (item: TQuizData["pagination"]["page"][number]) => (
-                      <Button
-                        key={item.number}
-                        onClick={() => onSelectedPagination?.(item.number)}
-                        className={`relative m-0 bg-[#2E2E2E] border 
+        {!hideNavigation && (
+          <div className="justify-self-end w-full">
+            <div className="flex lg:pl-5 xl:pl-10 justify-center static">
+              <div className="flex fixed right-0 lg:right-auto top-0 lg:top-auto">
+                <Button
+                  onClick={() => {
+                    hidePagination
+                      ? setHidePagination(false)
+                      : setHidePagination(true);
+                  }}
+                  size="icon"
+                  className="mt-4 lg:hidden"
+                >
+                  {hidePagination ? <ChevronLeft /> : <ChevronRight />}
+                </Button>
+                <div className={`${hidePagination ? "hidden" : "block"}`}>
+                  <div className="grid grid-cols-4 gap-2 bg-card p-4 rounded-xl max-w-fit">
+                    {quizData?.pagination.page.map(
+                      (item: TQuizData["pagination"]["page"][number]) => (
+                        <Button
+                          key={item.number}
+                          onClick={() => onSelectedPagination?.(item.number)}
+                          className={`relative m-0 bg-[#2E2E2E] border 
                   ${stylePagination(item)} }`}
-                      >
-                        {options.pathType === "evaluation" ? (
-                          item.isCorrect ? (
-                            <SquareCheckBig className="absolute top-0 right-0 text-green-500" />
+                        >
+                          {options.pathType === "evaluation" ? (
+                            item.isCorrect ? (
+                              <SquareCheckBig className="absolute top-0 right-0 text-green-500" />
+                            ) : (
+                              <SquareX className="absolute top-0 right-0 text-red-500" />
+                            )
                           ) : (
-                            <SquareX className="absolute top-0 right-0 text-red-500" />
-                          )
-                        ) : (
-                          <></>
-                        )}
-                        {item.number}
-                      </Button>
-                    )
-                  )}
+                            <></>
+                          )}
+                          {item.number}
+                        </Button>
+                      )
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

@@ -38,6 +38,7 @@ export default async function Page({ params, searchParams }: Props) {
 
   return (
     <NavQuiz
+      hideNavigation={false}
       resultQuiz={{
         score: getQuestion.data?.quiz.score || 0,
         totalCorrect: getQuestion.data?.quiz.totalCorrect || 0,
@@ -50,6 +51,7 @@ export default async function Page({ params, searchParams }: Props) {
       pagination={getQuestion.data?.pagination}
     >
       <Question
+        hideNavigation={false}
         options={optionsQuiz}
         quizData={getQuestion.data}
         question={getQuestion.data?.question}
