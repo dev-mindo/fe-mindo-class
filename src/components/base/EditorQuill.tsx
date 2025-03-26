@@ -32,8 +32,7 @@ const QuillEditor: React.FC<QuillEditorProps> = ({
 
   return (
     <div className="w-full h-full flex flex-col">
-      <ReactQuill          
-        style={{ height: "100%" }}
+      <ReactQuill                  
         value={content}
         onChange={handleChange}
         className={` ${className}`}

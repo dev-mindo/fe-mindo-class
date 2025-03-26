@@ -28,6 +28,7 @@ type Props = {
     redirectCompleted: string;
     pathType: string;
   };
+  hideNavigation: boolean;
 };
 
 export function NavQuiz({
@@ -39,6 +40,7 @@ export function NavQuiz({
   pagination,
   options,
   resultQuiz,
+  hideNavigation,
 }: Props) {
   const params = useParams<{
     slug: string;
@@ -74,9 +76,21 @@ export function NavQuiz({
     handlePagination(pagination?.back);
   }
 
-  async function handleNextAnswer() {
+  async function handleNextAnswer(data?: {
+    questionId: number;
+    answerId: number;
+  }) {
     if (options.pathType === "quiz") {
-      if (selectedAnswer.questionId !== 0 && selectedAnswer.answerId !== 0) {
+      const selectedUserAnswer = hideNavigation
+        ? data || {
+            questionId: 0,
+            answerId: 0,
+          }
+        : selectedAnswer;
+      if (
+        selectedUserAnswer.questionId !== 0 &&
+        selectedUserAnswer.answerId !== 0
+      ) {
         setLoading(true);
         //save answer
         const resAnswer: ApiResponse = await fetchApi(
@@ -84,7 +98,7 @@ export function NavQuiz({
           {
             method: "POST",
             body: {
-              ...selectedAnswer,
+              ...selectedUserAnswer,
             },
           }
         );
@@ -94,9 +108,13 @@ export function NavQuiz({
           });
         }
         setLoading(false);
-        clearCachesByServerAction(
-          options.redirectPagination + `?page=${pagination?.next}`
-        );
+        if (hideNavigation) {
+          clearCachesByServerAction(options.redirectPagination);
+        } else {
+          clearCachesByServerAction(
+            options.redirectPagination + `?page=${pagination?.next}`
+          );
+        }
       }
     }
     if (
@@ -104,7 +122,11 @@ export function NavQuiz({
       pagination?.page[pagination.page.length - 1].number
     ) {
       if (options.pathType === "quiz") {
-        setIsOpenDialogCompleted(true);
+        if (hideNavigation) {
+          handleCompletedQuiz();
+        } else {
+          setIsOpenDialogCompleted(true);
+        }
       } else {
         router.push(options.redirectCompleted);
       }
@@ -214,36 +236,39 @@ export function NavQuiz({
             ? React.cloneElement(children as React.ReactElement, {
                 onDataFromQuestion: setSelectedAnswer,
                 onSelectedPagination: handlePagination,
+                handleNextAnswer: handleNextAnswer,
               })
             : children}
         </div>
       </div>
-      <div className="flex justify-between items-center bg-sidebar h-16">
-        <div className="ml-8">
-          <Button
-            onClick={handleBackAnswer}
-            disabled={pagination?.current === 1}
-          >
-            <ChevronLeft />
-            Sebelumnya
-          </Button>
+      {!hideNavigation && (
+        <div className="flex justify-between items-center bg-sidebar h-16">
+          <div className="ml-8">
+            <Button
+              onClick={handleBackAnswer}
+              disabled={pagination?.current === 1}
+            >
+              <ChevronLeft />
+              Sebelumnya
+            </Button>
+          </div>
+          <div className="mr-8">
+            <Button onClick={() => handleNextAnswer()} disabled={loading}>
+              {loading ? (
+                <>
+                  <Loader2 className="animate-spin" /> Please wait
+                </>
+              ) : pagination?.current ===
+                pagination?.page[pagination.page.length - 1].number ? (
+                "Selesai"
+              ) : (
+                "Selanjutnya"
+              )}
+              <ChevronRight />
+            </Button>
+          </div>
         </div>
-        <div className="mr-8">
-          <Button onClick={handleNextAnswer} disabled={loading}>
-            {loading ? (
-              <>
-                <Loader2 className="animate-spin" /> Please wait
-              </>
-            ) : pagination?.current ===
-              pagination?.page[pagination.page.length - 1].number ? (
-              "Selesai"
-            ) : (
-              "Selanjutnya"
-            )}
-            <ChevronRight />
-          </Button>
-        </div>
-      </div>
+      )}
       <AlertTimeEnd
         isOpen={isOpenAlertTimeEnd}
         message={alertMessageTimeEnd.message}

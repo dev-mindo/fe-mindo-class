@@ -18,6 +18,9 @@ type Props = {
 };
 
 export default async function Page({params, searchParams}: Props) {
+  //TODO jika menyembunyikan pagination
+  const hideNaviation = true
+
   const getTypeClass = params.type_class;
   let getSection = params.section;
   const getSlug = params.slug;
@@ -25,8 +28,11 @@ export default async function Page({params, searchParams}: Props) {
   const getModuleSlug = params.module;
   const getToken = (params.id as string) || "";
   const getPage = (searchParams.page as string) || "";
+  
+  const urlFetchQuiz = hideNaviation ? `/classroom/quiz?token=${getToken}` : `/classroom/quiz?token=${getToken}&page=${getPage}`
+
   const getQuestion: ApiResponse<TQuizData> = await fetchApi(
-    `/classroom/quiz?token=${getToken}&page=${getPage}`
+    urlFetchQuiz
   );
 
   const urlQuiz = `${process.env.NEXT_PUBLIC_URL}/${getTypeClass}/${getSlug}/${getSection}/${getModuleSlug}`;
@@ -44,6 +50,7 @@ export default async function Page({params, searchParams}: Props) {
   return (
     <>
       <NavQuiz
+        hideNavigation={hideNaviation}
         options={optionsQuiz}
         completed={getQuestion.data?.quiz.completed || 0}
         time={getQuestion.data?.quiz.timeLimit || ""}
@@ -52,6 +59,7 @@ export default async function Page({params, searchParams}: Props) {
         pagination={getQuestion.data?.pagination}
       >
         <Question
+          hideNavigation={hideNaviation}
           options={optionsQuiz}
           quizData={getQuestion.data}
           question={getQuestion.data?.question}
