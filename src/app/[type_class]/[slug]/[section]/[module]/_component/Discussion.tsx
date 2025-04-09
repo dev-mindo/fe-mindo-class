@@ -35,7 +35,7 @@ export const Discussion = () => {
           </TableHeader>
           <TableBody>
             <TableRow>
-              <TableCell>
+              <TableCell className="cursor-pointer">
                 <div>
                   <p className="text-base mb-2">
                     Lorem Ipsum is simply dummy text of the printing and

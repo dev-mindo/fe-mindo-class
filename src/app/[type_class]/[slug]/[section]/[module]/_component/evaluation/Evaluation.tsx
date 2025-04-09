@@ -4,12 +4,6 @@ import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { ApiResponse, fetchApi } from "@/lib/utils/fetchApi";
 import { useRouter } from "next/navigation";
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@/components/ui/chart";
-import { Area, AreaChart, Bar, BarChart, CartesianGrid, XAxis } from "recharts";
 import { ChartAttemptQuiz } from "./ChartAttemptQuiz";
 
 type Props = {
@@ -44,18 +38,31 @@ const Evaluation = ({
   >(null);
 
   useEffect(() => {
-    const scoresArray = evaluationAttemptQuiz?.map((group, index) => ({
-      title: group.title,
-      scores: group.data.map((attempt, index) => ({
-        trial: index + 1,
-        score: attempt.score,
-      })),
-    }));
-
-    console.log(scoresArray);
-
-    setChartAttemptQuiz(scoresArray || null);
-  }, [evaluationAttemptQuiz]);
+    if (!evaluationAttemptQuiz) return;
+  
+    const allAttempts: {
+      trial: number;
+      score: number;
+      groupTitle: string;
+    }[] = [];
+  
+    evaluationAttemptQuiz.forEach((group) => {
+      group.data.forEach((attempt, index) => {
+        allAttempts.push({
+          trial: allAttempts.length + 1, // global trial number
+          score: attempt.score,
+          groupTitle: group.title,
+        });
+      });
+    });
+  
+    setChartAttemptQuiz([
+      {
+        title: "Evaluasi Attempt Quiz",
+        scores: allAttempts,
+      },
+    ]);
+  }, [evaluationAttemptQuiz]);  
 
   const handleStartFeedback = async () => {
     // alert("Mulai mengisi feedback...");
@@ -78,7 +85,7 @@ const Evaluation = ({
         <div className="grid grid-cols-2 gap-5">
           {chartAttemptQuiz &&
             chartAttemptQuiz.map((item) => (
-              <div className="p-6 bg-card rounded-lg">
+              <div key={item.title} className="p-6 bg-card rounded-lg">
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
                   {item.title}
                 </h2>

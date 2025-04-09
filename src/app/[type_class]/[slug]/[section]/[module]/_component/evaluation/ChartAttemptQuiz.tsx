@@ -1,7 +1,6 @@
 import {
   ChartContainer,
   ChartTooltip,
-  ChartTooltipContent,
 } from "@/components/ui/chart";
 import { Area, AreaChart, CartesianGrid, XAxis } from "recharts";
 
@@ -9,17 +8,32 @@ type Props = {
   dataChart: {
     trial: number;
     score: number;
+    groupTitle: string;
   }[];
 };
 
-export const ChartAttemptQuiz = ({dataChart}: Props) => {
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    const { score, groupTitle } = payload[0].payload;
+    return (
+      <div className="bg-white dark:bg-zinc-900 border rounded-lg p-2 shadow">
+        {/* <p className="text-sm font-semibold">Percobaan ke-{label}</p> */}
+        <p className="text-sm">Skor: {score}</p>
+        <p className="text-xs text-muted-foreground">{groupTitle}</p>
+      </div>
+    );
+  }
+  return null;
+};
+
+export const ChartAttemptQuiz = ({ dataChart }: Props) => {
   return (
     <ChartContainer
       config={{
-        trial: {
-          label: "Trial",
+        score: {
+          label: "Skor",
           color: "hsl(var(--chart-1))",
-        }
+        },
       }}
     >
       <AreaChart
@@ -36,18 +50,20 @@ export const ChartAttemptQuiz = ({dataChart}: Props) => {
           tickLine={false}
           axisLine={false}
           tickMargin={8}
-          tickFormatter={(value) => value}
+          tickFormatter={(value) => {            
+            return `${value}`
+          }}
         />
         <ChartTooltip
           cursor={false}
-          content={<ChartTooltipContent indicator="dot" />}
+          content={<CustomTooltip />}
         />
         <Area
           dataKey="score"
           type="natural"
-          fill="var(--color-trial)"
+          fill="var(--color-score)"
           fillOpacity={0.4}
-          stroke="var(--color-trial)"
+          stroke="var(--color-score)"
           stackId="a"
         />
       </AreaChart>
