@@ -51,7 +51,8 @@ export default async function Page({ params }: Props) {
           <AttemptQuiz quiz={quiz?.data} params={params} baseUrl={baseUrl} />
         );
       case "DISCUSSION":
-        return <Discussion />;
+        const discussion = await fetchApi(`/discussion/${getModule.data.id}`)
+        return <Discussion moduleId={getModule.data.id} discussionData={discussion} baseUrl={baseUrl} />;
       case "EVALUATION":
         console.log(getModule.data);
         const getAttemptQuiz: ApiResponse<TEvaluationAttemptQuiz> = await fetchApi(`/attempt-quiz/result/${getSection}`)        
