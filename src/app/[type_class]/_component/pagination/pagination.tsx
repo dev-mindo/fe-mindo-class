@@ -3,8 +3,8 @@ import { Button } from "@/components/ui/button";
 import { clearCachesByServerAction } from "@/lib/action/quiz";
 import { ApiResponse, fetchApi } from "@/lib/utils/fetchApi";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { AlertDialogPagination } from "./AlertDialog";
 import { useAppContext } from "../navProvider";
 
@@ -18,10 +18,15 @@ export const Pagination = ({ dataSection, baseUrl, currentPage }: Props) => {
   const [isOpenAlertDialog, setOpenAlertDialog] = useState<boolean>(false);
   const [messageAlertDialog, setMessageAlertDialog] = useState<string>("");
   const { hideAll, setHideAll } = useAppContext();
+  const pathname = usePathname()
 
-  if (hideAll) {
+  const urlPathDiscussion = new RegExp(
+    /(\/[^/]+\/[^/]+\/[^/]+\/[^/]+\/detail-discussion\/\d+)$/
+  );
+
+  if (hideAll || pathname.match(urlPathDiscussion)) {
     return <></>;
-  }
+  }  
 
 
   const getPrevNextModule = (navMenu: TNavClass["sectionMenu"]) => {

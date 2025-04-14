@@ -24,6 +24,7 @@ type Props = {
   setDiscussionAnswerList: (
     value: SetStateAction<TDiscussionAnswer[] | []>
   ) => void;
+  discussionStatus: boolean;
 };
 
 export const DiscussionAnswer = ({
@@ -36,6 +37,7 @@ export const DiscussionAnswer = ({
   setAlertDestroyEvent,
   setLoadingDestroy,
   setDiscussionAnswerList,
+  discussionStatus,
 }: Props) => {
   const [editAnswerId, setEditAnswerId] = useState<number>(0);
   const [editAnswerField, setEditAnswerField] = useState<string>("");
@@ -164,24 +166,26 @@ export const DiscussionAnswer = ({
 
   return (
     <>
-      <div className="p-4 bg-card rounded-lg mt-4">
-        <h1>Berikan Tanggapan</h1>
-        <div className="mt-4">
-          <Textarea
-            onChange={(data) => {
-              setAnswerField(data.target.value);
-            }}
-            ref={refAnswer}
-            className="h-[10vh]"
-            placeholder="Tambahkan Tanggapan"
-          />
+      {discussionStatus && (
+        <div className="p-4 bg-card rounded-lg mt-4">
+          <h1>Berikan Tanggapan</h1>
+          <div className="mt-4">
+            <Textarea
+              onChange={(data) => {
+                setAnswerField(data.target.value);
+              }}
+              ref={refAnswer}
+              className="h-[10vh]"
+              placeholder="Tambahkan Tanggapan"
+            />
+          </div>
+          <div className="flex justify-end mt-4">
+            <Button onClick={handleCreateDiscussionAnswer}>
+              Simpan Tanggapan
+            </Button>
+          </div>
         </div>
-        <div className="flex justify-end mt-4">
-          <Button onClick={handleCreateDiscussionAnswer}>
-            Simpan Tanggapan
-          </Button>
-        </div>
-      </div>
+      )}
       <div className="mt-4">
         <h2 className="text-lg">Tanggapan</h2>
         {discussionDataList.length === 0 && (
@@ -191,13 +195,13 @@ export const DiscussionAnswer = ({
           <div className="p-4 bg-card rounded-lg mt-4">
             <div className="flex justify-between mb-7">
               <div>
-                <p className="text-base">{item.user.name}</p>
+                <p className={item.isUser ? 'text-green-500 font-bold' : 'text-base'}>{item.user.name}</p>
                 <p className="text-sm">
                   {moment(item.createdAt).format("dddd, DD MMMM YYYY")}
                 </p>
               </div>
               <div className="flex items-center gap-2">
-                <Button variant="secondary">
+                {/* <Button variant="secondary">
                   <div className="flex items-center">
                     <ThumbsUp
                       size={20}
@@ -226,59 +230,63 @@ export const DiscussionAnswer = ({
                     />
                     <p className="ml-2 text-base">{item.voteSummary.down}</p>
                   </div>
-                </Button>
-                {editAnswerId === item.id && (
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        setEditAnswerField("");
-                        setEditAnswerId(0);
-                      }}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      onClick={handleUpdateDiscussionAnswer}
-                      disabled={loading}
-                    >
-                      {loading ? (
-                        <>
-                          <Loader2 className="animate-spin" />
-                          Loading
-                        </>
-                      ) : (
-                        "Save"
-                      )}
-                    </Button>
-                  </div>
-                )}
+                </Button> */}
+                {discussionStatus && (
+                  <>
+                    {editAnswerId === item.id && (
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            setEditAnswerField("");
+                            setEditAnswerId(0);
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          onClick={handleUpdateDiscussionAnswer}
+                          disabled={loading}
+                        >
+                          {loading ? (
+                            <>
+                              <Loader2 className="animate-spin" />
+                              Loading
+                            </>
+                          ) : (
+                            "Save"
+                          )}
+                        </Button>
+                      </div>
+                    )}
 
-                {item.isUser && (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger>
-                      <EllipsisVertical />
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                      <DropdownMenuItem
-                        onClick={() =>
-                          handleEditDiscussionAnswer(item.id, item.message)
-                        }
-                        className="cursor-pointer"
-                      >
-                        Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => {
-                          handleOpenDestroyDialog();
-                          setDeleteAnswerId(item.id);
-                        }}
-                        className="cursor-pointer"
-                      >
-                        Hapus
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                    {item.isUser && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger>
+                          <EllipsisVertical />
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                          <DropdownMenuItem
+                            onClick={() =>
+                              handleEditDiscussionAnswer(item.id, item.message)
+                            }
+                            className="cursor-pointer"
+                          >
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              handleOpenDestroyDialog();
+                              setDeleteAnswerId(item.id);
+                            }}
+                            className="cursor-pointer"
+                          >
+                            Hapus
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
+                  </>
                 )}
               </div>
             </div>

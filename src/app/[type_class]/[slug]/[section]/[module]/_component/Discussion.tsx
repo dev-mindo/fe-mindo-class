@@ -131,15 +131,16 @@ export const Discussion = ({ discussionData, baseUrl, moduleId }: Props) => {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center gap-5">
-                      <Badge>{item.status ? "open" : "close"}</Badge>
-                      <div className="flex items-center">
+                      <Badge variant={item.status ? 'default' : 'destructive'}>{item.status ? "open" : "close"}</Badge>
+                      {/* TODO vote */}
+                      {/* <div className="flex items-center">
                         <ThumbsUp size={20} />
                         <p className="ml-2 text-base">{item.discussionVote.up}</p>
                       </div>
                       <div className="flex items-center">
                         <ThumbsDown size={20} />
                         <p className="ml-2 text-base">{item.discussionVote.down}</p>
-                      </div>
+                      </div> */}
                       <div className="flex items-center">
                         <MessageSquare size={20} />
                         <p className="ml-2 text-base">
