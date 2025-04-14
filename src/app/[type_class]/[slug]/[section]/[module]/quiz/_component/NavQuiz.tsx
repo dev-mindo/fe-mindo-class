@@ -237,6 +237,7 @@ export function NavQuiz({
                 onDataFromQuestion: setSelectedAnswer,
                 onSelectedPagination: handlePagination,
                 handleNextAnswer: handleNextAnswer,
+                loading: loading                
               })
             : children}
         </div>
