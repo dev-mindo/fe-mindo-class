@@ -27,6 +27,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { DiscussionAnswer } from "./DiscussionAnswer";
 import { ConfirmDialogDeleteDiscussion } from "./DialogConfirmDeleteDiscussion";
+import { DialogConfirmCloseDiscussion } from "./DialogConfirmCloseDiscussion";
 
 export const DetailDiscussion = () => {
   const params = useParams<{
@@ -71,6 +72,11 @@ export const DetailDiscussion = () => {
     question: "",
     title: "",
   });
+
+  const [dialogConfirmCloseDiscussion, setDialogConfirmCloseDiscussion] =
+    useState<boolean>(false);
+  const [loadingCloseDiscussion, setLoadingCloseDiscussion] =
+    useState<boolean>(false);
 
   const getDetailDiscussion = async () => {
     const detailDiscussion: ApiResponse<TDetailDiscussion> = await fetchApi(
@@ -147,6 +153,27 @@ export const DetailDiscussion = () => {
       if (deleteDiscussion.statusCode !== 200) {
         toast.error("Deleted Failed");
       }
+    }
+  };
+
+  const handleCloseDiscussion = async () => {
+    setLoadingCloseDiscussion(true);
+    const updateDiscussion: ApiResponse = await fetchApi(
+      `/discussion/close/${params.id}`,
+      {
+        method: "PATCH",
+      }
+    );
+
+    if (updateDiscussion) {
+      if (updateDiscussion.statusCode === 200) {
+        toast.success(updateDiscussion.message);
+      }
+
+      if (updateDiscussion.statusCode === 404) {
+        toast.error(updateDiscussion.message);
+      }
+      setLoadingCloseDiscussion(false);
     }
   };
 
@@ -277,10 +304,16 @@ export const DetailDiscussion = () => {
           )}
           <div className="flex items-center gap-4">
             <div>
-              <Badge>{detailDiscussionData?.status ? "open" : "close"}</Badge>
+              <Badge
+                variant={
+                  detailDiscussionData?.status ? "default" : "destructive"
+                }
+              >
+                {detailDiscussionData?.status ? "open" : "close"}
+              </Badge>
             </div>
             <div className="flex gap-4 items-center">
-              <div className="flex items-center">
+              {/* <div className="flex items-center">
                 <ThumbsUp size={20} />
                 <p className="ml-2 text-base">
                   {detailDiscussionData?.totalDiscussionVote.up}
@@ -291,7 +324,7 @@ export const DetailDiscussion = () => {
                 <p className="ml-2 text-base">
                   {detailDiscussionData?.totalDiscussionVote.down}
                 </p>
-              </div>
+              </div> */}
               <div className="flex items-center">
                 <MessageSquare size={20} />
                 <p className="ml-2 text-base">
@@ -302,8 +335,21 @@ export const DetailDiscussion = () => {
           </div>
         </div>
         <div className="flex gap-2">
-          {detailDiscussionData?.isUser && (
-            <Button variant="destructive">Tutup Diskusi</Button>
+          {detailDiscussionData?.isUser && detailDiscussionData.status && (
+            <>
+              <Button
+                variant="destructive"
+                onClick={() => setDialogConfirmCloseDiscussion(true)}
+              >
+                Tutup Diskusi
+              </Button>
+              <DialogConfirmCloseDiscussion
+                loadingCloseDiscussion={loadingCloseDiscussion}
+                handleCloseDiscussion={handleCloseDiscussion}
+                isOpen={dialogConfirmCloseDiscussion}
+                setIsOpen={setDialogConfirmCloseDiscussion}
+              />
+            </>
           )}
           <Button
             variant="outline"
@@ -320,7 +366,7 @@ export const DetailDiscussion = () => {
           <div className="p-4 bg-card rounded-lg mt-4">
             <div className="flex justify-between mb-7">
               <div>
-                <p className="text-base">{detailDiscussionData?.user.name}</p>
+                <p className="text-green-500 font-bold">{detailDiscussionData?.user.name}</p>
                 <p className="text-sm">
                   {moment(detailDiscussionData?.createdAt).format(
                     "dddd, DD MMMM YYYY"
@@ -328,7 +374,8 @@ export const DetailDiscussion = () => {
                 </p>
               </div>
               <div className="flex items-center gap-2">
-                <Button variant="secondary">
+                {/* TODO vote */}
+                {/* <Button variant="secondary">
                   <div className="flex items-center">
                     <ThumbsUp
                       size={20}
@@ -361,54 +408,56 @@ export const DetailDiscussion = () => {
                       {detailDiscussionData?.voteSummary.down}
                     </p>
                   </div>
-                </Button>
-                <div className="flex gap-2">
-                  {isEditQuestion ? (
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        onClick={() => setEditQuestion(false)}
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        onClick={handleUpdateDiscussionQuestion}
-                        disabled={loading}
-                      >
-                        {loading ? (
-                          <>
-                            <Loader2 className="animate-spin" />
-                            Loading
-                          </>
-                        ) : (
-                          "Save"
-                        )}
-                      </Button>
-                    </div>
-                  ) : detailDiscussionData?.isUser ? (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger>
-                        <EllipsisVertical />
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent>
-                        <DropdownMenuItem
-                          className="cursor-pointer"
-                          onClick={handleEditQuestionField}
+                </Button> */}
+                {detailDiscussionData?.status && (
+                  <div className="flex gap-2">
+                    {isEditQuestion ? (
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          onClick={() => setEditQuestion(false)}
                         >
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={handleDestroyShowConfirm}
-                          className="cursor-pointer"
+                          Cancel
+                        </Button>
+                        <Button
+                          onClick={handleUpdateDiscussionQuestion}
+                          disabled={loading}
                         >
-                          Hapus
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  ) : (
-                    <></>
-                  )}
-                </div>
+                          {loading ? (
+                            <>
+                              <Loader2 className="animate-spin" />
+                              Loading
+                            </>
+                          ) : (
+                            "Save"
+                          )}
+                        </Button>
+                      </div>
+                    ) : detailDiscussionData?.isUser ? (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger>
+                          <EllipsisVertical />
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                          <DropdownMenuItem
+                            className="cursor-pointer"
+                            onClick={handleEditQuestionField}
+                          >
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={handleDestroyShowConfirm}
+                            className="cursor-pointer"
+                          >
+                            Hapus
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    ) : (
+                      <></>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
             <div>
@@ -430,6 +479,7 @@ export const DetailDiscussion = () => {
           </div>
 
           <DiscussionAnswer
+            discussionStatus={detailDiscussionData?.status || false}
             setDiscussionAnswerList={setDiscussionAnswerList}
             setLoadingDestroy={setLoadingDestroy}
             setAlertDestroyEvent={setAlertDestroyEvent}
