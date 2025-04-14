@@ -27,11 +27,11 @@ export const NavProvider = ({ children }: { children: ReactNode }) => {
 
   const urlPathQuiz = new RegExp(
     /(\/[^/]+\/[^/]+\/[^/]+\/[^/]+\/quiz\/[^/?]+|\/evaluation\/[^/]+)$/
-  );  
+  );
 
   const urlPathEvaluation = new RegExp(
     /(\/[^/]+\/[^/]+\/[^/]+\/evaluation\/feedback-form\/\d+)$/
-  );  
+  );
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
