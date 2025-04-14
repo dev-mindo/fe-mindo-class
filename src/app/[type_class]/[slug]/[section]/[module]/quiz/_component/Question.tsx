@@ -7,6 +7,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   ChevronLeft,
   ChevronRight,
+  Loader2,
   SquareCheckBig,
   SquareX,
 } from "lucide-react";
@@ -20,16 +21,14 @@ type Props = {
   eventType: string;
   onDataFromQuestion?: (data: { questionId: number; answerId: number }) => void;
   onSelectedPagination?: (page: number | undefined) => void;
-  handleNextAnswer?: (data?: {
-    questionId: number;
-    answerId: number;
-  }) => void,
+  handleNextAnswer?: (data?: { questionId: number; answerId: number }) => void;
   options: {
     redirectPagination: string;
     redirectCompleted: string;
     pathType: string;
   };
   hideNavigation: boolean;
+  loading?: boolean;
 };
 
 type TUserAnswer = {
@@ -45,6 +44,7 @@ export const Question = ({
   quizData,
   options,
   hideNavigation,
+  loading,
 }: Props) => {
   const { theme } = useTheme();
   const [selectedAnswer, setSelectedAnswer] = useState<string>("");
@@ -53,6 +53,7 @@ export const Question = ({
     isCorrect: false,
   });
   const { hidePagination, setHidePagination } = useAppContext();
+  const [loadingSubmit, setLoadingSubmit] = useState<boolean>(false);
 
   useEffect(() => {
     const getUserAnswer = question?.userAnswer.at(0) as {
@@ -80,12 +81,12 @@ export const Question = ({
 
     if (options.pathType === "evaluation") {
       return item.current
-        ? "bg-[#616161] border border-[#BDBDBD] hover:bg-[#90A4AE] hover:border-[#BDBDBD]"
-        : "bg-[#424242] border-[#757575] hover:bg-[#90A4AE] hover:border-[#BDBDBD]";
+        ? "bg-[#e0e0e0] text-black dark:text-white dark:bg-[#616161] border border-[#BDBDBD] hover:bg-[#90A4AE] hover:border-[#BDBDBD]"
+        : "bg-[#f5f5f5] text-black dark:text-white dark:bg-[#424242] border-[#757575] hover:bg-[#90A4AE] hover:border-[#BDBDBD]";
     }
 
     return "";
-  }  
+  }
 
   // function styleAnswer() {}
 
@@ -125,7 +126,7 @@ export const Question = ({
                         {selectedUserAnswer.answerId !== 0 &&
                         selectedUserAnswer.answerId === it.id ? (
                           <div
-                            className={`my-4 rounded-xl p-4 bg-[#616161] border-2 ${
+                            className={`my-4 rounded-xl p-4 bg-[#e0e0e0] dark:bg-[#616161] border-2 ${
                               selectedUserAnswer.isCorrect
                                 ? "border-green-500"
                                 : "border-red-500"
@@ -145,7 +146,7 @@ export const Question = ({
                         ) : (
                           <div
                             className={`my-4 rounded-xl p-4
-                            bg-[#424242] border border-[#757575]
+                            bg-[#f5f5f5] dark:bg-[#424242] border border-[#757575]
                           `}
                           >
                             <div className="flex justify-between">
@@ -163,15 +164,15 @@ export const Question = ({
                 {options.pathType === "quiz" && (
                   <RadioGroup
                     value={selectedAnswer}
-                    onValueChange={(e) => {                      
-                      setSelectedAnswer(e);     
+                    onValueChange={(e) => {
+                      setSelectedAnswer(e);
                       const getResultAnswer = {
                         questionId: question?.id || 0,
                         answerId: parseInt(e),
-                      }              
-                      if(hideNavigation){
-                        handleNextAnswer?.(getResultAnswer)
-                      }else{
+                      };
+                      if (hideNavigation) {
+                        handleNextAnswer?.(getResultAnswer);
+                      } else {
                         onDataFromQuestion?.(getResultAnswer);
                       }
                     }}
@@ -190,6 +191,7 @@ export const Question = ({
                           className="ml-4"
                           value={it.id.toString()}
                           id={"r" + index}
+                          disabled={loading}
                         />
                         <Label
                           className="py-4 pl-1 pr-4 text-md sm:text-lg lg:text-2xl w-full"
@@ -197,6 +199,11 @@ export const Question = ({
                         >
                           <div className="cursor-pointer">{it.answerText}</div>
                         </Label>
+                        {loading && selectedAnswer === it.id.toString() && (
+                          <div className="pr-4">
+                            <Loader2 className="animate-spin" />
+                          </div>
+                        )}
                       </div>
                     ))}
                   </RadioGroup>
