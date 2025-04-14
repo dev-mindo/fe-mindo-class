@@ -7,8 +7,7 @@ import { Area, AreaChart, CartesianGrid, XAxis } from "recharts";
 type Props = {
   dataChart: {
     trial: number;
-    score: number;
-    groupTitle: string;
+    score: number;    
   }[];
 };
 
