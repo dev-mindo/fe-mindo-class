@@ -195,7 +195,13 @@ export const DiscussionAnswer = ({
           <div className="p-4 bg-card rounded-lg mt-4">
             <div className="flex justify-between mb-7">
               <div>
-                <p className={item.isUser ? 'text-green-500 font-bold' : 'text-base'}>{item.user.name}</p>
+                <p
+                  className={
+                    item.isUser ? "text-green-500 font-bold" : "text-base"
+                  }
+                >
+                  {item.user.name}
+                </p>
                 <p className="text-sm">
                   {moment(item.createdAt).format("dddd, DD MMMM YYYY")}
                 </p>
@@ -298,10 +304,12 @@ export const DiscussionAnswer = ({
                   }}
                   ref={refEditAnswer}
                   className="h-[10vh]"
-                  placeholder="Tambahkan Tanggapan"
+                  placeholder="Edit Tanggapan"
                 />
               ) : (
-                item.message
+                <div className="break-all">
+                  <p className="text-wrap">{item.message}</p>
+                </div>
               )}
             </div>
           </div>

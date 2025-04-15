@@ -29,7 +29,12 @@ export const Discussion = ({ discussionData, baseUrl, moduleId }: Props) => {
     useState<boolean>(false);
   const [discussionDataList, setDiscussionDataList] = useState<any[]>([]);
   const [isSocketConnected, setSocketConnected] = useState(socket.connected);
-  const router = useRouter()
+  const [searchTerm, setSearchTerm] = useState("");
+  const router = useRouter();
+
+  const filteredData = discussionDataList.filter((item) =>
+    item.title.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   useEffect(() => {
     socket.on("connect", () => {
@@ -44,11 +49,13 @@ export const Discussion = ({ discussionData, baseUrl, moduleId }: Props) => {
       console.log("Socket Data ", value);
       const newDiscussionData = JSON.parse(value).data;
 
-      const messageEvent = JSON.parse(value).messageEvent
+      const messageEvent = JSON.parse(value).messageEvent;
 
       if (messageEvent === "create") {
         setDiscussionDataList((prevItems) => {
-          const alreadyExists = prevItems.some(item => item.id === newDiscussionData.id);
+          const alreadyExists = prevItems.some(
+            (item) => item.id === newDiscussionData.id
+          );
           if (alreadyExists) return prevItems;
           return [newDiscussionData, ...prevItems];
         });
@@ -56,18 +63,18 @@ export const Discussion = ({ discussionData, baseUrl, moduleId }: Props) => {
 
       if (messageEvent === "update") {
         setDiscussionDataList((prevItems) => {
-          return prevItems.map(item =>
+          return prevItems.map((item) =>
             item.id === newDiscussionData.id ? newDiscussionData : item
           );
         });
       }
-    
+
       if (messageEvent === "destroy") {
         setDiscussionDataList((prevItems) => {
-          return prevItems.filter(item => item.id !== newDiscussionData.id);
+          return prevItems.filter((item) => item.id !== newDiscussionData.id);
         });
       }
-    });   
+    });
 
     return () => {
       socket.off("connect");
@@ -90,7 +97,11 @@ export const Discussion = ({ discussionData, baseUrl, moduleId }: Props) => {
         <div className="flex gap-5">
           <div className="flex items-center gap-2 w-full">
             <Search />
-            <Input placeholder="Search Discussion" />
+            <Input
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search Discussion"
+            />
           </div>
           <div>
             <Button onClick={() => setOpenDiscussionForm(true)}>
@@ -116,10 +127,12 @@ export const Discussion = ({ discussionData, baseUrl, moduleId }: Props) => {
           </TableHeader>
           <TableBody>
             {discussionDataList.length > 0 &&
-              discussionDataList.map((item) => (
-                <TableRow onClick={() => {
-                  router.push(`${baseUrl}/detail-discussion/${item.id}`)
-                }}>
+              filteredData.map((item) => (
+                <TableRow
+                  onClick={() => {
+                    router.push(`${baseUrl}/detail-discussion/${item.id}`);
+                  }}
+                >
                   <TableCell className="cursor-pointer">
                     <div>
                       <p className="text-base mb-2">{item.title}</p>
@@ -131,7 +144,9 @@ export const Discussion = ({ discussionData, baseUrl, moduleId }: Props) => {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center gap-5">
-                      <Badge variant={item.status ? 'default' : 'destructive'}>{item.status ? "open" : "close"}</Badge>
+                      <Badge variant={item.status ? "default" : "destructive"}>
+                        {item.status ? "open" : "close"}
+                      </Badge>
                       {/* TODO vote */}
                       {/* <div className="flex items-center">
                         <ThumbsUp size={20} />
