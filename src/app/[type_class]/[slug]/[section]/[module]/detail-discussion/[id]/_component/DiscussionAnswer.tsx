@@ -100,6 +100,7 @@ export const DiscussionAnswer = ({
         setCreateAnswerId(createDiscussionAnswer.data.id);
         setAnswerField("");
         toast.success("Discussion Answer Created");
+        //TODO create answer (send socket)
       } else {
         toast.error(createDiscussionAnswer.message);
       }
@@ -132,6 +133,7 @@ export const DiscussionAnswer = ({
         setEditAnswerId(0);
         setEditAnswerField("");
         toast.success("Berhasil Memperbaharui Tanggapan");
+        //TODO edit answer (send socket)
       } else {
         toast.error(updateDiscussionAnswer.message);
       }
@@ -151,6 +153,7 @@ export const DiscussionAnswer = ({
         setConfirmDestroyAnswer(false);
         setDeleteAnswerId(0);
         toast.success("Tanggapan berhasil dihapus");
+        //TODO delete answer (send socket)
       } else {
         toast.error(destroyDiscussionAnswer.message);
       }

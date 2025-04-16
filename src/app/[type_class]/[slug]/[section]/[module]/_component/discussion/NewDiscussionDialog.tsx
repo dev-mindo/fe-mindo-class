@@ -8,6 +8,7 @@ import {
   DialogHeader,
 } from "@/components/ui/dialog";
 import { Form } from "@/components/ui/form";
+import { socket } from "@/lib/service/socket";
 import { ApiResponse, fetchApi } from "@/lib/utils/fetchApi";
 import discussionFormSchema from "@/schemas/DiscussionFormSchema";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -51,7 +52,14 @@ export const NewDialogDiscussion = ({
     });
 
     if (res && res.statusCode === 200) {
-      console.log('create disscusion', res.data)
+      console.log("create disscusion", res.data);
+      socket.emit(
+        "sendDiscussionQuestion",
+        JSON.stringify({
+          messageEvent: "create",
+          data: res.data
+        })
+      );
       router.push(`${baseUrl}/detail-discussion/${res.data.id}`);
     } else {
       console.error(res.errorCode);
