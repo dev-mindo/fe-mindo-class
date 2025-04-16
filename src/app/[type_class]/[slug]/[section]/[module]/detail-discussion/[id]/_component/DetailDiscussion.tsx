@@ -72,7 +72,6 @@ export const DetailDiscussion = () => {
     question: "",
     title: "",
   });
-
   const [dialogConfirmCloseDiscussion, setDialogConfirmCloseDiscussion] =
     useState<boolean>(false);
   const [loadingCloseDiscussion, setLoadingCloseDiscussion] =
@@ -114,10 +113,29 @@ export const DetailDiscussion = () => {
 
     if (updateDiscussion) {
       if (updateDiscussion.statusCode === 200) {
-        toast.success(updateDiscussion.message);
+        socket.emit(
+          "sendDiscussionQuestion",
+          JSON.stringify({
+            messageEvent: "update",
+            data: updateDiscussion.data
+          })
+        );
+        socket.emit(
+          "sendDiscussionAnswer",
+          JSON.stringify({
+            messageEvent: "update",
+            eventTo: "question",
+            data: {
+              ...updateDiscussion.data,
+              isUser: false,
+            },
+          }),
+        );
         setLoading(false);
         setEditQuestion(false);
         toast.success(updateDiscussion.message);
+        //TODO update data
+
       }
 
       if (updateDiscussion.statusCode === 404) {
@@ -149,6 +167,8 @@ export const DetailDiscussion = () => {
         setIsOpenAlertDestroy(false);
         setLoadingDestroy(false);
         router.push(baseUrl);
+        //TODO destroy data
+        //TODO send socket
       }
       if (deleteDiscussion.statusCode !== 200) {
         toast.error("Deleted Failed");

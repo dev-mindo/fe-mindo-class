@@ -84,6 +84,10 @@ export const Discussion = ({ discussionData, baseUrl, moduleId }: Props) => {
   }, []);
 
   useEffect(() => {
+    console.log('socket connected', isSocketConnected)
+  }, [isSocketConnected])
+
+  useEffect(() => {
     setDiscussionDataList(discussionData.data);
   }, [discussionData]);
 
