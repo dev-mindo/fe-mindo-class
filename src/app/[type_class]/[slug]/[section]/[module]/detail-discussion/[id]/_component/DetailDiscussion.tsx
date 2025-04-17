@@ -81,7 +81,8 @@ export const DetailDiscussion = ({ detailDiscussionDataProps }: Props) => {
     useState<boolean>(false);
   const [loadingCloseDiscussion, setLoadingCloseDiscussion] =
     useState<boolean>(false);
-  const [answerSocketData, setAnswerSocketData] = useState<SocketAnswerData>(null)
+  const [answerSocketData, setAnswerSocketData] =
+    useState<SocketAnswerData>(null);
 
   const handleEditQuestionField = () => {
     setEditQuestion(true);
@@ -201,6 +202,28 @@ export const DetailDiscussion = ({ detailDiscussionDataProps }: Props) => {
 
     if (updateDiscussion) {
       if (updateDiscussion.statusCode === 200) {
+        socket.emit(
+          "sendDiscussionQuestion",
+          JSON.stringify({
+            messageEvent: "update",
+            data: updateDiscussion.data,
+          })
+        );
+        socket.emit(
+          "sendDiscussionAnswer",
+          JSON.stringify({
+            messageEvent: "update",
+            eventTo: "question",
+            data: {
+              ...updateDiscussion.data,
+              isUser: false,
+            },
+          })
+        );
+        setDetailDiscussionData({
+          ...updateDiscussion.data,
+          isUser: true,
+        });
         toast.success(updateDiscussion.message);
       }
 
@@ -212,8 +235,8 @@ export const DetailDiscussion = ({ detailDiscussionDataProps }: Props) => {
   };
 
   useEffect(() => {
-    console.log('discussion data list', discussionAnswerList)
-  }, [discussionAnswerList])
+    console.log("discussion data list", discussionAnswerList);
+  }, [discussionAnswerList]);
 
   useEffect(() => {
     const observer = new MutationObserver(() => {
@@ -235,7 +258,7 @@ export const DetailDiscussion = ({ detailDiscussionDataProps }: Props) => {
     }
 
     socket.on("connect", () => {
-      setSocketConnected(true);      
+      setSocketConnected(true);
     });
 
     socket.on("disconnect", () => {
@@ -248,7 +271,10 @@ export const DetailDiscussion = ({ detailDiscussionDataProps }: Props) => {
       const eventTo = JSON.parse(value).eventTo;
 
       console.log("detail discussion user", detailDiscussionData);
-      if (eventTo === "question" && detailDiscussionDataProps?.isUser === false) {
+      if (
+        eventTo === "question" &&
+        detailDiscussionDataProps?.isUser === false
+      ) {
         console.log("Socket Data ", value);
         if (messageEvent === "update") {
           setDetailDiscussionData(discussionData);
@@ -261,7 +287,7 @@ export const DetailDiscussion = ({ detailDiscussionDataProps }: Props) => {
       }
 
       if (eventTo === "answer") {
-        setAnswerSocketData(JSON.parse(value))
+        setAnswerSocketData(JSON.parse(value));
       }
     });
 
@@ -271,7 +297,7 @@ export const DetailDiscussion = ({ detailDiscussionDataProps }: Props) => {
 
     return () => {
       socket.off("connect");
-      socket.off("disconnect");      
+      socket.off("disconnect");
       socket.off("discussionAnswer");
       observer.disconnect();
     };
