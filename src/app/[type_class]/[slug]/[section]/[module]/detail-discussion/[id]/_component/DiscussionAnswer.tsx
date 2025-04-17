@@ -6,11 +6,18 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Textarea } from "@/components/ui/textarea";
+import { socket } from "@/lib/service/socket";
 import { ApiResponse, fetchApi } from "@/lib/utils/fetchApi";
 import { EllipsisVertical, Loader2, ThumbsDown, ThumbsUp } from "lucide-react";
 import moment from "moment";
 import { SetStateAction, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+
+export type SocketAnswerData = {
+  messageEvent: string,
+  eventTo: string,
+  data: TDiscussionAnswer
+} | null
 
 type Props = {
   discussionDataList: TDiscussionAnswer[];
@@ -25,6 +32,7 @@ type Props = {
     value: SetStateAction<TDiscussionAnswer[] | []>
   ) => void;
   discussionStatus: boolean;
+  socketAnswerData: SocketAnswerData
 };
 
 export const DiscussionAnswer = ({
@@ -38,6 +46,7 @@ export const DiscussionAnswer = ({
   setLoadingDestroy,
   setDiscussionAnswerList,
   discussionStatus,
+  socketAnswerData
 }: Props) => {
   const [editAnswerId, setEditAnswerId] = useState<number>(0);
   const [editAnswerField, setEditAnswerField] = useState<string>("");
@@ -48,22 +57,50 @@ export const DiscussionAnswer = ({
   const [deleteAnswerId, setDeleteAnswerId] = useState<number>(0);
   const [createAnswerId, setCreateAnswerId] = useState<number>(0);
 
+  const [updateAnswerId, setUpdateAnswerId] = useState<number>(0)
+
   useEffect(() => {
-    if (createAnswerId > 0) {
-      setDiscussionAnswerList((prevItems) => {
-        return prevItems.map((item) =>
-          item.id === createAnswerId
-            ? {
-                ...item,
-                isUser: item.id === createAnswerId,
-              }
-            : item
-        );
-      });
-      setCreateAnswerId(0);
+    if(socketAnswerData !== null && updateAnswerId !== socketAnswerData.data.id){
+      if (socketAnswerData.eventTo === "answer") {
+        if (socketAnswerData.messageEvent === "create") {
+          setDiscussionAnswerList((prevItems) => {
+            const alreadyExists = prevItems.some(
+              (item) => item.id === socketAnswerData.data.id
+            );
+            if (alreadyExists) return prevItems;
+            return [
+              {
+                ...socketAnswerData.data,
+                isUser: false,
+              },
+              ...prevItems,
+            ];
+          });
+        }
     }
-    console.log("created data", discussionDataList);
-  }, [createAnswerId, discussionDataList]);
+
+      if (socketAnswerData.messageEvent === "update") {
+        setDiscussionAnswerList((prevItems) => {
+          return prevItems.map((item) =>
+            item.id === socketAnswerData.data.id
+              ? {
+                  ...socketAnswerData.data,
+                  isUser: item.isUser,
+                }
+              : item
+          );
+        });
+      }
+
+      if (socketAnswerData.messageEvent === "destroy") {
+        setDiscussionAnswerList((prevItems) => {
+          return prevItems.filter((item) => item.id !== socketAnswerData.data.id);
+        });
+      }
+    }else{
+      setUpdateAnswerId(0)
+    }    
+  }, [setUpdateAnswerId, socketAnswerData]);  
 
   useEffect(() => {
     if (refEditAnswer.current) refEditAnswer.current.value = editAnswerField;
@@ -83,7 +120,7 @@ export const DiscussionAnswer = ({
     setIsOpenAlertDestroy(true);
   };
 
-  const handleCreateDiscussionAnswer = async () => {
+  const handleCreateDiscussionAnswer = async () => {    
     const createDiscussionAnswer: ApiResponse = await fetchApi(
       `/discussion/answer/${discussionId}`,
       {
@@ -95,12 +132,38 @@ export const DiscussionAnswer = ({
     );
 
     if (createDiscussionAnswer) {
-      if (createDiscussionAnswer.success) {
+      if (createDiscussionAnswer.success) {        
         console.log("create id", createDiscussionAnswer.data.id);
         setCreateAnswerId(createDiscussionAnswer.data.id);
+        setUpdateAnswerId(createDiscussionAnswer.data.id)
         setAnswerField("");
-        toast.success("Discussion Answer Created");
-        //TODO create answer (send socket)
+        toast.success("Discussion Answer Created");  
+
+        setDiscussionAnswerList((prevItems) => {
+          const alreadyExists = prevItems.some(
+            (item) => item.id === createDiscussionAnswer.data.id
+          );
+          if (alreadyExists) return prevItems;
+          return [
+            {
+              ...createDiscussionAnswer.data,
+              isUser: true,
+            },
+            ...prevItems,
+          ];
+        });      
+
+        socket.emit(
+          "sendDiscussionAnswer",
+          JSON.stringify({
+            messageEvent: "create",
+            eventTo: "answer",
+            data: {
+              ...createDiscussionAnswer.data,
+              isUser: false,
+            },
+          })
+        );
       } else {
         toast.error(createDiscussionAnswer.message);
       }
@@ -117,6 +180,7 @@ export const DiscussionAnswer = ({
 
   const handleUpdateDiscussionAnswer = async () => {
     setLoading(true);
+    setUpdateAnswerId(editAnswerId)    
     const updateDiscussionAnswer: ApiResponse = await fetchApi(
       `/discussion/answer/${editAnswerId}`,
       {
@@ -133,7 +197,28 @@ export const DiscussionAnswer = ({
         setEditAnswerId(0);
         setEditAnswerField("");
         toast.success("Berhasil Memperbaharui Tanggapan");
-        //TODO edit answer (send socket)
+        //TODO edit answer (send socket)        
+        setDiscussionAnswerList((prevItems) => {
+          return prevItems.map((item) =>
+            item.id === updateDiscussionAnswer.data.id
+              ? {
+                  ...updateDiscussionAnswer.data,
+                  isUser: true,
+                }
+              : item
+          );
+        });
+        socket.emit(
+          "sendDiscussionAnswer",
+          JSON.stringify({
+            messageEvent: "update",
+            eventTo: "answer",
+            data: {
+              ...updateDiscussionAnswer.data,
+              isUser: false,
+            },
+          }),
+        );       
       } else {
         toast.error(updateDiscussionAnswer.message);
       }
@@ -141,6 +226,7 @@ export const DiscussionAnswer = ({
   };
 
   const handleDestroyDiscussionAnswer = async () => {
+    setUpdateAnswerId(deleteAnswerId)
     const destroyDiscussionAnswer: ApiResponse = await fetchApi(
       `/discussion/answer/${deleteAnswerId}`,
       {
@@ -150,10 +236,23 @@ export const DiscussionAnswer = ({
     if (destroyDiscussionAnswer) {
       if (destroyDiscussionAnswer.success) {
         setIsOpenAlertDestroy(false);
-        setConfirmDestroyAnswer(false);
-        setDeleteAnswerId(0);
+        setConfirmDestroyAnswer(false);        
         toast.success("Tanggapan berhasil dihapus");
         //TODO delete answer (send socket)
+        setDiscussionAnswerList((prevItems) => {
+          return prevItems.filter((item) => item.id !== deleteAnswerId);
+        });
+        socket.emit(
+          "sendDiscussionAnswer",
+          JSON.stringify({
+            messageEvent: "destroy",
+            eventTo: "answer",
+            data: {
+              id: deleteAnswerId,
+            },
+          }),
+        );   
+        setDeleteAnswerId(0);
       } else {
         toast.error(destroyDiscussionAnswer.message);
       }
