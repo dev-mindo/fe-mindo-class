@@ -3,6 +3,7 @@ import {
   ArrowLeftFromLine,
   BookText,
   CircleCheckBig,
+  ClipboardCheck,
   ClipboardList,
   FileBadge,
   Info,
@@ -69,6 +70,10 @@ export const Sidebar = ({ dataSection, baseUrl }: Props) => {
       type: "MATERIAL",
       icon: <BookText strokeWidth={1.5} size={20} />,
     },
+    {
+      type: "TASK",
+      icon: <ClipboardCheck strokeWidth={1.5} size={20}/>
+    }
   ];
 
   const sectionMenu = dataSection?.map((section) => ({
