@@ -23,13 +23,17 @@ import {
 } from "lucide-react";
 import moment from "moment";
 import { notFound, useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { DiscussionAnswer } from "./DiscussionAnswer";
+import { DiscussionAnswer, SocketAnswerData } from "./DiscussionAnswer";
 import { ConfirmDialogDeleteDiscussion } from "./DialogConfirmDeleteDiscussion";
 import { DialogConfirmCloseDiscussion } from "./DialogConfirmCloseDiscussion";
 
-export const DetailDiscussion = () => {
+type Props = {
+  detailDiscussionDataProps: TDetailDiscussion | undefined;
+};
+
+export const DetailDiscussion = ({ detailDiscussionDataProps }: Props) => {
   const params = useParams<{
     id: string;
     type_class: string;
@@ -39,8 +43,9 @@ export const DetailDiscussion = () => {
   }>();
   const baseUrl = `${process.env.NEXT_PUBLIC_URL}/${params.type_class}/${params.slug}/${params.section}/${params.module}`;
   const router = useRouter();
-  const [detailDiscussionData, setDetailDiscussionData] =
-    useState<TDetailDiscussion>();
+  const [detailDiscussionData, setDetailDiscussionData] = useState<
+    TDetailDiscussion | undefined
+  >(detailDiscussionDataProps);
 
   const [discussionAnswerList, setDiscussionAnswerList] = useState<
     TDiscussionAnswer[] | []
@@ -76,22 +81,7 @@ export const DetailDiscussion = () => {
     useState<boolean>(false);
   const [loadingCloseDiscussion, setLoadingCloseDiscussion] =
     useState<boolean>(false);
-
-  const getDetailDiscussion = async () => {
-    const detailDiscussion: ApiResponse<TDetailDiscussion> = await fetchApi(
-      `/discussion/detail/${params.id}`
-    );
-    if (detailDiscussion) {
-      if (detailDiscussion.statusCode === 200) {
-        setDetailDiscussionData(detailDiscussion.data);
-        console.log("detail discussion data", detailDiscussion.data);
-        setLoadingPage(false);
-        setDiscussionAnswerList(detailDiscussion.data?.discussionAnswer || []);
-      } else {
-        notFound();
-      }
-    }
-  };
+  const [answerSocketData, setAnswerSocketData] = useState<SocketAnswerData>(null)
 
   const handleEditQuestionField = () => {
     setEditQuestion(true);
@@ -113,11 +103,12 @@ export const DetailDiscussion = () => {
 
     if (updateDiscussion) {
       if (updateDiscussion.statusCode === 200) {
+        console.log("is user", detailDiscussionData?.isUser);
         socket.emit(
           "sendDiscussionQuestion",
           JSON.stringify({
             messageEvent: "update",
-            data: updateDiscussion.data
+            data: updateDiscussion.data,
           })
         );
         socket.emit(
@@ -129,13 +120,15 @@ export const DetailDiscussion = () => {
               ...updateDiscussion.data,
               isUser: false,
             },
-          }),
+          })
         );
+        setDetailDiscussionData({
+          ...updateDiscussion.data,
+          isUser: true,
+        });
         setLoading(false);
         setEditQuestion(false);
         toast.success(updateDiscussion.message);
-        //TODO update data
-
       }
 
       if (updateDiscussion.statusCode === 404) {
@@ -166,9 +159,30 @@ export const DetailDiscussion = () => {
       if (deleteDiscussion) {
         setIsOpenAlertDestroy(false);
         setLoadingDestroy(false);
-        router.push(baseUrl);
-        //TODO destroy data
         //TODO send socket
+        socket.emit(
+          "sendDiscussionQuestion",
+          JSON.stringify({
+            messageEvent: "destroy",
+            data: {
+              id: params.id,
+            },
+          })
+        );
+
+        socket.emit(
+          "sendDiscussionAnswer",
+          JSON.stringify({
+            messageEvent: "destroy",
+            eventTo: "question",
+            data: {
+              id: params.id,
+            },
+          })
+        );
+
+        //TODO destroy data
+        router.push(baseUrl);
       }
       if (deleteDiscussion.statusCode !== 200) {
         toast.error("Deleted Failed");
@@ -198,6 +212,10 @@ export const DetailDiscussion = () => {
   };
 
   useEffect(() => {
+    console.log('discussion data list', discussionAnswerList)
+  }, [discussionAnswerList])
+
+  useEffect(() => {
     const observer = new MutationObserver(() => {
       const pointer = getComputedStyle(document.body).pointerEvents;
       if (pointer === "none") {
@@ -208,10 +226,16 @@ export const DetailDiscussion = () => {
 
     observer.observe(document.body, { attributes: true });
 
-    getDetailDiscussion();
+    if (detailDiscussionData) {
+      console.log("detail discussion data", detailDiscussionData);
+      setLoadingPage(false);
+      setDiscussionAnswerList(detailDiscussionData?.discussionAnswer || []);
+    } else {
+      router.push(baseUrl);
+    }
 
     socket.on("connect", () => {
-      setSocketConnected(true);
+      setSocketConnected(true);      
     });
 
     socket.on("disconnect", () => {
@@ -219,13 +243,13 @@ export const DetailDiscussion = () => {
     });
 
     socket.on("discussionAnswer", (value) => {
-      console.log("Socket Data ", value);
-
       const discussionData = JSON.parse(value).data;
       const messageEvent = JSON.parse(value).messageEvent;
       const eventTo = JSON.parse(value).eventTo;
 
-      if (eventTo === "question") {
+      console.log("detail discussion user", detailDiscussionData);
+      if (eventTo === "question" && detailDiscussionDataProps?.isUser === false) {
+        console.log("Socket Data ", value);
         if (messageEvent === "update") {
           setDetailDiscussionData(discussionData);
         }
@@ -237,40 +261,7 @@ export const DetailDiscussion = () => {
       }
 
       if (eventTo === "answer") {
-        if (messageEvent === "create") {
-          setDiscussionAnswerList((prevItems) => {
-            const alreadyExists = prevItems.some(
-              (item) => item.id === discussionData.id
-            );
-            if (alreadyExists) return prevItems;
-            return [
-              {
-                ...discussionData,
-                isUser: false,
-              },
-              ...prevItems,
-            ];
-          });
-        }
-
-        if (messageEvent === "update") {
-          setDiscussionAnswerList((prevItems) => {
-            return prevItems.map((item) =>
-              item.id === discussionData.id
-                ? {
-                    ...discussionData,
-                    isUser: item.isUser,
-                  }
-                : item
-            );
-          });
-        }
-
-        if (messageEvent === "destroy") {
-          setDiscussionAnswerList((prevItems) => {
-            return prevItems.filter((item) => item.id !== discussionData.id);
-          });
-        }
+        setAnswerSocketData(JSON.parse(value))
       }
     });
 
@@ -386,7 +377,9 @@ export const DetailDiscussion = () => {
           <div className="p-4 bg-card rounded-lg mt-4">
             <div className="flex justify-between mb-7">
               <div>
-                <p className="text-green-500 font-bold">{detailDiscussionData?.user.name}</p>
+                <p className="text-green-500 font-bold">
+                  {detailDiscussionData?.user.name}
+                </p>
                 <p className="text-sm">
                   {moment(detailDiscussionData?.createdAt).format(
                     "dddd, DD MMMM YYYY"
@@ -499,6 +492,7 @@ export const DetailDiscussion = () => {
           </div>
 
           <DiscussionAnswer
+            socketAnswerData={answerSocketData}
             discussionStatus={detailDiscussionData?.status || false}
             setDiscussionAnswerList={setDiscussionAnswerList}
             setLoadingDestroy={setLoadingDestroy}
