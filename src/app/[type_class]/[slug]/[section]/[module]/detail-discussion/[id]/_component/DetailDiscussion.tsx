@@ -202,6 +202,7 @@ export const DetailDiscussion = ({ detailDiscussionDataProps }: Props) => {
 
     if (updateDiscussion) {
       if (updateDiscussion.statusCode === 200) {
+        console.log('status updated',updateDiscussion.data)
         socket.emit(
           "sendDiscussionQuestion",
           JSON.stringify({
