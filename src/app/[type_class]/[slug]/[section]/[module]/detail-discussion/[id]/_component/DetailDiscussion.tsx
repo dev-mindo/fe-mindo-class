@@ -271,8 +271,8 @@ export const DetailDiscussion = ({ detailDiscussionDataProps }: Props) => {
 
     return () => {
       socket.off("connect");
-      socket.off("disconnect");
-      socket.off("discussionQuestion");
+      socket.off("disconnect");      
+      socket.off("discussionAnswer");
       observer.disconnect();
     };
   }, []);
