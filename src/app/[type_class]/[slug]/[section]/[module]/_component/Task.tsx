@@ -7,7 +7,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 export const Task = () => {
-  const [isEditable, setIsEditable] = useState<boolean>(false);
+  const [isEditable, setIsEditable] = useState<boolean>(true);
   const [editTask, setEditTask] = useState<boolean>(false);
   const [taskId, setTaskId] = useState<number>(1)
 
