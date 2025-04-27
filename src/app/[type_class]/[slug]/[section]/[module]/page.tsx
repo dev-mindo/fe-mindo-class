@@ -7,6 +7,7 @@ import { AttemptQuiz } from "./quiz/_component/AttemptQuiz";
 import { Discussion } from "./_component/Discussion";
 import Evaluation from "./_component/evaluation/Evaluation";
 import { Certificate } from "./_component/Certificate";
+import { Task } from "./_component/Task";
 
 export const metadata: Metadata = {
   title: "Mindo Class | Module",
@@ -53,6 +54,8 @@ export default async function Page({ params }: Props) {
       case "DISCUSSION":
         const discussion = await fetchApi(`/discussion/${getModule.data.id}`)
         return <Discussion moduleId={getModule.data.id} discussionData={discussion} baseUrl={baseUrl} />;
+      case "TASK":
+        return <Task/>
       case "EVALUATION":
         console.log(getModule.data);
         const getAttemptQuiz: ApiResponse<TEvaluationAttemptQuiz> = await fetchApi(`/attempt-quiz/result/${getSection}`)        
