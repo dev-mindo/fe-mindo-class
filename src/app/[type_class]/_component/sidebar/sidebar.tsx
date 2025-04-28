@@ -97,7 +97,7 @@ export const Sidebar = ({ dataSection, baseUrl }: Props) => {
     {
       title: "Left Class",
       icon: <ArrowLeftFromLine strokeWidth={1.5} size={20} />,
-      link: "/",
+      link: "https://mindoeducation.co.id/dashboard/kelas-saya",
       isLocked: false,
       isDone: false,
     },
