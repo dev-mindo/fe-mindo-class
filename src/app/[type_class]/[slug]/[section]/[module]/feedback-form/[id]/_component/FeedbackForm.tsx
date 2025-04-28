@@ -92,7 +92,7 @@ export const FeedbackForm = ({
         <div className="w-[50%] mx-auto">
           <div className="flex flex-col gap-4 my-4">
             <div className="bg-card  p-4 rounded-lg">
-              <h1 className="text-3xl">Evaluasi</h1>
+              <h1 className="text-3xl">Evaluasi (Semua Pertanyaan Wajib Disini)</h1>
             </div>
             {showFormFeedback.map((item, index) => (
               <>
