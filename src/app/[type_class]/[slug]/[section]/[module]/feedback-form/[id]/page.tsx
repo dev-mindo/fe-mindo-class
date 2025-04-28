@@ -71,11 +71,11 @@ export default async function Page({ params }: Props) {
     `/evaluation/${params.id}/feedback`
   );
 
-  if (
-    !getEvaluationQuestion ||
-    (getEvaluationQuestion && !getEvaluationQuestion.success)
-  )
-    notFound();
+  // if (
+  //   !getEvaluationQuestion ||
+  //   (getEvaluationQuestion && !getEvaluationQuestion.success)
+  // )
+  //   notFound();
 
   const showFormFeedback: TFormFeedback["formFeedback"] =
     getEvaluationQuestion.data?.formFeedback || [];

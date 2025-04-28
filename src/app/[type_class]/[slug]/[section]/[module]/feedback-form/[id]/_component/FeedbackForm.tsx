@@ -17,10 +17,11 @@ import { ApiResponse, fetchApi } from "@/lib/utils/fetchApi";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import IRadio from "@/components/base/IRadio";
 
 type Props = {
-  evaluationId: string
-  feedbackUserId: string
+  evaluationId: string;
+  feedbackUserId: string;
   showFormFeedback: TFormFeedback["formFeedback"];
   dataFormFeedback: Record<string, string | string[]>;
   // formFeedbackSchema: any
@@ -122,6 +123,16 @@ export const FeedbackForm = ({
                             name={item.name}
                             placeholder="Tuliskan Jawaban Disini"
                             className="text-lg"
+                          />
+                        </div>
+                      )}
+
+                      {item.type === "RADIO" && (
+                        <div className="my-4">
+                          <IRadio
+                            control={form.control}
+                            items={item.value || []}
+                            name={item.name}
                           />
                         </div>
                       )}
