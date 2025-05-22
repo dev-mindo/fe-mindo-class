@@ -57,6 +57,12 @@ declare global {
     };
   };
 
+  type TFile = {
+    moduleId: number;
+    name: string
+    url: string
+  }
+
   type TModuleMaterial = {
     id: number;
     productId: number;
@@ -64,11 +70,18 @@ declare global {
     type: string;
     description: string;
     videoUrl?: string;
-    file?: string;
+    file?: TFile[];
     userNote?: string;
     evaluation?: {
       id: number;
       feedbackUser: Array<any>;
+    };
+    videoLive?: {
+      id: number;
+      link: string;
+      startAt: Date | string;
+      endAt: Date | string;
+      video: any;
     };
   };
 
@@ -267,6 +280,23 @@ declare global {
       down: number;
     };
     isUser: boolean;
+  };
+
+  type TTaskUser = {
+    uploadUrl: string
+    grade: number
+    status: string
+    createdAt: date
+  }
+
+  type TAssignment = {
+    id: number;
+    moduleId: number;
+    editable: boolean;
+    canLate: boolean;
+    startAt: string;
+    endAt: string;
+    taskUser: TTaskUser[];
   };
 }
 
