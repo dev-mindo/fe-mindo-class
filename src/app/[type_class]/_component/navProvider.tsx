@@ -1,5 +1,6 @@
 "use client";
 import { clearCachesByServerAction } from "@/lib/action/quiz";
+import 'moment/locale/id';
 import { usePathname } from "next/navigation";
 import { createContext, ReactNode, useContext, useEffect, useState } from "react";
 
@@ -33,7 +34,7 @@ export const NavProvider = ({ children }: { children: ReactNode }) => {
     /(\/[^/]+\/[^/]+\/[^/]+\/evaluation\/feedback-form\/\d+)$/
   );
 
-  useEffect(() => {
+  useEffect(() => {    
     if (typeof window !== 'undefined') {
       if(size.width && size.width >= 1024){        
         setHidePagination(false)

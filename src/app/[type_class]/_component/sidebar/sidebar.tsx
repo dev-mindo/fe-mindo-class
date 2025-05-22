@@ -10,6 +10,7 @@ import {
   ListTodo,
   Lock,
   MessagesSquare,
+  RadioTower,
   SquarePlay,
   X,
 } from "lucide-react";
@@ -73,6 +74,10 @@ export const Sidebar = ({ dataSection, baseUrl }: Props) => {
     {
       type: "TASK",
       icon: <ClipboardCheck strokeWidth={1.5} size={20}/>
+    },
+    {
+      type: "LIVE",
+      icon: <RadioTower strokeWidth={1.5} size={20}/>
     }
   ];
 
