@@ -26,7 +26,7 @@ export const Pagination = ({ dataSection, baseUrl, currentPage }: Props) => {
 
   if (hideAll || pathname.match(urlPathDiscussion)) {
     return <></>;
-  }  
+  }    
 
 
   const getPrevNextModule = (navMenu: TNavClass["sectionMenu"]) => {
@@ -51,8 +51,9 @@ export const Pagination = ({ dataSection, baseUrl, currentPage }: Props) => {
   const handleNextPage = async () => {
     const getNextStep = getPrevNextModule(
       dataSection as TNavClass["sectionMenu"]
-    );
+    );    
 
+    //TODO ubah disini
     if (getNextStep.at(0)?.next.at(0)?.status === "DONE") {
       router.push(
         `${baseUrl}/${getNextStep[0].slug}/${
@@ -67,7 +68,7 @@ export const Pagination = ({ dataSection, baseUrl, currentPage }: Props) => {
           status: "DONE",
         },
       });
-
+      console.log('step next',currentPage)
       if (saveStep1.success) {
         const saveStep2: ApiResponse = await fetchApi(`/classroom/save-step`, {
           method: "POST",

@@ -184,10 +184,18 @@ export const Sidebar = ({ dataSection, baseUrl }: Props) => {
             </Button>
           </div>
         </div>
-        <div className="mt-5 px-2">
+        <div className="mt-5 px-2 overflow-y-auto h-[calc(100vh-8rem)]">
           {sectionMenu?.map((item, index) => (
-            <div>              
-              <Accordion type="single" defaultValue={`item-${item.modules.findIndex(item => item.current) > 1 ? index : -1}`} collapsible>
+            <div>
+              <Accordion
+                type="single"
+                defaultValue={`item-${
+                  item.modules.findIndex((item) => item.current) > -1
+                    ? index
+                    : -1
+                }`}
+                collapsible
+              >
                 <AccordionItem value={`item-${index}`}>
                   <AccordionTrigger className="mx-2">
                     <div className="font-bold text-lg mx-2">{item.title}</div>
@@ -271,7 +279,7 @@ export const Sidebar = ({ dataSection, baseUrl }: Props) => {
           ))}
         </div>
       </div>
-      <div className="flex flex-col gap-2 mb-5">
+      <div className="flex flex-col gap-2 mb-5 pt-2">
         {menu.map((item, index) => (
           <Link key={index} href={item.link} className="mx-4">
             <div
