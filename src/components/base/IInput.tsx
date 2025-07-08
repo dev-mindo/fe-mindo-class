@@ -9,7 +9,7 @@ import {
 import { Input } from "../ui/input";
 
 type Props = {
-  control: Control<any>;
+  control: any;
   name: string;
   label?: string;
   placeholder?: string;
@@ -30,8 +30,7 @@ const IInput = (props: Props) => {
               {...field}
               type={props.type ? props.type : "text"}
             />
-          </FormControl>
-          {/* <FormDescription>This is your public display name.</FormDescription> */}
+          </FormControl>          
           <FormMessage />
         </FormItem>
       )}

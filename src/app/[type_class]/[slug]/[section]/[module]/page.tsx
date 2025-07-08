@@ -9,6 +9,7 @@ import Evaluation from "./_component/evaluation/Evaluation";
 import { Certificate } from "./_component/Certificate";
 import { Task } from "./_component/Task";
 import { ModuleLiveVideo } from "./_component/live/ModuleLiveVideo";
+import { IAlertDialog } from "@/components/base/IAlertDialog";
 
 export const metadata: Metadata = {
   title: "Mindo Class | Module",
@@ -29,9 +30,12 @@ export default async function Page({ params }: Props) {
   const getSlug = params.slug;
   // if (getTypeClass === "video-learning") getSection = getSlug;
   const getModuleSlug = params.module;
-  const getModule: ApiResponse<TModuleMaterial> = await fetchApi(
+  const fetchClass = await fetchApi(
     `/classroom/${getSection}/${getModuleSlug}`
   );
+  const getModule = fetchClass as ApiResponse<TModuleMaterial>;
+
+  console.log("module", getModule);
 
   const baseUrl = `${process.env.NEXT_PUBLIC_URL}/${getTypeClass}/${getSlug}/${getSection}/${getModuleSlug}`;
 
@@ -48,21 +52,36 @@ export default async function Page({ params }: Props) {
         const quiz: ApiResponse<TQuizAll> = await fetchApi(
           `/quiz/${getModule.data.id}`
         );
-        if ((quiz && !quiz.success) || !quiz) notFound();
+        // if ((quiz && !quiz.success) || !quiz) notFound();
         return (
           <AttemptQuiz quiz={quiz?.data} params={params} baseUrl={baseUrl} />
         );
       case "DISCUSSION":
-        const discussion = await fetchApi(`/discussion/${getModule.data.id}`)
-        return <Discussion moduleId={getModule.data.id} discussionData={discussion} baseUrl={baseUrl} />;
+        const discussion = await fetchApi(`/discussion/${getModule.data.id}`);
+        return (
+          <Discussion
+            moduleId={getModule.data.id}
+            discussionData={discussion}
+            baseUrl={baseUrl}
+          />
+        );
       case "TASK":
-        const getAssignment: ApiResponse<TAssignment> = await fetchApi(`/assignment/${getModule.data.id}`)
-        return <Task intruction={getModule.data.description} intructionLink={getModule.data.file} assignment={getAssignment.data}/>
-      case "LIVE": 
-        return <ModuleLiveVideo materialData={getModule.data} />
+        const getAssignment: ApiResponse<TAssignment> = await fetchApi(
+          `/assignment/${getModule.data.id}`
+        );
+        return (
+          <Task
+            intruction={getModule.data.description}
+            intructionLink={getModule.data.file}
+            assignment={getAssignment.data}
+          />
+        );
+      case "LIVE":
+        return <ModuleLiveVideo materialData={getModule.data} />;
       case "EVALUATION":
         console.log(getModule.data);
-        const getAttemptQuiz: ApiResponse<TEvaluationAttemptQuiz> = await fetchApi(`/attempt-quiz/result/${getSection}`)        
+        const getAttemptQuiz: ApiResponse<TEvaluationAttemptQuiz> =
+          await fetchApi(`/attempt-quiz/result/${getSection}`);
         return (
           <Evaluation
             evaluationAttemptQuiz={getAttemptQuiz.data}
@@ -74,8 +93,42 @@ export default async function Page({ params }: Props) {
         );
       case "CERTIFICATE":
         //TODO bikin page sertifikat
-        return <Certificate/>        
+        return <Certificate />;
     }
+  }
+
+  if (getModule.statusCode === 404 && getModule.errorCode !== "NOT_FOUND") {
+    const getFetchRedirect = fetchClass as ApiResponse<TModuleRedirect>;
+    if (getModule.message === "ERR_CLASS_NOT_FOUND") {
+      return (
+        <IAlertDialog
+          isOpen={true}
+          message="Data kelas Tidak Ditemukan"
+          title="Informasi"
+          redirectUrl={process.env.NEXT_PUBLIC_MINDO_MY_CLASS}
+          buttonText="Kembali ke kelas saya"
+        />
+      );
+    }
+
+    const getRedirectData = getFetchRedirect.data;
+
+    return (
+      <IAlertDialog
+        isOpen={true}
+        message={getModule.message}
+        title="Error Info"
+        redirectUrl={`${process.env.NEXT_PUBLIC_URL}/${getRedirectData?.classType}/${getRedirectData?.classSlug}/${getRedirectData?.sectionSlug}/${getRedirectData?.moduleSlug}`}
+      />
+    );
+  } else {
+    return (
+      <IAlertDialog
+        isOpen={true}
+        message={getModule.message}
+        title="Error Info"
+      />
+    );
   }
 
   notFound();

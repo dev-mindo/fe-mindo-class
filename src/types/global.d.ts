@@ -59,9 +59,9 @@ declare global {
 
   type TFile = {
     moduleId: number;
-    name: string
-    url: string
-  }
+    name: string;
+    url: string;
+  };
 
   type TModuleMaterial = {
     id: number;
@@ -83,6 +83,13 @@ declare global {
       endAt: Date | string;
       video: any;
     };
+  };
+
+  type TModuleRedirect = {
+    moduleSlug: string;
+    sectionSlug: string;
+    classSlug: string;
+    classType: string;
   };
 
   type TClassroom = {
@@ -110,7 +117,6 @@ declare global {
       slug: string;
       id: number;
     };
-    checkCurrentPage: boolean;
   };
 
   type TNavClass = {
@@ -283,11 +289,11 @@ declare global {
   };
 
   type TTaskUser = {
-    uploadUrl: string
-    grade: number
-    status: string
-    createdAt: date
-  }
+    uploadUrl: string;
+    grade: number;
+    status: string;
+    createdAt: date;
+  };
 
   type TAssignment = {
     id: number;
@@ -297,6 +303,116 @@ declare global {
     startAt: string;
     endAt: string;
     taskUser: TTaskUser[];
+  };
+
+  type TUserToken = {
+    token: string;
+    refreshToken: string;
+    user: {
+      id: string;
+      name: string;
+      username: string;
+      role: string;
+    };
+  };
+
+  type TDetailParticipant = {
+    userId: number;
+    name: string;
+    className: string;
+    classType: string;
+    progress: string;
+    isCertificateEligible: boolean;
+    totalScore: number;
+    sections: Array<{
+      sectionId: number;
+      sectionTitle: string;
+      modules: Array<{
+        moduleId: number;
+        moduleTitle: string;
+        moduleType: string;
+        quizAttempts: Array<{
+          attemptId: number;
+          quizId: number;
+          score: number;
+          startedAt: string;
+          completeAt: string;
+          quizTitle: string;
+          status: string;
+        }>;
+        tasks: Array<{
+          taskId: number;
+          userId: number;
+          productId: number;
+          uploadUrl: string;
+          grade: number;
+          status: string;
+          createdAt: string;
+          updatedAt: string;
+          task: {
+            id: number;
+          };
+        }>;
+      }>;
+    }>;
+  };
+
+  type TClassModuleAll = {
+    id: number;
+    productType: string;
+    publish: boolean;
+    publishTime: string;
+    thumbnail: string;
+    title: string;
+    slug: string;
+    isAutoGetCertificate: boolean;
+    createdAt: string;
+    updatedAt: string;
+    _count: {
+      sections: number;
+    };
+    sections: Array<{
+      _count: {
+        module: number;
+      };
+    }>;
+    totalModule: number;
+  };
+
+  type TClassModuleDetail = {
+    id: number;
+    productType: string;
+    publish: boolean;
+    publishTime: string;
+    thumbnail: string;
+    title: string;
+    slug: string;
+    isAutoGetCertificate: boolean;
+    createdAt: string;
+    updatedAt: string;
+    sections: Array<{
+      id: number;
+      productId: number;
+      position: number;
+      publish: boolean;
+      title: string;
+      slug: string;
+      type: string;
+      module: Array<{
+        id: number;
+        sectionId: number;
+        type: string;
+        step: number;
+        title: string;
+        menuTitle: string;
+        slug: string;
+        description: string;
+        hide: boolean;
+        isLocked: boolean;
+        showAt: any;
+        hideAt: any;
+      }>;
+    }>;
   };
 }
 

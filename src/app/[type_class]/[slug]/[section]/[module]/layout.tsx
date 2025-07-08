@@ -28,11 +28,15 @@ export default async function Layout({ params, children }: Props) {
     `/classroom/nav-module/${params.section}/${params.module}`
   );
 
-  if (getClass && !getClass.success) notFound();  
+  // if (getClass && !getClass.success) notFound();
 
   // if (urlPath.test(pathname)) {
   //   return <>{children}</>;
   // }
+
+  if(getClass && !getClass.success){
+    return <>get nav module failed</>
+  }
 
   const getCurrent = getClass.data?.sectionMenu
     .map((item) => item.modules)

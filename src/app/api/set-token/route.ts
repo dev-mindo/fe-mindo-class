@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies, headers } from "next/headers";
-import { NextApiRequest } from "next";
 
 export async function POST(req: NextRequest) {
   const searchParams = req.nextUrl.searchParams
-  const token = searchParams.get('token')  
+  const token = searchParams.get('token')
 
   if (!token) {
     return NextResponse.json(
