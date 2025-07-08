@@ -51,6 +51,7 @@ export const HandleNextPage = (props: Props) => {
         body: {
           moduleId: props.currentPage?.id,
           status: "DONE",
+          navigation: "NEXT"
         },
       });
       if (saveStep1.statusCode === 200) {
@@ -63,6 +64,7 @@ export const HandleNextPage = (props: Props) => {
           body: {
             moduleId: nextModule?.id,
             status: "OPEN",
+            navigation: "NEXT"
           },
         });
         console.log("step2", saveStep2);
@@ -110,14 +112,6 @@ export const HandleNextPage = (props: Props) => {
       console.log(saveStep1);
     }
   };
-
-  useEffect(() => {
-    console.log('open alert dialog', isOpenAlertDialog)
-  }, [])
-
-  useEffect(() => {
-    console.log('open alert dialog', isOpenAlertDialog)
-  }, [isOpenAlertDialog])
 
   return (
     <>
