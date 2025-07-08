@@ -20,7 +20,7 @@ export const Task = ({ intructionLink, intruction, assignment }: Props) => {
     useState<TTaskUser | null>(null);
   const [isEditable, setIsEditable] = useState<boolean>(true);
   const [editTask, setEditTask] = useState<boolean>(false);
-  const [taskId, setTaskId] = useState<number>(1);
+  const [taskId, setTaskId] = useState<number>(0);
   const [task, setTask] = useState<string>("");
   const [isLate, setIsLate] = useState<boolean>(false);
 
@@ -128,7 +128,7 @@ export const Task = ({ intructionLink, intruction, assignment }: Props) => {
             <div className="flex gap-2">
               <Input
                 disabled={
-                  (!assignment?.editable && taskId > 0) ||
+                  (!assignment?.editable && collectionAssignment !== null) ||
                   (assignment?.editable && !editTask)
                 }
                 onChange={(e) => setTask(e.target.value)}

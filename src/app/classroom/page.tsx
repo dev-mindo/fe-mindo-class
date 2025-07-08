@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 const Page = async () => {
   const getClassroom: ApiResponse<TClassroom[]> = await fetchApi(`/classroom`)
 
-  if(getClassroom && !getClassroom.success || !getClassroom) notFound()
+  // if(getClassroom && !getClassroom.success || !getClassroom) notFound()
 
   return (
     <div className="w-[90%] mx-auto">

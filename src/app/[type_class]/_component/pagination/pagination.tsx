@@ -7,18 +7,23 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AlertDialogPagination } from "./AlertDialog";
 import { useAppContext } from "../navProvider";
+import { HandleNextPage } from "./_component/HandleNextPage";
+import { HandleBackPage } from "./_component/HandleBackPage";
 
 type Props = {
   dataSection: TNavClass["sectionMenu"] | null;
   baseUrl: string;
   currentPage: TCurrentPageNav;
 };
+
+export type PrevNextModule = {
+  previous: TNavClass["sectionMenu"][number]["modules"];
+  next: TNavClass["sectionMenu"][number]["modules"];
+} & TNavClass["sectionMenu"][number];
+
 export const Pagination = ({ dataSection, baseUrl, currentPage }: Props) => {
-  const router = useRouter();
-  const [isOpenAlertDialog, setOpenAlertDialog] = useState<boolean>(false);
-  const [messageAlertDialog, setMessageAlertDialog] = useState<string>("");
   const { hideAll, setHideAll } = useAppContext();
-  const pathname = usePathname()
+  const pathname = usePathname();
 
   const urlPathDiscussion = new RegExp(
     /(\/[^/]+\/[^/]+\/[^/]+\/[^/]+\/detail-discussion\/\d+)$/
@@ -26,10 +31,11 @@ export const Pagination = ({ dataSection, baseUrl, currentPage }: Props) => {
 
   if (hideAll || pathname.match(urlPathDiscussion)) {
     return <></>;
-  }    
+  }
 
-
-  const getPrevNextModule = (navMenu: TNavClass["sectionMenu"]) => {
+  const getPrevNextModule = (
+    navMenu: TNavClass["sectionMenu"]
+  ): PrevNextModule[] => {
     return navMenu.map((section) => {
       const modules = section.modules;
 
@@ -48,84 +54,28 @@ export const Pagination = ({ dataSection, baseUrl, currentPage }: Props) => {
     });
   };
 
-  const handleNextPage = async () => {
-    const getNextStep = getPrevNextModule(
-      dataSection as TNavClass["sectionMenu"]
-    );    
-
-    //TODO ubah disini
-    if (getNextStep.at(0)?.next.at(0)?.status === "DONE") {
-      router.push(
-        `${baseUrl}/${getNextStep[0].slug}/${
-          getNextStep.at(0)?.next.at(0)?.slug
-        }`
-      );
-    } else {
-      const saveStep1: ApiResponse = await fetchApi(`/classroom/save-step`, {
-        method: "POST",
-        body: {
-          moduleId: currentPage?.id,
-          status: "DONE",
-        },
-      });
-      console.log('step next',currentPage)
-      if (saveStep1.success) {
-        const saveStep2: ApiResponse = await fetchApi(`/classroom/save-step`, {
-          method: "POST",
-          body: {
-            moduleId: getNextStep.at(0)?.next.at(0)?.id,
-            status: "OPEN",
-          },
-        });
-        if (saveStep2.success) {
-          clearCachesByServerAction(
-            `${baseUrl}/${getNextStep[0].slug}/${
-              getNextStep.at(0)?.next.at(0)?.slug
-            }`
-          );
-          router.push(
-            `${baseUrl}/${getNextStep[0].slug}/${
-              getNextStep.at(0)?.next.at(0)?.slug
-            }`
-          );
-        }
-      } else if (saveStep1.statusCode === 403) {
-        setMessageAlertDialog(saveStep1.message);
-        setOpenAlertDialog(true);
-      }
-
-      console.log(saveStep1)
-    }
-  };
-
-  const handleBackPage = () => {
-    const getNextStep = getPrevNextModule(
-      dataSection as TNavClass["sectionMenu"]
-    );
-    router.push(
-      `${baseUrl}/${getNextStep[0].slug}/${getNextStep[0].previous[0].slug}`
-    );
-  };
   return (
     <div className="flex justify-between items-center bg-sidebar h-16">
       <div className="ml-8">
-        <Button onClick={handleBackPage} disabled={currentPage?.step === 1}>
-          <ChevronLeft />
-          Kembali
-        </Button>
+        <HandleBackPage
+          baseUrl={baseUrl}
+          currentPage={currentPage}
+          dataSection={dataSection}
+          getPrevNextModule={(dataSection) =>
+            getPrevNextModule(dataSection as TNavClass["sectionMenu"])
+          }
+        />
       </div>
       <div className="mr-8">
-        <Button onClick={handleNextPage}>
-          Selanjutnya
-          <ChevronRight />
-        </Button>
+        <HandleNextPage
+          baseUrl={baseUrl}
+          currentPage={currentPage}
+          dataSection={dataSection}
+          getPrevNextModule={(dataSection) =>
+            getPrevNextModule(dataSection as TNavClass["sectionMenu"])
+          }
+        />
       </div>
-      <AlertDialogPagination
-        isOpen={isOpenAlertDialog}
-        setIsOpen={setOpenAlertDialog}
-        message=""
-        title={messageAlertDialog}
-      />
     </div>
   );
 };

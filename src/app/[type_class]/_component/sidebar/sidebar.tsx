@@ -113,7 +113,7 @@ export const Sidebar = ({ dataSection, baseUrl }: Props) => {
     {
       title: "Left Class",
       icon: <ArrowLeftFromLine strokeWidth={1.5} size={20} />,
-      link: "https://mindoeducation.co.id/dashboard/kelas-saya",
+      link: process.env.NEXT_PUBLIC_MINDO_MY_CLASS,
       isLocked: false,
       isDone: false,
     },

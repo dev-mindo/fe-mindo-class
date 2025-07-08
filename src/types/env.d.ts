@@ -4,6 +4,7 @@ declare global {
             NEXT_PUBLIC_URL: string
             API_URL: string           
             NEXT_PUBLIC_SOCKET_URL: string
+            NEXT_PUBLIC_MINDO_MY_CLASS: string
         }
     }
 }

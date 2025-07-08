@@ -9,7 +9,7 @@ export interface ApiResponse<T = any> {
   message: string;
   statusCode: number;
   data?: T;
-  errorCode?: number;
+  errorCode?: string;  
 }
 
 interface FetchOptions {
@@ -22,8 +22,8 @@ export async function fetchApi<ApiResponse>(
   endpoint: string,
   options: FetchOptions = {}
 ): Promise<ApiResponse> {
-  const API_URL = process.env.API_URL;
-  const authToken = await getAuthToken();
+  const API_URL = process.env.API_URL;  
+  let authToken = await getAuthToken();  
 
   try {
     const response = await fetch(`${API_URL}${endpoint}`, {
