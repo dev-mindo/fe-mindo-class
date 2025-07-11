@@ -26,8 +26,6 @@ export const HandleNextPage = (props: Props) => {
   const [redirectUrl, setRedirectUrl] = useState<string>("");
 
   const handleNextPage = async () => {
-    console.log(props.dataSection);
-    
     if (!props.dataSection) {
       // Optionally handle the null case, e.g., return early or show an error
       return;
@@ -40,31 +38,67 @@ export const HandleNextPage = (props: Props) => {
 
     const nextModule = getNextStep.at(currentModuleIndex)?.next.at(0);
 
+    let nextUrl = null;
+
+    if (!nextModule) {
+      const nextSection = getNextStep.at(currentModuleIndex);
+
+      if (nextSection) {
+        const mapSection = props.dataSection
+          .filter((sectionItem) => sectionItem.position > nextSection.position)
+          .flatMap((sectionItem) => {
+            return {
+              ...sectionItem,
+              modules: sectionItem.modules.filter((moduleItem) => {
+                return (
+                  moduleItem.status === "OPEN" ||
+                  moduleItem.UserModule.at(0)?.status === "DONE" ||
+                  !moduleItem.isLocked
+                );
+              }),
+            };
+          });
+
+        console.log("mapSection", mapSection);
+
+        if (mapSection.length > 0) {
+          const getFirstModule = mapSection.at(0)?.modules.at(0);
+          console.log("mapSection", getFirstModule);
+          nextUrl = `${props.baseUrl}/${mapSection.at(0)?.slug}/${
+            getFirstModule?.slug
+          }`;
+        }
+      }
+    }
+    console.log("current", props.currentPage);
+
     //TODO ubah disini
     if (nextModule?.status === "DONE") {
       router.push(
         `${props.baseUrl}/${getNextStep[currentModuleIndex].slug}/${nextModule?.slug}`
       );
+    } else if (nextUrl) {
+      console.log("nextUrl", nextUrl);
+      router.push(nextUrl);
     } else {
       const saveStep1: ApiResponse = await fetchApi(`/classroom/save-step`, {
         method: "POST",
         body: {
           moduleId: props.currentPage?.id,
           status: "DONE",
-          navigation: "NEXT"
+          navigation: "NEXT",
         },
       });
       if (saveStep1.statusCode === 200) {
         console.log("step1");
         console.log("step next", getNextStep);
         console.log("next module", nextModule);
-        console.log("current", props.currentPage);
         const saveStep2: ApiResponse = await fetchApi(`/classroom/save-step`, {
           method: "POST",
           body: {
             moduleId: nextModule?.id,
             status: "OPEN",
-            navigation: "NEXT"
+            navigation: "NEXT",
           },
         });
         console.log("step2", saveStep2);
@@ -77,19 +111,22 @@ export const HandleNextPage = (props: Props) => {
           router.push(
             `${props.baseUrl}/${getNextStep[currentModuleIndex].slug}/${nextModule?.slug}`
           );
-        } else {            
-            setMessageAlertDialog(saveStep2.message);
-            setOpenAlertDialog(true);
+        } else {
+          setOpenAlertDialog(true);
           if (
             saveStep2.statusCode === 403 &&
             saveStep2.errorCode === "ERR_PAGE_MODULES_FORBIDEN"
           ) {
+            setMessageAlertDialog(
+              `Page ${nextModule?.title} tidak dapat diakses`
+            );
             setRedirectUrl(
               `${props.baseUrl}/${saveStep2.data.sectionSlug}/${saveStep2.data.moduleSlug}`
             );
           } else {
+            setMessageAlertDialog(saveStep2.message);
             setRedirectUrl(
-              `${props.baseUrl}/${getNextStep[currentModuleIndex].slug}/${nextModule?.slug}`
+              `${props.baseUrl}/${props.currentPage?.sectionSlug}/${props.currentPage?.slug}`
             );
           }
         }
@@ -98,14 +135,19 @@ export const HandleNextPage = (props: Props) => {
           saveStep1.statusCode === 403 &&
           saveStep1.errorCode === "ERR_PAGE_MODULES_FORBIDEN"
         ) {
+          setMessageAlertDialog(
+            `Page ${nextModule?.title} tidak dapat diakses`
+          );
           setRedirectUrl(
             `${props.baseUrl}/${saveStep1.data.sectionSlug}/${saveStep1.data.moduleSlug}`
           );
         } else {
-          `${props.baseUrl}/${getNextStep[currentModuleIndex].slug}/${nextModule?.slug}`;
+          setMessageAlertDialog(saveStep1.message);
+          setRedirectUrl(
+            `${props.baseUrl}/${props.currentPage?.sectionSlug}/${props.currentPage?.slug}`
+          );
         }
 
-        setMessageAlertDialog(saveStep1.message);
         setOpenAlertDialog(true);
       }
 
@@ -115,7 +157,7 @@ export const HandleNextPage = (props: Props) => {
 
   return (
     <>
-      <Button onClick={handleNextPage}>
+      <Button onClick={handleNextPage} disabled={props.currentPage?.isLast}>
         Selanjutnya
         <ChevronRight />
       </Button>

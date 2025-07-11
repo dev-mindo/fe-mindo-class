@@ -41,7 +41,7 @@ export default async function Page({ searchParams }: Props) {
         authorization: `Bearer ${createToken.data?.accessToken}`,
       },
     }
-  );  
+  );   
 
   if (
     getCurrentPage &&
@@ -86,6 +86,16 @@ export default async function Page({ searchParams }: Props) {
   )}/${getDataCurrentPage?.classSlug}/${getDataCurrentPage?.sectionSlug}/${
     getDataCurrentPage?.module.slug
   }`;
+  
+  await fetchApi(`/user-class/save-timezone`, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${createToken.data?.accessToken}`,
+    },
+    body: {
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    },
+  })
 
   return (
     <div>
