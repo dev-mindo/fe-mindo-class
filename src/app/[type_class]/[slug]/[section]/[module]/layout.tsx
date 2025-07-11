@@ -36,12 +36,12 @@ export default async function Layout({ params, children }: Props) {
 
   if(getClass && !getClass.success){
     return <>get nav module failed</>
-  }
+  }  
 
-  const getCurrent = getClass.data?.sectionMenu
-    .map((item) => item.modules)
-    .flat()
-    .filter((item) => item.current)[0];
+  const getCurrent = getClass.data?.sectionMenu.flatMap((sectionItem) => sectionItem.modules.map(moduleItem => ({
+    sectionSlug: sectionItem.slug,
+    ...moduleItem
+  }))).flat().filter((item) => item.current)[0]
 
   return (
     <div>

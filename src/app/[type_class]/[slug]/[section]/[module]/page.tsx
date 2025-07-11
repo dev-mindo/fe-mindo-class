@@ -33,9 +33,7 @@ export default async function Page({ params }: Props) {
   const fetchClass = await fetchApi(
     `/classroom/${getSection}/${getModuleSlug}`
   );
-  const getModule = fetchClass as ApiResponse<TModuleMaterial>;
-
-  console.log("module", getModule);
+  const getModule = fetchClass as ApiResponse<TModuleMaterial>;    
 
   const baseUrl = `${process.env.NEXT_PUBLIC_URL}/${getTypeClass}/${getSlug}/${getSection}/${getModuleSlug}`;
 
@@ -78,8 +76,7 @@ export default async function Page({ params }: Props) {
         );
       case "LIVE":
         return <ModuleLiveVideo materialData={getModule.data} />;
-      case "EVALUATION":
-        console.log(getModule.data);
+      case "EVALUATION":        
         const getAttemptQuiz: ApiResponse<TEvaluationAttemptQuiz> =
           await fetchApi(`/attempt-quiz/result/${getSection}`);
         return (

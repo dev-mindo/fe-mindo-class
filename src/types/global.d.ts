@@ -74,6 +74,7 @@ declare global {
     userNote?: string;
     evaluation?: {
       id: number;
+      linkUrl: string
       feedbackUser: Array<any>;
     };
     videoLive?: {
@@ -143,14 +144,17 @@ declare global {
           createdAt: string;
           updatedAt: string;
         }>;
+        isLocked: boolean;
         status: string;
         current: boolean;
+        isFirst: boolean
+        isLast: boolean
       }>;
     }>;
   };
 
   type TCurrentPageNav =
-    | {
+    | {      
         id: number;
         sectionId: number;
         type: string;
@@ -167,8 +171,12 @@ declare global {
           createdAt: string;
           updatedAt: string;
         }>;
+        isLocked: boolean
         status: string;
         current: boolean;
+        sectionSlug: string;
+        isFirst: boolean
+        isLast: boolean
       }
     | undefined;
 

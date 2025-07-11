@@ -67,6 +67,12 @@ const Evaluation = ({
   const handleStartFeedback = async () => {
     // alert("Mulai mengisi feedback...");
     // setFeedbackDone(true);
+    if(evaluation?.linkUrl){
+      // Jika ada link URL, arahkan ke halaman feedback
+      router.push(evaluation.linkUrl);
+      return;
+    }
+
     const createEvaluation: ApiResponse = await fetchApi(
       `/evaluation/${evaluation?.id}/feedback/attempt`,
       {

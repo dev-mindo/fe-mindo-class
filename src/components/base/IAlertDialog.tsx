@@ -1,6 +1,7 @@
 'use client'
 import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 type Props = {
@@ -14,14 +15,10 @@ type Props = {
 };
 
 export const IAlertDialog = (props: Props) => {
-    const [isOpen, setIsOpen] = useState(false)
+    const router = useRouter()
+    const [isOpen, setIsOpen] = useState(false)    
 
-    useEffect(() => {
-      console.log('alert dialog', props.isOpen)
-    }, [])
-
-    useEffect(() => {
-      console.log('alert dialog', props.isOpen)
+    useEffect(() => {      
       setIsOpen(props.isOpen)
     }, [props.isOpen])
 
@@ -44,7 +41,8 @@ export const IAlertDialog = (props: Props) => {
               props.customFunction();
             }
             if(props.redirectUrl){
-                window.location.href = props.redirectUrl
+              router.push(props.redirectUrl)
+                // window.location.href = props.redirectUrl
             }
             setIsOpen(false)
           }}>{props.buttonText || 'Ok'}</Button>
