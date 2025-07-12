@@ -9,6 +9,7 @@ import { ApiResponse, fetchApi } from "@/lib/utils/fetchApi";
 import { Pagination } from "@/app/[type_class]/_component/pagination/pagination";
 import { NavProvider } from "@/app/[type_class]/_component/navProvider";
 import { MainContent } from "@/app/[type_class]/_component/content/MainContent";
+import { AlertDialogPageNotLoad } from "./_component/AlertDialogPageNotLoad";
 
 type Props = {
   params: {
@@ -35,7 +36,7 @@ export default async function Layout({ params, children }: Props) {
   // }
 
   if(getClass && !getClass.success){
-    return <>get nav module failed</>
+    return (<AlertDialogPageNotLoad isOpen={true}/>)
   }  
 
   const getCurrent = getClass.data?.sectionMenu.flatMap((sectionItem) => sectionItem.modules.map(moduleItem => ({
