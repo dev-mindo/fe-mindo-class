@@ -79,7 +79,7 @@ export const FeedbackForm = ({
     if (saveFeedback && saveFeedback.success) {
       router.push(baseUrl);
     } else {
-      if (saveFeedback.errorCode === 500) {
+      if (saveFeedback.statusCode === 500) {
         toast.error("Server Error");
       }
       toast.error(saveFeedback.message);
