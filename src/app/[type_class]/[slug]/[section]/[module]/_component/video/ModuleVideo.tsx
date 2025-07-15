@@ -103,7 +103,7 @@ export const ModuleVideo = ({ materialData }: Props) => {
       <div className="w-full mt-4">
         {materialData?.file && materialData.file.length > 0 && (
           <Button asChild className="w-full">
-            <Link href={materialData.file[0]?.name || ""} target="_blank">
+            <Link href={materialData.file[0]?.url || ""} target="_blank">
               Akses Materi
             </Link>
           </Button>
