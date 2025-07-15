@@ -115,11 +115,14 @@ export const HandleNextPage = (props: Props) => {
           setOpenAlertDialog(true);
           if (
             saveStep2.statusCode === 403 &&
-            saveStep2.errorCode === "ERR_PAGE_MODULES_FORBIDEN"
+            saveStep2.errorCode === "ERR_PAGE_MODULES_FORBIDEN" &&
+            saveStep2.data &&
+            saveStep2.data.sectionSlug
           ) {
             setMessageAlertDialog(
               `Page ${nextModule?.title} tidak dapat diakses`
             );
+
             setRedirectUrl(
               `${props.baseUrl}/${saveStep2.data.sectionSlug}/${saveStep2.data.moduleSlug}`
             );
