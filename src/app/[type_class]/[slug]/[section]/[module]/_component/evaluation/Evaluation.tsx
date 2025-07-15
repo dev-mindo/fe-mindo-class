@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { ApiResponse, fetchApi } from "@/lib/utils/fetchApi";
 import { useRouter } from "next/navigation";
 import { ChartAttemptQuiz } from "./ChartAttemptQuiz";
+import Link from "next/link";
 
 type Props = {
   title: string;
@@ -108,7 +109,7 @@ const Evaluation = ({
           <p className="text-gray-600 dark:text-gray-300 mt-2">{description}</p>
 
           {/* Status Feedback */}
-          <div className="mt-4">
+          {/* <div className="mt-4">
             Status Pengisian :
             <Badge
               className="ml-2"
@@ -116,16 +117,21 @@ const Evaluation = ({
             >
               {feedbackDone ? "Sudah Mengisi" : "Belum Mengisi"}
             </Badge>
-          </div>
+          </div> */}
 
           {/* Tombol Aksi */}
 
           <Button
-            onClick={handleStartFeedback}
+            // onClick={handleStartFeedback}
             disabled={feedbackDone}
             className="mt-4 w-full"
-          >
-            Mulai Feedback
+            asChild
+          >            
+            {
+              evaluation?.linkUrl && (
+                <Link target="_blank" href={evaluation.linkUrl}>Mulai Feedback</Link>
+              )
+            }            
           </Button>
         </div>
       </div>
