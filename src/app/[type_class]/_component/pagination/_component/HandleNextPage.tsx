@@ -73,7 +73,10 @@ export const HandleNextPage = (props: Props) => {
     console.log("current", props.currentPage);
 
     //TODO ubah disini
-    if (nextModule?.status === "DONE") {
+    if (
+      nextModule?.status === "DONE" &&
+      props.currentPage?.UserModule.at(0)?.status === "DONE"
+    ) {
       router.push(
         `${props.baseUrl}/${getNextStep[currentModuleIndex].slug}/${nextModule?.slug}`
       );
