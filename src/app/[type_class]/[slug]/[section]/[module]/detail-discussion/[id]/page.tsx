@@ -1,5 +1,5 @@
+import { DetailDiscussion } from "@/app/[type_class]/[slug]/[section]/[module]/detail-discussion/[id]/_component/DetailDiscussion";
 import { ApiResponse, fetchApi } from "@/lib/utils/fetchApi";
-import { DetailDiscussion } from "./_component/DetailDiscussion";
 
 type Props = {
     params: {

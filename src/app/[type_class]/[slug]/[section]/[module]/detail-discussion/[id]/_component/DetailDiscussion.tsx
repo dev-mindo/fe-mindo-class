@@ -25,9 +25,9 @@ import moment from "moment";
 import { notFound, useParams, useRouter } from "next/navigation";
 import { use, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { DiscussionAnswer, SocketAnswerData } from "./DiscussionAnswer";
-import { ConfirmDialogDeleteDiscussion } from "./DialogConfirmDeleteDiscussion";
-import { DialogConfirmCloseDiscussion } from "./DialogConfirmCloseDiscussion";
+import { DiscussionAnswer, SocketAnswerData } from "../../../../../../../dashboard/discussion/[id]/_component/DiscussionAnswer";
+import { ConfirmDialogDeleteDiscussion } from "../../../../../../../dashboard/discussion/[id]/_component/DialogConfirmDeleteDiscussion";
+import { DialogConfirmCloseDiscussion } from "../../../../../../../dashboard/discussion/[id]/_component/DialogConfirmCloseDiscussion";
 
 type Props = {
   detailDiscussionDataProps: TDetailDiscussion | undefined;
