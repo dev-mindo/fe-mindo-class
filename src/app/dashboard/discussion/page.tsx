@@ -1,12 +1,7 @@
-import { DiscussionList } from "./_component/Discussion"
-
+import { DiscussionList } from "./_component/DiscussionList";
 
 const Page = () => {
-    return (
-        <>
-            <DiscussionList/>
-        </>
-    )
-}
+  return <DiscussionList />;
+};
 
-export default Page
+export default Page;
