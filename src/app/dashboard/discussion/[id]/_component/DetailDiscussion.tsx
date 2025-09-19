@@ -41,7 +41,7 @@ export const DetailDiscussion = ({ detailDiscussionDataProps }: Props) => {
     slug: string;
     module: string;
   }>();
-  const baseUrl = `${process.env.NEXT_PUBLIC_URL}/${params.type_class}/${params.slug}/${params.section}/${params.module}`;
+  const baseUrl = `${process.env.NEXT_PUBLIC_URL}/dashboard/discussion`;
   const router = useRouter();
   const [detailDiscussionData, setDetailDiscussionData] = useState<
     TDetailDiscussion | undefined
@@ -150,7 +150,7 @@ export const DetailDiscussion = ({ detailDiscussionDataProps }: Props) => {
 
   const handleDestroyDiscussionQuestion = async () => {
     const deleteDiscussion: ApiResponse = await fetchApi(
-      `/discussion/destroy/${params.id}`,
+      `/admin/discussion/destroy/${params.id}`,
       {
         method: "DELETE",
       }
@@ -202,7 +202,7 @@ export const DetailDiscussion = ({ detailDiscussionDataProps }: Props) => {
 
     if (updateDiscussion) {
       if (updateDiscussion.statusCode === 200) {
-        console.log('status updated',updateDiscussion.data)
+        console.log("status updated", updateDiscussion.data);
         socket.emit(
           "sendDiscussionQuestion",
           JSON.stringify({
@@ -373,7 +373,7 @@ export const DetailDiscussion = ({ detailDiscussionDataProps }: Props) => {
           </div>
         </div>
         <div className="flex gap-2">
-          {detailDiscussionData?.isUser && detailDiscussionData.status && (
+          {/* {detailDiscussionData?.isUser && detailDiscussionData.status && (
             <>
               <Button
                 variant="destructive"
@@ -388,7 +388,25 @@ export const DetailDiscussion = ({ detailDiscussionDataProps }: Props) => {
                 setIsOpen={setDialogConfirmCloseDiscussion}
               />
             </>
-          )}
+          )} */}
+          <Button
+            variant="destructive"
+            onClick={() => setDialogConfirmCloseDiscussion(true)}
+          >
+            Tutup Diskusi
+          </Button>
+          <DialogConfirmCloseDiscussion
+            loadingCloseDiscussion={loadingCloseDiscussion}
+            handleCloseDiscussion={handleCloseDiscussion}
+            isOpen={dialogConfirmCloseDiscussion}
+            setIsOpen={setDialogConfirmCloseDiscussion}
+          />
+          <Button
+            variant="destructive"
+            onClick={handleDestroyShowConfirm}
+          >
+            Hapus
+          </Button>
           <Button
             variant="outline"
             onClick={() => {
@@ -519,6 +537,7 @@ export const DetailDiscussion = ({ detailDiscussionDataProps }: Props) => {
           </div>
 
           <DiscussionAnswer
+            productId={detailDiscussionData?.productId || 0}
             socketAnswerData={answerSocketData}
             discussionStatus={detailDiscussionData?.status || false}
             setDiscussionAnswerList={setDiscussionAnswerList}

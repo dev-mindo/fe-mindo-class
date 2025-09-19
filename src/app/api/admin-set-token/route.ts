@@ -15,9 +15,9 @@ export async function POST(req: NextRequest) {
 
   // requestHeader.set('auth_token', token)
   if (refreshToken) {
-    cookies().set("refresh_token", refreshToken);
+    cookies().set("admin_refresh_token", refreshToken);
   }
-  cookies().set("auth_token", token);
+  cookies().set("admin_auth_token", token);
 
   return NextResponse.json({
     success: true,

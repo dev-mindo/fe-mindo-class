@@ -22,7 +22,6 @@ export type SocketAnswerData = {
 type Props = {
   discussionDataList: TDiscussionAnswer[];
   discussionId: string;
-  productId: number
   setIsOpenAlertDestroy: (open: boolean) => void;
   setAlertDestroyData: (data: { title: string; message: string }) => void;
   isConfirmDestroyAnswer: boolean;
@@ -39,7 +38,6 @@ type Props = {
 export const DiscussionAnswer = ({
   discussionDataList,
   discussionId,
-  productId,
   setIsOpenAlertDestroy,
   setAlertDestroyData,
   isConfirmDestroyAnswer,
@@ -124,12 +122,11 @@ export const DiscussionAnswer = ({
 
   const handleCreateDiscussionAnswer = async () => {    
     const createDiscussionAnswer: ApiResponse = await fetchApi(
-      `/admin/discussion/answer/${discussionId}`,
+      `/discussion/answer/${discussionId}`,
       {
         method: "POST",
         body: {
           answer: answerField,
-          productId
         },
       }
     );
@@ -185,12 +182,11 @@ export const DiscussionAnswer = ({
     setLoading(true);
     setUpdateAnswerId(editAnswerId)    
     const updateDiscussionAnswer: ApiResponse = await fetchApi(
-      `/admin/discussion/answer/${editAnswerId}`,
+      `/discussion/answer/${editAnswerId}`,
       {
         method: "PATCH",
         body: {
           answer: editAnswerField,
-          productId
         },
       }
     );
@@ -232,7 +228,7 @@ export const DiscussionAnswer = ({
   const handleDestroyDiscussionAnswer = async () => {
     setUpdateAnswerId(deleteAnswerId)
     const destroyDiscussionAnswer: ApiResponse = await fetchApi(
-      `/admin/discussion/answer/${deleteAnswerId}`,
+      `/discussion/answer/${deleteAnswerId}`,
       {
         method: "DELETE",
       }

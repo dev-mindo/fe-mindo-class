@@ -74,7 +74,7 @@ declare global {
     userNote?: string;
     evaluation?: {
       id: number;
-      linkUrl: string
+      linkUrl: string;
       feedbackUser: Array<any>;
     };
     videoLive?: {
@@ -147,14 +147,14 @@ declare global {
         isLocked: boolean;
         status: string;
         current: boolean;
-        isFirst: boolean
-        isLast: boolean
+        isFirst: boolean;
+        isLast: boolean;
       }>;
     }>;
   };
 
   type TCurrentPageNav =
-    | {      
+    | {
         id: number;
         sectionId: number;
         type: string;
@@ -171,12 +171,12 @@ declare global {
           createdAt: string;
           updatedAt: string;
         }>;
-        isLocked: boolean
+        isLocked: boolean;
         status: string;
         current: boolean;
         sectionSlug: string;
-        isFirst: boolean
-        isLast: boolean
+        isFirst: boolean;
+        isLast: boolean;
       }
     | undefined;
 
@@ -422,6 +422,41 @@ declare global {
       }>;
     }>;
   };
+
+  type TDiscussionSection = Array<{
+    id: number;
+    title: string;
+    module: Array<{
+      id: number;
+      title: string;
+      discussion: Array<{
+        id: number;
+      }>;
+      _count: {
+        discussion: number;
+      };
+    }>;
+  }>;
+
+  type TModuleDiscussion = Array<{
+    id: number;
+    moduleId: number;
+    userId: number;
+    productId: number;
+    status: boolean;
+    title: string;
+    question: string;
+    createdAt: string;
+    updatedAt: string;
+    _count: {
+      discussionAnswer: number;
+    };
+    discussionAnswer: Array<any>;
+    discussionVote: Array<any>;
+    user: {
+      name: string;
+    };
+  }>;
 }
 
 export {};
