@@ -41,7 +41,7 @@ export default async function Page({ searchParams }: Props) {
         authorization: `Bearer ${createToken.data?.accessToken}`,
       },
     }
-  );   
+  );
 
   if (
     getCurrentPage &&
@@ -59,7 +59,7 @@ export default async function Page({ searchParams }: Props) {
     );
   }
 
-  if (getCurrentPage && !getCurrentPage.success) {  
+  if (getCurrentPage && !getCurrentPage.success) {
     return <ISonnerServerError />;
   }
 
@@ -86,7 +86,7 @@ export default async function Page({ searchParams }: Props) {
   )}/${getDataCurrentPage?.classSlug}/${getDataCurrentPage?.sectionSlug}/${
     getDataCurrentPage?.module.slug
   }`;
-  
+
   await fetchApi(`/user-class/save-timezone`, {
     method: "POST",
     headers: {
@@ -95,7 +95,17 @@ export default async function Page({ searchParams }: Props) {
     body: {
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     },
-  })
+  });
+
+  await fetchApi(
+    `/user-class/sync-module-progress`,
+    {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${createToken.data?.accessToken}`,
+      },
+    }
+  );
 
   return (
     <div>

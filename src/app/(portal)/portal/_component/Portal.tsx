@@ -1,7 +1,7 @@
 "use client";
 import { Button } from "@/components/ui/button";
 import { getAuthToken } from "@/lib/action/auth";
-import { fetchApi } from "@/lib/utils/fetchApi";
+import { ApiResponse, fetchApi } from "@/lib/utils/fetchApi";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
@@ -12,21 +12,9 @@ type Props = {
 
 export const Portal = ({ token, redirectUrl }: Props) => {
   useEffect(() => {
-    setCookiesdata(token);
-    saveTimeZone()
+    setCookiesdata(token);    
   }, []);
-
-  const saveTimeZone = async () => {
-    await fetchApi(`/user-class/save-timezone`, {
-      method: "POST",
-      headers: {
-        authorization: `Bearer ${token}`,
-      },
-      body: {
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      },
-    });
-  };
+  
 
   // const getCookiesdata = async () => {
   //   console.log("test");
