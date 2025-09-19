@@ -177,6 +177,16 @@ export function NavQuiz({
     console.log("time", getTargetTime);
   }, [time]);
 
+  useEffect(() => {
+    if (
+      hideNavigation &&
+      options.pathType === "quiz" &&
+      completed === totalQuestion
+    ) {
+      handleCompletedQuiz();
+    }
+  }, [completed]);
+
   return (
     <div className="flex flex-col lg:justify-between h-screen">
       <div className="flex flex-col sm:flex-row items-center bg-sidebar">
@@ -237,7 +247,7 @@ export function NavQuiz({
                 onDataFromQuestion: setSelectedAnswer,
                 onSelectedPagination: handlePagination,
                 handleNextAnswer: handleNextAnswer,
-                loading: loading                
+                loading: loading,
               })
             : children}
         </div>
