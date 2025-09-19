@@ -15,6 +15,12 @@ export async function getAuthToken(): Promise<string | undefined> {
   return getCookie;
 }
 
+export async function getAdminAuthToken(): Promise<string | undefined> {
+    const getCookie = cookies().get("admin_auth_token")?.value
+    console.log(getCookie)
+  return getCookie;
+}
+
 export async function removeAuthToken() {
   cookies().delete("auth_token");
 }
