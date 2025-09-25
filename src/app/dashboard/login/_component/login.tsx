@@ -1,6 +1,5 @@
 "use client";
 import ICard from "@/components/base/ICard";
-import IInput from "@/components/base/IInput";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { ApiResponse, fetchApi } from "@/lib/utils/fetchApi";
@@ -10,6 +9,7 @@ import Image from "next/image";
 import { useForm } from "react-hook-form";
 import { AlertDialogLogin } from "./loginDialog";
 import { useState } from "react";
+import { IInput } from "@/components/base/IInput";
 
 export const Login = () => {
   const { setTheme, theme } = useTheme();
