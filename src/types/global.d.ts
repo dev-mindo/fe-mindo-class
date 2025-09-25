@@ -457,6 +457,31 @@ declare global {
       name: string;
     };
   }>;
+
+  type TDetailModule = {
+    id: number;
+    type: string;
+    step: number;
+    title: string;
+    menuTitle: string;
+    description: string;
+    hide: boolean;
+    isLocked: boolean;
+    section: {
+      id: number;
+      title: string;
+    };
+  };
+
+  type TDetailSection = {
+    id: number;
+    productId: number;
+    position: number;
+    publish: boolean;
+    title: string;
+    slug: string;
+    type: string;
+  };
 }
 
 export {};
