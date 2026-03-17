@@ -54,3 +54,18 @@ export function convertSnakeToTitleCase(text: string): string {
 export function convertSnakeToKebab (text: string): string {
   return text.toLowerCase().split("_").join("-");
 };
+
+export function removePrefix(number: number, input: number) {
+  // ubah ke string supaya mudah manipulasi
+  const strNumber = String(number);
+  const strInput = String(input);
+
+  // jika angka diawali dengan input
+  if (strNumber.startsWith(strInput)) {
+    // hapus bagian depan yang sesuai input
+    return strNumber.slice(strInput.length);
+  }
+
+  // jika tidak diawali dengan input, kembalikan angka asli
+  return strNumber;
+}
