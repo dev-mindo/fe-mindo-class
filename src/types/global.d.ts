@@ -482,6 +482,158 @@ declare global {
     slug: string;
     type: string;
   };
+
+  type TDataQuiz = Array<{
+    id: number;
+    title: string;
+    minimumScore: number;
+    limitTime: string;
+    limitTrial: number;
+    module: {
+      id: number;
+      title: string;
+      section: {
+        id: number;
+        title: string;
+      };
+    };
+  }>;
+
+  type TDataQuizDetail = {
+    module: {
+      id: number;
+      title: string;
+      section: {
+        id: number;
+        title: string;
+        classProduct: {
+          id: number;
+          title: string;
+        };
+      };
+    };
+    id: number;
+    title: string;
+    minimumScore: number;
+    limitTime: string;
+    limitTrial: number;
+    question: Array<{
+      id: number;
+      publish: boolean;
+      quizId: number;
+      questionText: string;
+      image: string;
+      Answer: Array<{
+        id: number;
+        questionId: number;
+        answerText: string;
+        isCorrect: boolean;
+      }>;
+    }>;
+  };
+
+  type TDTModuleProgress = {
+    userId: number;
+    name: string;
+    moduleProgress: Array<{
+      moduleId: number;
+      type: string;
+      status: string;
+    }>;
+    progress: string;
+  };
+
+  type TDTModuleScore = {
+    userId: number;
+    name: string;
+    modules: Array<{
+      moduleId: number;
+      title: string;
+      type: string;
+      score: number;
+    }>;
+    totalScore: number;
+  }[];
+
+  type TDTModuleType = {
+    name: string;
+    taskId: any;
+    uploadUrl: any;
+    grade: any;
+    status: string;
+  }[];
+
+  type TModuleTaskParticipant = {
+    userId: number;
+    name: string;
+    taskId: any;
+    uploadUrl: any;
+    grade: any;
+    status: string;
+  };
+
+  type TModuleTypeGrade = {
+    moduleTitle: string;
+    data: TModuleTaskParticipant[];
+  };
+
+  type TLIstSection = {
+    id: number;
+    productId: number;
+    position: number;
+    publish: boolean;
+    title: string;
+    slug: string;
+    type: string;
+  };
+
+  type TListModuleBySection = {
+    id: number;
+    sectionId: number;
+    type: string;
+    step: number;
+    title: string;
+    menuTitle: string;
+    slug: string;
+    description: string;
+    hide: boolean;
+    isLocked: boolean;
+    showAt: any;
+    hideAt: any;
+    Quiz?: {
+      id: number;
+      moduleId: number;
+      title: string;
+      minimumScore: number;
+      limitTime: string;
+      limitTrial: number;
+      pagination: boolean;
+      random: boolean;
+      publish: boolean;
+      createdAt: string;
+      updatedAt: string;
+    };
+    task: Array<{
+      id: number;
+      moduleId: number;
+      editable: boolean;
+      canLate: boolean;
+      startAt: string;
+      endAt: string;
+    }>;
+  };
+
+  type TScoreList = {
+    userId: number;
+    name: string;
+    modules: Array<{
+      moduleId: number;
+      title: string;
+      type: string;
+      score: number;
+    }>;
+    totalScore: number;
+  };
 }
 
 export {};
