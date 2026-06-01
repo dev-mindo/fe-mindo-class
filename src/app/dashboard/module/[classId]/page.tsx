@@ -1,27 +1,32 @@
 "use client";
 import { IAlertDialog } from "@/components/base/IAlertDialog";
-import ICard from "@/components/base/ICard";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { ApiResponse, fetchApi } from "@/lib/utils/fetchApi";
-import { Eye, Plus, SquarePen, Trash } from "lucide-react";
-import { useParams, useRouter } from "next/navigation";
+import { Plus } from "lucide-react";
+import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import type { DragEvent } from "react";
 import { AddModuleDialog } from "./_component/AddModuleDialog";
 import { DestroyModuleDialog } from "./_component/DestroyModuleDialog";
-import { EditModule } from "./_component/EditModule";
 import { AddSectionDialog } from "./_component/AddSectionDialog";
 import { EditSectionDialog } from "./_component/EditSectionDialog";
 import { DestroySectionDialog } from "./_component/DestroySectionDialog";
+import { DashboardPageTitle } from "../../_component/page-title";
+import { toast } from "sonner";
+import { ClassModuleSummary } from "./_component/ClassModuleSummary";
+import { EditModuleAside } from "./_component/EditModuleAside";
+import { ModuleStructure } from "./_component/ModuleStructure";
+import type {
+  DragItem,
+  ModuleDropTarget,
+  SectionItem,
+} from "./_component/moduleTypes";
 
 const Page = () => {
   const [dataClassModule, setDataClassModule] =
     useState<TClassModuleDetail | null>(null);
 
   const [isOpenDialogModule, setOpenDialogModule] = useState<boolean>(false);
-
-  const [dataModule, setDataModule] = useState(null);
 
   const [addStepNumber, setAddStepNumber] = useState<number>(0);
 
@@ -31,6 +36,9 @@ const Page = () => {
   const [moduleId, setModuleId] = useState<number>(0);
 
   const [showEditModule, setShowEditModule] = useState<boolean>(false);
+  const [dragItem, setDragItem] = useState<DragItem | null>(null);
+  const [moduleDropTarget, setModuleDropTarget] =
+    useState<ModuleDropTarget | null>(null);
 
   const [dataDeleteModuleDialog, setDataDeleteModuleDialog] = useState<{
     id: number;
@@ -71,13 +79,16 @@ const Page = () => {
     classId: string;
   }>();
 
+  const totalModule =
+    dataClassModule?.sections.reduce(
+      (total, section) => total + section.module.length,
+      0
+    ) ?? 0;
+
   const getClassModule = async () => {
-    console.log(params.classId);
     const fetchClass: ApiResponse<TClassModuleDetail> = await fetchApi(
       `/admin/module/show-detail/${params.classId}`
     );
-
-    console.log(fetchClass);
 
     if (
       fetchClass &&
@@ -101,12 +112,170 @@ const Page = () => {
     setOpenDialogModule(true);
   };
 
+  const handleAddSection = () => {
+    const getLastPosition = dataClassModule?.sections.at(
+      dataClassModule?.sections.length - 1
+    );
+
+    setSectionPosition(getLastPosition ? getLastPosition.position + 1 : 1);
+    setOpenAddSectionDialog(true);
+  };
+
+  const persistModulesOrder = async (sections: SectionItem[]) => {
+    const modules = sections.flatMap((section) =>
+      section.module.map((module, index) => ({
+        ...module,
+        sectionId: section.id,
+        step: index + 1,
+      }))
+    );
+
+    const responses = await Promise.all(
+      modules.map((module) =>
+        fetchApi<ApiResponse>(`/admin/module/${module.id}`, {
+          method: "PUT",
+          body: {
+            sectionId: module.sectionId,
+            title: module.title,
+            type: module.type,
+            menuTitle: module.menuTitle,
+            step: module.step,
+            hide: module.hide,
+            isLocked: module.isLocked,
+          },
+        })
+      )
+    );
+
+    if (responses.some((response) => response.statusCode !== 200)) {
+      throw new Error("Failed to update module order");
+    }
+  };
+
+  const handleModuleDrop = async (
+    targetSectionId: number,
+    targetModuleId?: number,
+    position: ModuleDropTarget["position"] = "before"
+  ) => {
+    if (!dataClassModule || dragItem?.type !== "module") {
+      return;
+    }
+
+    if (
+      dragItem.sectionId === targetSectionId &&
+      dragItem.moduleId === targetModuleId
+    ) {
+      setDragItem(null);
+      setModuleDropTarget(null);
+      return;
+    }
+
+    const sections = dataClassModule.sections.map((section) => ({
+      ...section,
+      module: [...section.module],
+    }));
+    const sourceSection = sections.find(
+      (section) => section.id === dragItem.sectionId
+    );
+    const targetSection = sections.find((section) => section.id === targetSectionId);
+
+    if (!sourceSection || !targetSection) {
+      setDragItem(null);
+      setModuleDropTarget(null);
+      return;
+    }
+
+    const sourceIndex = sourceSection.module.findIndex(
+      (module) => module.id === dragItem.moduleId
+    );
+
+    if (sourceIndex < 0) {
+      setDragItem(null);
+      setModuleDropTarget(null);
+      return;
+    }
+
+    const [movedModule] = sourceSection.module.splice(sourceIndex, 1);
+    const foundTargetIndex = targetModuleId
+      ? targetSection.module.findIndex((module) => module.id === targetModuleId)
+      : targetSection.module.length;
+    const targetIndex =
+      position === "after" && foundTargetIndex >= 0
+        ? foundTargetIndex + 1
+        : foundTargetIndex;
+
+    targetSection.module.splice(
+      targetIndex >= 0 ? targetIndex : targetSection.module.length,
+      0,
+      {
+        ...movedModule,
+        sectionId: targetSection.id,
+      }
+    );
+
+    const reorderedSections = sections.map((section) => ({
+      ...section,
+      module: section.module.map((module, index) => ({
+        ...module,
+        sectionId: section.id,
+        step: index + 1,
+      })),
+    }));
+
+    setDataClassModule({
+      ...dataClassModule,
+      sections: reorderedSections,
+    });
+    setDragItem(null);
+    setModuleDropTarget(null);
+
+    try {
+      await persistModulesOrder(reorderedSections);
+      toast.info("Urutan modul sudah diperbaharui");
+      getClassModule();
+    } catch (error) {
+      toast.error("Gagal memperbaharui urutan modul");
+      getClassModule();
+    }
+  };
+
+  const handleModuleDragOver = (
+    event: DragEvent<HTMLElement>,
+    sectionId: number,
+    moduleId: number
+  ) => {
+    if (dragItem?.type !== "module" || dragItem.moduleId === moduleId) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    const rect = event.currentTarget.getBoundingClientRect();
+    const position = event.clientY < rect.top + rect.height / 2 ? "before" : "after";
+    setModuleDropTarget({ sectionId, moduleId, position });
+  };
+
+  const handleModuleListDragOver = (
+    event: DragEvent<HTMLElement>,
+    sectionId: number
+  ) => {
+    if (dragItem?.type !== "module") {
+      return;
+    }
+
+    event.preventDefault();
+
+    if (event.target === event.currentTarget) {
+      setModuleDropTarget({ sectionId, position: "end" });
+    }
+  };
+
   useEffect(() => {
     getClassModule();
   }, []);
 
   useEffect(() => {
-    console.log(dataClassModule);
     setClassData({
       id: dataClassModule?.id || 0,
       title: dataClassModule?.title || "",
@@ -114,150 +283,53 @@ const Page = () => {
   }, [dataClassModule]);
 
   return (
-    <div>
-      <div className="mb-4">
-        <h1 className="text-lg">Edit Module</h1>
+    <div className="w-full space-y-5">
+      <DashboardPageTitle title="Edit Module" />
+      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+        <div>
+          <p className="text-sm text-muted-foreground">
+            Atur section dan modul untuk kelas ini.
+          </p>
+        </div>
+        <Button
+          onClick={handleAddSection}
+        >
+          <Plus />
+          Tambah Section
+        </Button>
       </div>
-      <div className="flex gap-5">
-        <ICard className="w-[50%] flex flex-col justify-between">
-          <div>
-            {dataClassModule?.sections.map((sectionItem) => (
-              <>
-                <div className="flex flex-col gap-1 border mb-4 p-4">
-                  <div className="flex justify-between">
-                    <div className="mb-3">{sectionItem.title}</div>
-                    <div className="flex">
-                      <Button
-                        onClick={() => {
-                          setDataSection({
-                            id: sectionItem.id,
-                            title: sectionItem.title,
-                          });
-                          setOpenSectionEditDialog(true);
-                        }}
-                        size="icon"
-                        variant="ghost"
-                      >
-                        <SquarePen />
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => {
-                          setDataSection({
-                            id: sectionItem.id,
-                            title: sectionItem.title,
-                          });
-                          setOpenSectionDestroyDialog(true);
-                        }}
-                      >
-                        <Trash />
-                      </Button>
-                    </div>
-                  </div>
-                  {sectionItem.module.map((moduleItem) => (
-                    <div className="flex flex-col">
-                      <div className="flex px-4 py-2 border items-center justify-between">
-                        <div>{moduleItem.title}</div>
-                        <div className="flex gap-1">
-                          <div>
-                            <Badge>{moduleItem.type}</Badge>
-                          </div>
-                          {/* <Button size="icon" variant="ghost">
-                            <Eye />
-                          </Button> */}
-                          <Button
-                            onClick={() => {
-                              setModuleId(moduleItem.id);
-                              setShowEditModule(true);
-                            }}
-                            size="icon"
-                            variant="ghost"
-                          >
-                            <SquarePen />
-                          </Button>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            onClick={() => {
-                              setDataDeleteModuleDialog({
-                                id: moduleItem.id,
-                                title: moduleItem.title,
-                              });
-                              setOpenDeleteModuleDialog(true);
-                            }}
-                          >
-                            <Trash />
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                  <Button
-                    onClick={() => {
-                      handleAddModule();
-                      setDataSection({
-                        id: sectionItem.id,
-                        title: sectionItem.title,
-                      });
-                      const getLastNumber = sectionItem.module.at(
-                        sectionItem.module.length - 1
-                      );
-                      console.log("last number", getLastNumber?.step);
-                      setAddStepNumber(
-                        getLastNumber && getLastNumber.step
-                          ? getLastNumber.step + 1
-                          : 1
-                      );
-                    }}
-                    className="w-full my-1"
-                  >
-                    <Plus />
-                    Tambah Module
-                  </Button>
-                  {/* <div className="flex flex-col">
-                  <div className="flex px-4 py-2 border w-full">
-                    
-                  </div>
-                </div> */}
-                </div>
-              </>
-            ))}
-            <Button
-              onClick={() => {
-                const getLastPosition = dataClassModule?.sections.at(
-                  dataClassModule?.sections.length - 1
-                );
-                setSectionPosition(
-                  getLastPosition ? getLastPosition.position + 1 : 1
-                );
-                setOpenAddSectionDialog(true);
-              }}
-              className="w-full my-1"
-            >
-              <Plus />
-              Tambah Section
-            </Button>
-          </div>
-          <div className="flex justify-between mt-5">
-            {/* <Button asChild>
-              <Link href="/dashboard/module">Kembali</Link>
-            </Button>
-            <Button>Simpan</Button> */}
-          </div>
-        </ICard>
-        <ICard className="w-full">
-          {showEditModule && moduleId > 0 ? (
-            <EditModule
-              moduleId={moduleId}
-              setShowEditModule={setShowEditModule}
-              showEditModule={showEditModule}
-              getClassModule={getClassModule}
-            />
-          ) : (
-            <div>Tidak Ada Data</div>
-          )}
-        </ICard>
+
+      <ClassModuleSummary dataClassModule={dataClassModule} />
+
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.05fr)_minmax(420px,0.95fr)]">
+        <ModuleStructure
+          dataClassModule={dataClassModule}
+          totalModule={totalModule}
+          dragItem={dragItem}
+          moduleDropTarget={moduleDropTarget}
+          setDragItem={setDragItem}
+          setModuleDropTarget={setModuleDropTarget}
+          setDataSection={setDataSection}
+          setModuleId={setModuleId}
+          setShowEditModule={setShowEditModule}
+          setDataDeleteModuleDialog={setDataDeleteModuleDialog}
+          setOpenDeleteModuleDialog={setOpenDeleteModuleDialog}
+          setOpenSectionEditDialog={setOpenSectionEditDialog}
+          setOpenSectionDestroyDialog={setOpenSectionDestroyDialog}
+          setAddStepNumber={setAddStepNumber}
+          handleAddModule={handleAddModule}
+          handleAddSection={handleAddSection}
+          handleModuleDrop={handleModuleDrop}
+          handleModuleDragOver={handleModuleDragOver}
+          handleModuleListDragOver={handleModuleListDragOver}
+        />
+
+        <EditModuleAside
+          moduleId={moduleId}
+          showEditModule={showEditModule}
+          setShowEditModule={setShowEditModule}
+          getClassModule={getClassModule}
+        />
       </div>
       <AddModuleDialog
         isOpen={isOpenDialogModule}
@@ -284,6 +356,7 @@ const Page = () => {
         getClassModule={getClassModule}
         isOpen={openSectionEditDialog}
         sectionId={dataSection.id}
+        sections={dataClassModule?.sections ?? []}
         setIsOpenDialog={setOpenSectionEditDialog}
       />
 

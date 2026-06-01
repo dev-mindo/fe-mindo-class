@@ -1,7 +1,13 @@
 import { DiscussionList } from "./_component/DiscussionList";
+import { DashboardPageTitle } from "../_component/page-title";
 
 const Page = () => {
-  return <DiscussionList />;
+  return (
+    <>
+      <DashboardPageTitle title="Diskusi" />
+      <DiscussionList />
+    </>
+  );
 };
 
 export default Page;

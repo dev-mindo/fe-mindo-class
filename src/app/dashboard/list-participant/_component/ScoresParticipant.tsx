@@ -1,4 +1,3 @@
-import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -25,6 +24,11 @@ export const ScoresParticipantComponent = ({
   >([]);
 
   const fetchScoresByClassModule = async () => {
+    if (!selectedClass || !sectionId) {
+      setDataScoreParticipant([]);
+      return;
+    }
+
     const getScore: ApiResponse<TScoreList[]> = await fetchApi(
       `/admin/classroom/show-list-participant/${selectedClass}/participant-score/${sectionId}`
     );
@@ -34,7 +38,7 @@ export const ScoresParticipantComponent = ({
 
   useEffect(() => {
     fetchScoresByClassModule();
-  }, []);
+  }, [selectedClass, sectionId]);
 
   return (
     <Table className="w-full">
@@ -43,7 +47,7 @@ export const ScoresParticipantComponent = ({
         <TableRow>
           <TableHead>Nama Peserta</TableHead>
           {dataScoreParticipant.at(0)?.modules.map((moduleItem) => (
-            <TableHead>{moduleItem.title}</TableHead>
+            <TableHead key={moduleItem.moduleId}>{moduleItem.title}</TableHead>
           ))}
           <TableHead>Total Score</TableHead>
           <TableHead></TableHead>
@@ -54,7 +58,7 @@ export const ScoresParticipantComponent = ({
           <TableRow key={item.userId}>
             <TableCell>{item.name}</TableCell>
             {item.modules.map((moduleItem) => (
-              <TableCell>{moduleItem.score}</TableCell>
+              <TableCell key={moduleItem.moduleId}>{moduleItem.score}</TableCell>
             ))}
             <TableCell>{item.totalScore}</TableCell>
             {/* <TableCell> */}
@@ -76,6 +80,16 @@ export const ScoresParticipantComponent = ({
             </TableCell> */}
           </TableRow>
         ))}
+        {dataScoreParticipant.length === 0 ? (
+          <TableRow>
+            <TableCell
+              className="h-24 text-center text-muted-foreground"
+              colSpan={3}
+            >
+              Nilai peserta tidak ditemukan
+            </TableCell>
+          </TableRow>
+        ) : null}
       </TableBody>
     </Table>
   );

@@ -1,7 +1,6 @@
 import { Metadata } from "next";
 import { Classroom } from "./_component/Classroom";
 import { ApiResponse, fetchApi } from "@/lib/utils/fetchApi";
-import { notFound } from "next/navigation";
 
 export const metadata: Metadata = {
   title: "Mindo Class | Classroom",

@@ -12,6 +12,7 @@ import {
 import { ApiResponse, fetchApi } from "@/lib/utils/fetchApi";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { DashboardPageTitle } from "../_component/page-title";
 
 const Page = () => {
   const [dataClassModule, setDataClassModule] = useState<
@@ -32,7 +33,7 @@ const Page = () => {
 
   return (
     <div className="w-full">
-      <h1 className="text-lg">List Module</h1>
+      <DashboardPageTitle title="Modul" />
       <div>
         <div className="flex justify-between items-center mb-4">
           <div></div>
