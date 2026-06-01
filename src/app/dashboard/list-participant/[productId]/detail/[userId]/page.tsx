@@ -23,6 +23,7 @@ import { Accordion } from "@radix-ui/react-accordion";
 import moment from "moment";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { DashboardPageTitle } from "../../../../_component/page-title";
 
 const Page = () => {
   const [dataDetailParticipant, setDataDetailParticipant] =
@@ -48,9 +49,7 @@ const Page = () => {
 
   return (
     <div className="w-full">
-      <div className="mb-[20px]">
-        <h1 className="text-xl">Detail Peserta</h1>
-      </div>
+      <DashboardPageTitle title="Detail Peserta" />
       <div className="flex flex-col gap-5">
         <ICard className="w-full">
           <div className="grid grid-cols-2 w-[30%] gap-3">
@@ -76,7 +75,7 @@ const Page = () => {
         </ICard>
         {dataDetailParticipant?.sections.map((sectionItem) => (
           <ICard>
-            <h1 className="text-lg">{sectionItem.sectionTitle}</h1>
+            <h2 className="text-lg">{sectionItem.sectionTitle}</h2>
             <div className="my-[10px] mx-3">
               {sectionItem.modules?.map((moduleItem, key) => (
                 <Accordion type="single" collapsible>

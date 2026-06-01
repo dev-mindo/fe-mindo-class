@@ -29,6 +29,7 @@ import {
 } from "@firebase/firestore";
 import { firebaseDB } from "@/lib/config/firebase";
 import useAnonymousAuth from "@/hooks/useAnonymousAuth";
+import { DashboardPageTitle } from "../_component/page-title";
 
 interface Progress {
   id: string;
@@ -153,28 +154,28 @@ const Page = () => {
 
   return (
     <div className="w-full">
-      <h1 className="text-lg">List Video</h1>
+      <DashboardPageTitle title="Video" />
       <div>
         <div className="flex justify-between items-center mb-4">
           <div></div>
           <div>
-            <Button
+            {/* <Button
               onClick={() => {
                 setOpenDialogVideo(true);
               }}
             >
               Tambah Video
-            </Button>
+            </Button> */}
           </div>
         </div>
         <ListVideo />
       </div>
-      <UploadVideoDialog
+      {/* <UploadVideoDialog
         isOpen={openDialogVideo}
         setIsOpenDialog={setOpenDialogVideo}
         handleUploadProgress={handleUploadProgress}
-      />
-      <UploadProgressCard uploads={uploadsProgress} />
+      /> */}
+      {/* <UploadProgressCard uploads={uploadsProgress} /> */}
     </div>
   );
 };

@@ -398,6 +398,9 @@ declare global {
     isAutoGetCertificate: boolean;
     createdAt: string;
     updatedAt: string;
+    _count?: {
+      userClass?: number;
+    };
     sections: Array<{
       id: number;
       productId: number;

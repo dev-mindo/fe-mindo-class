@@ -1,5 +1,6 @@
 "use client";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -10,28 +11,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ApiResponse, fetchApi } from "@/lib/utils/fetchApi";
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ParticipantComponent } from "./_component/Participant";
 import { TaskParticipantComponent } from "./_component/TaskParticipant";
 import { ProgressParticipantComponent } from "./_component/ProgressModule";
 import { ScoresParticipantComponent } from "./_component/ScoresParticipant";
+import { DashboardPageTitle } from "../_component/page-title";
 
 const Page = () => {
   const [dataClass, setDataClass] = useState<any[]>([]);
   const [selectedClass, setSelectedClass] = useState<string | null>(null);
-  const [tabsOn, setTabsOn] = useState<string>("");
   const [listSection, setListSection] = useState<TLIstSection[] | []>([]);
   const [selectedSectionId, setSelectedSectionId] = useState<number | null>(
     null
@@ -62,18 +53,51 @@ const Page = () => {
     }
   }, [selectedClass]);
 
+  const selectedClassData = dataClass.find(
+    (item: any) => item.id.toString() === selectedClass
+  );
+  const selectedSectionData = listSection.find(
+    (item: TLIstSection) => item.id === selectedSectionId
+  );
+
   return (
     <div className="w-full">
-      <div className="my-[20px]">
-        <h1 className="text-xl">List Peserta</h1>
-      </div>
+      <DashboardPageTitle title="Peserta" />
       <div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 my-4">
+          <Card>
+            <CardContent className="p-4">
+              <p className="text-sm text-muted-foreground">Nama Kelas</p>
+              <p className="mt-2 text-lg font-semibold">
+                {selectedClassData?.title ?? "-"}
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <p className="text-sm text-muted-foreground">Nama Section</p>
+              <p className="mt-2 text-lg font-semibold">
+                {selectedSectionData?.title ?? "-"}
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <p className="text-sm text-muted-foreground">Jumlah Peserta</p>
+              <p className="mt-2 text-lg font-semibold">
+                {selectedClassData?._count?.userClass ?? 0}
+              </p>
+            </CardContent>
+          </Card>
+        </div>
         <div className="flex justify-between items-center my-4">
           <div className="flex gap-4">
             <Input placeholder="Cari Peserta" />
             <Select
               onValueChange={(value) => {
                 setSelectedClass(value);
+                setSelectedSectionId(null);
+                setListSection([]);
               }}
             >
               <SelectTrigger className="w-[200px]">
@@ -85,7 +109,7 @@ const Page = () => {
                   {dataClass?.map((item: any) => (
                     <SelectItem
                       key={item.id}
-                      value={item.id}
+                      value={item.id.toString()}
                       // onClick={() => setSelectedClass(item.id)}
                       // onChange={(e) => {
                       //   setSelectedClass(e.target.value);

@@ -51,7 +51,7 @@ export const AddSectionDialog = (props: Props) => {
 
     if (store) {
       if (store.statusCode === 200) {
-        toast.info("Success menambahkan modul");
+        toast.info("Success menambahkan section");
         setIsOpen(false);
         props.getClassModule();
       } else {

@@ -1,5 +1,4 @@
 import { IInput } from "@/components/base/IInput";
-import ISwitch from "@/components/base/ISwitch";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -10,6 +9,13 @@ import {
 import { Form } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import sectionSchema, {
   SectionFormValues,
 } from "@/entities/schema/section.schema";
@@ -26,6 +32,7 @@ type Props = {
     title: string;
   };
   sectionId: number;
+  sections: TClassModuleDetail["sections"];
   setIsOpenDialog?: (isOpen: boolean) => void;
   getClassModule: () => void;
 };
@@ -44,27 +51,48 @@ export const EditSectionDialog = (props: Props) => {
   });
 
   const onFinish = async (value: any) => {
-    const update: ApiResponse = await fetchApi(
-      `/admin/section/${props.sectionId}`,
-      {
-        method: "PATCH",
-        body: value,
-      }
+    const currentSection = props.sections.find(
+      (section) => section.id === props.sectionId
     );
 
-    if (update) {
-      if (update.statusCode === 200) {
-        toast.info("Success memperbaharui section");
-        setIsOpen(false);
-        props.getClassModule();
-      } else {
-        toast.error(update.message);
-      }
-    } else {
+    if (!currentSection) {
       toast.error("Error tidak ditemukan");
+      return;
     }
-    console.log(true);
-    console.log("finish", value);
+
+    const reorderedSections = [...props.sections]
+      .sort((firstSection, secondSection) => firstSection.position - secondSection.position)
+      .filter((section) => section.id !== props.sectionId);
+
+    reorderedSections.splice(value.position - 1, 0, {
+      ...currentSection,
+      title: value.title,
+    });
+
+    const responses = await Promise.all(
+      reorderedSections.map((section, index) =>
+        fetchApi<ApiResponse>(`/admin/section/${section.id}`, {
+          method: "PATCH",
+          body: {
+            productId: section.productId,
+            title: section.id === props.sectionId ? value.title : section.title,
+            position: index + 1,
+            includeModule: false,
+          },
+        })
+      )
+    );
+
+    const failedResponse = responses.find((response) => response.statusCode !== 200);
+
+    if (failedResponse) {
+      toast.error(failedResponse.message);
+      return;
+    }
+
+    toast.info("Success memperbaharui section");
+    setIsOpen(false);
+    props.getClassModule();
   };
 
   const handleEditSection = async () => {
@@ -128,12 +156,23 @@ export const EditSectionDialog = (props: Props) => {
               </div>
               <div className="grid gap-3">
                 <Label>Position</Label>
-                <IInput
-                  disabled={true}
-                  type="number"
-                  control={form.control}
-                  name="position"
-                ></IInput>
+                <Select
+                  value={form.watch("position").toString()}
+                  onValueChange={(value) => {
+                    form.setValue("position", Number(value));
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Pilih posisi section" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {props.sections.map((_, index) => (
+                      <SelectItem key={index + 1} value={(index + 1).toString()}>
+                        Posisi {index + 1}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             <div className="flex justify-end gap-2">

@@ -36,52 +36,53 @@ import { useAppContext } from "@/app/[type_class]/_component/navProvider";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { useDashboardContext } from "@/context/DashboardContext";
 
 // Menu items.
 const items = [
   {
     title: "Dashboard",
-    url: "#",
+    url: "/dashboard",
     icon: <LayoutDashboard strokeWidth={1.5} size={20} />,
   },
   {
     title: "Kelas",
-    url: "#",    
+    url: "/dashboard/classroom",
     icon: <SquareUserRound strokeWidth={1.5} size={20} />,
   },
   {
     title: "Modul",
-    url: "#",      
+    url: "/dashboard/module",
     icon: <SquareMenu strokeWidth={1.5} size={20} />,
   },
   {
     title: "Peserta",
-    url: "#",
+    url: "/dashboard/list-participant",
     icon: <Users strokeWidth={1.5} size={20} />,
   },
   {
     title: "Kuis",
-    url: "#",
+    url: "/dashboard/quiz",
     icon: <ClipboardList strokeWidth={1.5} size={20} />,
   },
   {
     title: "Tugas",
-    url: "#",
+    url: "/dashboard/task",
     icon: <FileText strokeWidth={1.5} size={20} />,
   },
   {
     title: "Video",
-    url: "#",
+    url: "/dashboard/video",
     icon: <MonitorPlay strokeWidth={1.5} size={20} />,
   },
   {
     title: "Diskusi",
-    url: "#",    
+    url: "/dashboard/discussion",
     icon: <MessageSquareText strokeWidth={1.5} size={20} />,
   },
   {
     title: "Pengguna",
-    url: "#",
+    url: "/dashboard/user",
     icon: <User strokeWidth={1.5} size={20} />,
   },
 ];
@@ -94,10 +95,19 @@ const menu = [
   },
 ];
 
-export function AppSidebar() {  
+const isActiveMenu = (pathname: string, url: string) => {
+  if (url === "/dashboard") {
+    return pathname === url;
+  }
+
+  return pathname === url || pathname.startsWith(`${url}/`);
+};
+
+export function AppSidebar() {
   const { setTheme, theme } = useTheme();
   const [getCurrentTheme, setCurrentTheme] = useState<string>("");
   // const { hideAll, hideSidebar, setHideSidebar } = useAppContext();
+  const {hideSidebar} = useDashboardContext()
   const pathname = usePathname();
 
   if (pathname === "/dashboard/login") {
@@ -106,14 +116,23 @@ export function AppSidebar() {
 
   return (
     <div
-      className={`h-screen bg-sidebar w-[100%] lg:w-[30%] xl:w-[20%] flex flex-col justify-between ${
-        // hideSidebar ? "hidden" : ""
-        ""
+      className={`h-screen bg-sidebar w-[100%] lg:w-[30%] xl:w-[350px] flex flex-col justify-between ${
+        hideSidebar ? "hidden" : ""
       }`}
     >
       <div>
         {/* TODO fitur hide side bar */}
-        <div className="flex justify-end mx-4 mt-3">
+        <div className="flex justify-between border-b-[1px] py-3 px-3">
+          <div className="flex w-full gap-3 items-center">
+            <img src="/logo/logo192.png" alt="Mindo" className="h-[30px]" />
+            {/* <Image
+              height={30}
+              width={30}
+              src="/logo/logo192.png"
+              alt="logo mindo"
+            ></Image> */}
+            Classroom
+          </div>
           <div>
             <Button
               size="icon"
@@ -127,7 +146,7 @@ export function AppSidebar() {
               {theme === "system" || theme === "light" ? <Moon /> : <Sun />}
             </Button>
           </div>
-          <Button
+          {/* <Button
             className="lg:hidden"
             size="icon"
             variant="ghost"
@@ -136,93 +155,48 @@ export function AppSidebar() {
             // }}
           >
             <X />
-          </Button>
+          </Button> */}
         </div>
-        <div className="flex flex-col items-center w-full">
-          <div>
-            <Image
-              height={300}
-              width={90}
-              src="/logo/mindo-logo.svg"
-              alt="logo mindo"
-            ></Image>
-          </div>
-          <div className="">
+        <div className="flex flex-col gap-1 w-full border-b-[1px] py-3 px-3">
             <p>
-              {/* TODO username */}
+              nama
             </p>
-          </div>
+            <p>
+              role
+            </p>
         </div>
         <div></div>
-        <div className="mt-5 px-2 overflow-y-auto h-[calc(90vh-8rem)]">
+        <div className="mt-5 px-2 overflow-y-auto">
           <div>
             <div className="flex flex-col gap-2">
-              {items.map((item, index) => (
-                <Link key={index} href={item.url} className="mx-4">
-                  <div
-                    className={`flex gap-2 items-center px-2 py-2 rounded-lg dark:hover:bg-[#3A3A3A] hover:bg-[#E2E2E2] ${
-                      // getCurrentTheme === "light"
-                      //   ? `${
-                      //       module.current
-                      //         ? "bg-primary hover:bg-primary text-white"
-                      //         : ""
-                      //     }
-                      //    ${
-                      //      module.isLocked
-                      //        ? "cursor-not-allowed opacity-50 hover:bg-sidebar"
-                      //        : ""
-                      //    }`
-                      //   : getCurrentTheme === "dark"
-                      //   ? `${
-                      //       module.current
-                      //         ? "bg-primary hover:bg-primary text-white"
-                      //         : ""
-                      //     }
-                      //    ${
-                      //      module.isLocked
-                      //        ? "cursor-not-allowed opacity-50 hover:bg-sidebar"
-                      //        : ""
-                      //    }
-                      //    ${
-                      //      module.current ? "bg-primary hover:bg-primary" : ""
-                      //    }`
-                      //   : getCurrentTheme === "system"
-                      //   ? `${
-                      //       module.current
-                      //         ? "bg-primary hover:bg-primary text-white"
-                      //         : ""
-                      //     }
-                      //    ${
-                      //      module.isLocked
-                      //        ? "cursor-not-allowed opacity-50 hover:bg-sidebar"
-                      //        : ""
-                      //    }`
-                      //   :
-                      ""
-                    }`}
+              {items.map((item, index) => {
+                const active = isActiveMenu(pathname, item.url);
+
+                return (
+                  <Link
+                    key={index}
+                    href={item.url}
+                    aria-current={active ? "page" : undefined}
+                    className="mx-4"
                   >
-                    <div className="mr-2">{item.icon}</div>
-                    <div>{item.title}</div>
-                    {/* <div className="ml-auto">
-                        {module.isLocked && (
-                          <Lock strokeWidth={1.5} size={20} />
-                        )}
-                        {module.isDone && (
-                          <CircleCheckBig
-                            color="green"
-                            strokeWidth={1.5}
-                            size={20}
-                          />
-                        )}
-                      </div> */}
-                  </div>
-                </Link>
-              ))}
+                    <div
+                      className={`flex gap-2 items-center rounded-lg px-2 py-2 transition-colors ${
+                        active
+                          ? "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90"
+                          : "text-sidebar-foreground/80 hover:bg-[#E2E2E2] hover:text-sidebar-foreground dark:hover:bg-[#3A3A3A]"
+                      }`}
+                    >
+                      <div className="mr-2">{item.icon}</div>
+                      <div>{item.title}</div>
+                    </div>
+                  </Link>
+                );
+              })}
             </div>
           </div>
         </div>
       </div>
-      <div className="flex flex-col gap-2 mb-5 pt-2">
+      {/* <div className="flex flex-col gap-2 mb-5 pt-2">
         {menu.map((item, index) => (
           <Link key={index} href={item.url} className="mx-4">
             <div
@@ -234,7 +208,7 @@ export function AppSidebar() {
             </div>
           </Link>
         ))}
-      </div>
+      </div> */}
     </div>
   );
 }

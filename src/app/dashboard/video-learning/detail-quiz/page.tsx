@@ -14,6 +14,7 @@ import {
 import { Form } from "@/components/ui/form";
 import { Label } from "@radix-ui/react-label";
 import { useFieldArray, useForm } from "react-hook-form";
+import { DashboardPageTitle } from "../../_component/page-title";
 
 const hoursOption = Array.from({ length: 24 }, (_, i) => ({
   value: i.toString(),
@@ -58,7 +59,7 @@ const Page = () => {
   return (
     <div className="w-full">
       <div>
-        <h1>Detail Quiz</h1>
+        <DashboardPageTitle title="Detail Quiz" />
         <Form {...form}>
           <form action="">
             <div className="flex grid grid-cols-3 gap-4">

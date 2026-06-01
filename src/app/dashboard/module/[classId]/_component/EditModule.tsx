@@ -97,9 +97,9 @@ export const EditModule = (props: Props) => {
 
   return (
     <>
-      <div className="">
-        <h1>Edit Detail Modul</h1>
-        <div className="mt-4">
+      <div className="flex max-h-[calc(100vh-180px)] flex-col">
+        <h1 className="shrink-0">Edit Detail Modul</h1>
+        <div className="mt-4 min-h-0 overflow-y-auto pr-2">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleUpdateModule)}>
               <div className="grid gap-4">
@@ -146,8 +146,9 @@ export const EditModule = (props: Props) => {
                   <ISwitch control={form.control} name="isLocked"></ISwitch>
                 </div>
               </div>
-              <div className="flex justify-end gap-2">
+              <div className="sticky bottom-0 mt-4 flex justify-end gap-2 border-t bg-card py-3">
                 <Button
+                  type="button"
                   onClick={() => {
                     setShowEditModule(false);
                   }}

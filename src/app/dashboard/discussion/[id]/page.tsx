@@ -1,5 +1,6 @@
 import { ApiResponse, fetchApi } from "@/lib/utils/fetchApi";
 import { DetailDiscussion } from "./_component/DetailDiscussion";
+import { DashboardPageTitle } from "../../_component/page-title";
 
 type Props = {
   params: {
@@ -16,7 +17,12 @@ const Page = async ({ params }: Props) => {
     `/admin/discussion/detail/${params.id}`
   );
 
-  return <DetailDiscussion detailDiscussionDataProps={detailDiscussion.data} />;
+  return (
+    <>
+      <DashboardPageTitle title="Detail Diskusi" />
+      <DetailDiscussion detailDiscussionDataProps={detailDiscussion.data} />
+    </>
+  );
 };
 
 export default Page;
