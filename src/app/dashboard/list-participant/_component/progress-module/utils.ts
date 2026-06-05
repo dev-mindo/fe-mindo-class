@@ -22,6 +22,26 @@ export const isQuizModule = (type?: string) => type?.toUpperCase() === "QUIZ";
 export const isDiscussionModule = (type?: string) =>
   type?.toUpperCase() === "DISCUSSION";
 
+export const isEvaluationModule = (type?: string) =>
+  type?.toUpperCase() === "EVALUATION";
+
+export const isTaskModule = (type?: string) => type?.toUpperCase() === "TASK";
+
+export const getTaskStatusLabel = (status?: string | null) => {
+  switch (status) {
+    case "PENDING":
+      return "Menunggu";
+    case "SUBMITTED":
+      return "Sudah Mengumpulkan";
+    case "SUBMITTED_LATE":
+      return "Sudah Mengumpulkan Telat";
+    case "ASSESSED":
+      return "Sudah Dinilai";
+    default:
+      return "Menunggu";
+  }
+};
+
 export const getPaginationPages = (currentPage: number, totalPage: number) => {
   const maxVisiblePage = 5;
   const halfVisiblePage = Math.floor(maxVisiblePage / 2);

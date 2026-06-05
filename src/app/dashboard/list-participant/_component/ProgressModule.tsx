@@ -7,8 +7,10 @@ import { UserProgressView } from "./progress-module/UserProgressView";
 import type {
   DiscussionOrder,
   DiscussionStatusFilter,
+  ModuleEvaluation,
   ModuleParticipantFilter,
   ModuleProgressItem,
+  SelectedEvaluationDetail,
   SelectedQuizDetail,
   ViewMode,
 } from "./progress-module/types";
@@ -17,6 +19,8 @@ import {
   PARTICIPANT_PAGE_SIZE,
   getPaginationPages,
   isDiscussionModule,
+  isEvaluationModule,
+  isTaskModule,
 } from "./progress-module/utils";
 
 type Props = {
@@ -33,18 +37,29 @@ export const ProgressParticipantComponent = ({
   const [dataScoreParticipant, setDataScoreParticipant] = useState<
     TScoreList[]
   >([]);
+  const [dataTaskParticipant, setDataTaskParticipant] = useState<
+    TModuleTypeGrade[]
+  >([]);
   const [viewMode, setViewMode] = useState<ViewMode>("user");
   const [selectedModuleId, setSelectedModuleId] = useState<number | null>(null);
   const [selectedQuizDetail, setSelectedQuizDetail] =
     useState<SelectedQuizDetail | null>(null);
+  const [selectedEvaluationDetail, setSelectedEvaluationDetail] =
+    useState<SelectedEvaluationDetail | null>(null);
   const [selectedDiscussionDetail, setSelectedDiscussionDetail] =
     useState<TDetailDiscussion | null>(null);
   const [isLoadingQuizDetail, setIsLoadingQuizDetail] = useState(false);
+  const [isLoadingEvaluation, setIsLoadingEvaluation] = useState(false);
+  const [isLoadingEvaluationDetail, setIsLoadingEvaluationDetail] =
+    useState(false);
   const [isLoadingDiscussion, setIsLoadingDiscussion] = useState(false);
   const [isLoadingDiscussionDetail, setIsLoadingDiscussionDetail] =
     useState(false);
   const [moduleDiscussions, setModuleDiscussions] = useState<
     Record<number, TModuleDiscussion>
+  >({});
+  const [moduleEvaluations, setModuleEvaluations] = useState<
+    Record<number, ModuleEvaluation | null>
   >({});
   const [moduleParticipantFilter, setModuleParticipantFilter] =
     useState<ModuleParticipantFilter>("all");
@@ -94,10 +109,24 @@ export const ProgressParticipantComponent = ({
     setDataScoreParticipant(scores.data || []);
   };
 
+  const fetchTaskByClassModule = async () => {
+    if (!selectedClass || !selectedSetion) {
+      setDataTaskParticipant([]);
+      return;
+    }
+
+    const tasks: ApiResponse<TModuleTypeGrade[]> = await fetchApi(
+      `/admin/classroom/show-list-participant/${selectedClass}/module-type/${selectedSetion}/type/TASK`,
+    );
+
+    setDataTaskParticipant(tasks.data || []);
+  };
+
   useEffect(() => {
     fetchProgressByClassModule();
     fetchModuleBySectionId();
     fetchScoresByClassModule();
+    fetchTaskByClassModule();
   }, [selectedClass, selectedSetion]);
 
   const moduleTitleById = useMemo(() => {
@@ -135,6 +164,39 @@ export const ProgressParticipantComponent = ({
     );
   }, [dataScoreParticipant]);
 
+  const taskByUserModule = useMemo(() => {
+    return dataTaskParticipant.reduce<
+      Record<
+        string,
+        {
+          uploadUrl?: string | null;
+          grade?: number | string | null;
+          status?: string | null;
+        }
+      >
+    >((acc, taskModule) => {
+      const moduleId =
+        taskModule.moduleId ??
+        dataModule.find((moduleItem) => moduleItem.title === taskModule.moduleTitle)
+          ?.id;
+
+      if (!moduleId) {
+        return acc;
+      }
+
+      taskModule.data.forEach((participant) => {
+        const participantModuleId = participant.moduleId ?? moduleId;
+        acc[`${participant.userId}-${participantModuleId}`] = {
+          uploadUrl: participant.uploadUrl,
+          grade: participant.grade,
+          status: participant.status,
+        };
+      });
+
+      return acc;
+    }, {});
+  }, [dataModule, dataTaskParticipant]);
+
   const progressByModule = useMemo<ModuleProgressItem[]>(() => {
     const moduleIds = new Set<number>();
 
@@ -158,6 +220,9 @@ export const ProgressParticipantComponent = ({
             type: progressItem?.type ?? moduleTypeById[moduleId] ?? "-",
             status: progressItem?.status ?? "NOT_TAKEN",
             score: scoreByUserModule[`${participant.userId}-${moduleId}`],
+            task: isTaskModule(moduleTypeById[moduleId] ?? progressItem?.type)
+              ? taskByUserModule[`${participant.userId}-${moduleId}`]
+              : undefined,
           };
         });
 
@@ -186,6 +251,7 @@ export const ProgressParticipantComponent = ({
     moduleTitleById,
     moduleTypeById,
     scoreByUserModule,
+    taskByUserModule,
   ]);
 
   const selectedModuleProgress =
@@ -193,8 +259,41 @@ export const ProgressParticipantComponent = ({
       (moduleItem) => moduleItem.moduleId === selectedModuleId,
     ) ?? progressByModule[0];
 
+  const selectedModuleEvaluation = selectedModuleProgress
+    ? moduleEvaluations[selectedModuleProgress.moduleId]
+    : undefined;
+
+  const selectedModuleProgressWithEvaluation = useMemo(() => {
+    if (!selectedModuleProgress) return undefined;
+
+    if (!isEvaluationModule(selectedModuleProgress.type)) {
+      return selectedModuleProgress;
+    }
+
+    const participants = selectedModuleProgress.participants.map(
+      (participant) => {
+        const feedbackUser = selectedModuleEvaluation?.feedbackUser.find(
+          (feedback) => feedback.userId === participant.userId,
+        );
+
+        return {
+          ...participant,
+          status: feedbackUser?.done ? "DONE" : "NOT_TAKEN",
+        };
+      },
+    );
+
+    return {
+      ...selectedModuleProgress,
+      participants,
+      completedParticipant: participants.filter(
+        (participant) => participant.status === "DONE",
+      ).length,
+    };
+  }, [selectedModuleEvaluation, selectedModuleProgress]);
+
   const filteredModuleParticipants =
-    selectedModuleProgress?.participants.filter((participant) => {
+    selectedModuleProgressWithEvaluation?.participants.filter((participant) => {
       if (moduleParticipantFilter === "all") return true;
       return participant.status === moduleParticipantFilter;
     }) ?? [];
@@ -259,6 +358,7 @@ export const ProgressParticipantComponent = ({
 
   useEffect(() => {
     setSelectedQuizDetail(null);
+    setSelectedEvaluationDetail(null);
     setSelectedDiscussionDetail(null);
     setModuleParticipantFilter("all");
     setModuleParticipantPage(1);
@@ -266,6 +366,49 @@ export const ProgressParticipantComponent = ({
     setDiscussionOrder("desc");
     setDiscussionPage(1);
   }, [selectedModuleId, selectedSetion, viewMode]);
+
+  useEffect(() => {
+    const evaluationModules = progressByModule.filter(
+      (moduleItem) =>
+        isEvaluationModule(moduleItem.type) &&
+        !(moduleItem.moduleId in moduleEvaluations),
+    );
+
+    if (!evaluationModules.length) return;
+
+    const fetchEvaluationByModule = async () => {
+      setIsLoadingEvaluation(true);
+
+      try {
+        const evaluationResponses = await Promise.all(
+          evaluationModules.map(async (moduleItem) => {
+            const evaluation: ApiResponse<ModuleEvaluation> = await fetchApi(
+              `/admin/evaluation/module/${moduleItem.moduleId}`,
+            );
+
+            return {
+              moduleId: moduleItem.moduleId,
+              evaluation: evaluation.data ?? null,
+            };
+          }),
+        );
+
+        setModuleEvaluations((current) => {
+          const nextEvaluations = { ...current };
+
+          evaluationResponses.forEach((response) => {
+            nextEvaluations[response.moduleId] = response.evaluation;
+          });
+
+          return nextEvaluations;
+        });
+      } finally {
+        setIsLoadingEvaluation(false);
+      }
+    };
+
+    fetchEvaluationByModule();
+  }, [moduleEvaluations, progressByModule]);
 
   useEffect(() => {
     const discussionModules = progressByModule.filter(
@@ -366,6 +509,38 @@ export const ProgressParticipantComponent = ({
     }
   };
 
+  const handleShowEvaluationDetail = async ({
+    userId,
+    name,
+    moduleId,
+    moduleTitle,
+  }: {
+    userId: number;
+    name: string;
+    moduleId: number;
+    moduleTitle: string;
+  }) => {
+    setIsLoadingEvaluationDetail(true);
+
+    try {
+      const evaluation = moduleEvaluations[moduleId];
+      const feedbackUser = evaluation?.feedbackUser.find(
+        (feedback) => feedback.userId === userId,
+      );
+
+      setSelectedEvaluationDetail({
+        userId,
+        name,
+        moduleId,
+        moduleTitle,
+        evaluation: evaluation ?? undefined,
+        feedbackUser,
+      });
+    } finally {
+      setIsLoadingEvaluationDetail(false);
+    }
+  };
+
   const handleShowDiscussionDetail = async (discussionId: number) => {
     setIsLoadingDiscussionDetail(true);
 
@@ -409,13 +584,18 @@ export const ProgressParticipantComponent = ({
             setSelectedModuleId={setSelectedModuleId}
           />
           <ModuleParticipantPanel
-            selectedModuleProgress={selectedModuleProgress}
+            selectedModuleProgress={selectedModuleProgressWithEvaluation}
             selectedQuizDetail={selectedQuizDetail}
             setSelectedQuizDetail={setSelectedQuizDetail}
+            selectedEvaluationDetail={selectedEvaluationDetail}
+            setSelectedEvaluationDetail={setSelectedEvaluationDetail}
             selectedDiscussionDetail={selectedDiscussionDetail}
             setSelectedDiscussionDetail={setSelectedDiscussionDetail}
             moduleDiscussions={moduleDiscussions}
             isLoadingQuizDetail={isLoadingQuizDetail}
+            isLoadingEvaluationDetail={
+              isLoadingEvaluation || isLoadingEvaluationDetail
+            }
             isLoadingDiscussion={isLoadingDiscussion}
             isLoadingDiscussionDetail={isLoadingDiscussionDetail}
             moduleParticipantFilter={moduleParticipantFilter}
@@ -437,6 +617,7 @@ export const ProgressParticipantComponent = ({
             discussionPaginationPages={discussionPaginationPages}
             setDiscussionPage={setDiscussionPage}
             handleShowQuizDetail={handleShowQuizDetail}
+            handleShowEvaluationDetail={handleShowEvaluationDetail}
             handleShowDiscussionDetail={handleShowDiscussionDetail}
           />
         </div>

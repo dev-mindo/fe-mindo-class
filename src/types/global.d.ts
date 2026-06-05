@@ -474,6 +474,44 @@ declare global {
       id: number;
       title: string;
     };
+    dataQuiz?: {
+      id: number;
+      title: string | null;
+      minimumScore: number;
+      limitTime: string;
+      limitTrial: number;
+    } | null;
+    assignment?: TAssignment | null;
+    dataAssignment?: TAssignment | null;
+    task?: Array<{
+      id: number;
+      moduleId: number;
+      editable: boolean;
+      canLate: boolean;
+      startAt: string;
+      endAt: string;
+    }>;
+    videoLive?: {
+      id: number;
+      moduleId: number;
+      link: string;
+      startAt: string;
+      endAt: string;
+    } | null;
+    dataLive?: {
+      id: number;
+      moduleId: number;
+      link: string;
+      startAt: string;
+      endAt: string;
+    } | null;
+    live?: {
+      id: number;
+      moduleId: number;
+      link: string;
+      startAt: string;
+      endAt: string;
+    } | null;
   };
 
   type TDetailSection = {
@@ -568,6 +606,7 @@ declare global {
 
   type TModuleTaskParticipant = {
     userId: number;
+    moduleId?: number;
     name: string;
     taskId: any;
     uploadUrl: any;
@@ -576,6 +615,7 @@ declare global {
   };
 
   type TModuleTypeGrade = {
+    moduleId?: number;
     moduleTitle: string;
     data: TModuleTaskParticipant[];
   };
