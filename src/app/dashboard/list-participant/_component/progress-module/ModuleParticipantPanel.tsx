@@ -2,7 +2,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle2, CircleDashed } from "lucide-react";
+import Link from "next/link";
 import { DiscussionPanel } from "./DiscussionPanel";
+import { EvaluationDetailPanel } from "./EvaluationDetailPanel";
 import { QuizDetailPanel } from "./QuizDetailPanel";
 import type {
   DiscussionOrder,
@@ -10,18 +12,29 @@ import type {
   ModuleParticipantFilter,
   ModuleParticipantProgress,
   ModuleProgressItem,
+  SelectedEvaluationDetail,
   SelectedQuizDetail,
 } from "./types";
-import { getStatusLabel, isDiscussionModule, isQuizModule } from "./utils";
+import {
+  getStatusLabel,
+  getTaskStatusLabel,
+  isDiscussionModule,
+  isEvaluationModule,
+  isQuizModule,
+  isTaskModule,
+} from "./utils";
 
 type Props = {
   selectedModuleProgress?: ModuleProgressItem;
   selectedQuizDetail: SelectedQuizDetail | null;
   setSelectedQuizDetail: (detail: SelectedQuizDetail | null) => void;
+  selectedEvaluationDetail: SelectedEvaluationDetail | null;
+  setSelectedEvaluationDetail: (detail: SelectedEvaluationDetail | null) => void;
   selectedDiscussionDetail: TDetailDiscussion | null;
   setSelectedDiscussionDetail: (detail: TDetailDiscussion | null) => void;
   moduleDiscussions: Record<number, TModuleDiscussion>;
   isLoadingQuizDetail: boolean;
+  isLoadingEvaluationDetail: boolean;
   isLoadingDiscussion: boolean;
   isLoadingDiscussionDetail: boolean;
   moduleParticipantFilter: ModuleParticipantFilter;
@@ -48,6 +61,12 @@ type Props = {
     moduleId: number;
     moduleTitle: string;
   }) => void;
+  handleShowEvaluationDetail: (params: {
+    userId: number;
+    name: string;
+    moduleId: number;
+    moduleTitle: string;
+  }) => void;
   handleShowDiscussionDetail: (discussionId: number) => void;
 };
 
@@ -55,10 +74,13 @@ export const ModuleParticipantPanel = ({
   selectedModuleProgress,
   selectedQuizDetail,
   setSelectedQuizDetail,
+  selectedEvaluationDetail,
+  setSelectedEvaluationDetail,
   selectedDiscussionDetail,
   setSelectedDiscussionDetail,
   moduleDiscussions,
   isLoadingQuizDetail,
+  isLoadingEvaluationDetail,
   isLoadingDiscussion,
   isLoadingDiscussionDetail,
   moduleParticipantFilter,
@@ -80,6 +102,7 @@ export const ModuleParticipantPanel = ({
   discussionPaginationPages,
   setDiscussionPage,
   handleShowQuizDetail,
+  handleShowEvaluationDetail,
   handleShowDiscussionDetail,
 }: Props) => {
   if (!selectedModuleProgress) {
@@ -101,7 +124,7 @@ export const ModuleParticipantPanel = ({
     <Card className="self-start overflow-hidden xl:sticky xl:top-4">
       <div
         className={`flex flex-col ${
-          selectedQuizDetail
+          selectedQuizDetail || selectedEvaluationDetail
             ? "max-h-[calc(100vh-96px)]"
             : "max-h-[calc(100vh-180px)]"
         }`}
@@ -116,8 +139,10 @@ export const ModuleParticipantPanel = ({
                   </CardTitle>
                   <p className="mt-1 text-xs text-muted-foreground">
                     {selectedModuleProgress.completedParticipant} dari{" "}
-                    {selectedModuleProgress.participants.length} peserta sudah
-                    mengakses
+                    {selectedModuleProgress.participants.length} peserta{" "}
+                    {isEvaluationModule(selectedModuleProgress.type)
+                      ? "sudah mengerjakan"
+                      : "sudah mengakses"}
                   </p>
                 </div>
                 <div className="flex shrink-0 flex-wrap justify-end gap-2">
@@ -165,11 +190,24 @@ export const ModuleParticipantPanel = ({
             <CardContent className="min-h-0 space-y-2 overflow-y-auto p-3">
               {paginatedModuleParticipants.map((participant) => {
                 const isDone = participant.status === "DONE";
+                const isEvaluation = isEvaluationModule(
+                  selectedModuleProgress.type,
+                );
+                const isTask = isTaskModule(selectedModuleProgress.type);
+                const isLoadingEvaluationStatus =
+                  isEvaluation && isLoadingEvaluationDetail;
+                const statusLabel = isEvaluation
+                  ? isDone
+                    ? "Sudah mengerjakan"
+                    : "Belum mengerjakan"
+                  : isTask
+                    ? getTaskStatusLabel(participant.task?.status)
+                    : getStatusLabel(participant.status);
 
                 return (
                   <div
                     key={participant.userId}
-                    className="flex min-h-11 items-center justify-between gap-3 rounded-md border px-3 py-2"
+                    className="flex min-h-11 items-start justify-between gap-3 rounded-md border px-3 py-2"
                   >
                     <div className="min-w-0">
                       <p className="truncate text-sm font-medium">
@@ -186,6 +224,40 @@ export const ModuleParticipantPanel = ({
                           >
                             Nilai terbaru: {participant.score ?? "-"}
                           </Badge>
+                        ) : null}
+                        {isEvaluationModule(selectedModuleProgress.type) ? (
+                          <Badge
+                            variant="outline"
+                            className="h-5 px-1.5 text-[10px]"
+                          >
+                            Evaluasi
+                          </Badge>
+                        ) : null}
+                        {isTask ? (
+                          <>
+                            {participant.task?.uploadUrl ? (
+                              <Link
+                                href={participant.task.uploadUrl}
+                                target="_blank"
+                                className="max-w-56 truncate text-xs text-primary underline-offset-2 hover:underline"
+                              >
+                                {participant.task.uploadUrl}
+                              </Link>
+                            ) : (
+                              <Badge
+                                variant="outline"
+                                className="h-5 px-1.5 text-[10px]"
+                              >
+                                Upload: -
+                              </Badge>
+                            )}
+                            <Badge
+                              variant="outline"
+                              className="h-5 px-1.5 text-[10px]"
+                            >
+                              Nilai: {participant.task?.grade ?? "-"}
+                            </Badge>
+                          </>
                         ) : null}
                       </div>
                     </div>
@@ -208,17 +280,39 @@ export const ModuleParticipantPanel = ({
                           Detail
                         </Button>
                       ) : null}
+                      {isEvaluationModule(selectedModuleProgress.type) ? (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          disabled={isLoadingEvaluationDetail}
+                          onClick={() =>
+                            handleShowEvaluationDetail({
+                              userId: participant.userId,
+                              name: participant.name,
+                              moduleId: selectedModuleProgress.moduleId,
+                              moduleTitle: selectedModuleProgress.title,
+                            })
+                          }
+                        >
+                          Detail
+                        </Button>
+                      ) : null}
                       <Badge
                         variant={isDone ? "default" : "secondary"}
                         className="h-6 gap-1 px-2"
                       >
-                        {isDone ? (
+                        {isLoadingEvaluationStatus ? (
+                          <CircleDashed className="h-3 w-3" />
+                        ) : isDone ? (
                           <CheckCircle2 className="h-3 w-3" />
                         ) : (
                           <CircleDashed className="h-3 w-3" />
                         )}
                         <span className="text-[11px]">
-                          {getStatusLabel(participant.status)}
+                          {isLoadingEvaluationStatus
+                            ? "Memuat status"
+                            : statusLabel}
                         </span>
                       </Badge>
                     </div>
@@ -276,6 +370,12 @@ export const ModuleParticipantPanel = ({
               <QuizDetailPanel
                 selectedQuizDetail={selectedQuizDetail}
                 setSelectedQuizDetail={setSelectedQuizDetail}
+              />
+            ) : null}
+            {isEvaluationModule(selectedModuleProgress.type) ? (
+              <EvaluationDetailPanel
+                selectedEvaluationDetail={selectedEvaluationDetail}
+                setSelectedEvaluationDetail={setSelectedEvaluationDetail}
               />
             ) : null}
           </>
