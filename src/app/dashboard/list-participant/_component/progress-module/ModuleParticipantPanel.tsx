@@ -1,8 +1,12 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle2, CircleDashed } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import type { ApiResponse } from "@/lib/utils/fetchApi";
+import { CheckCircle2, CircleDashed, Download } from "lucide-react";
 import Link from "next/link";
+import { FormEvent, useEffect, useState } from "react";
+import { toast } from "sonner";
 import { DiscussionPanel } from "./DiscussionPanel";
 import { EvaluationDetailPanel } from "./EvaluationDetailPanel";
 import { QuizDetailPanel } from "./QuizDetailPanel";
@@ -37,6 +41,7 @@ type Props = {
   isLoadingEvaluationDetail: boolean;
   isLoadingDiscussion: boolean;
   isLoadingDiscussionDetail: boolean;
+  updatingTaskId: number | null;
   moduleParticipantFilter: ModuleParticipantFilter;
   setModuleParticipantFilter: (filter: ModuleParticipantFilter) => void;
   filteredModuleParticipants: ModuleParticipantProgress[];
@@ -68,6 +73,70 @@ type Props = {
     moduleTitle: string;
   }) => void;
   handleShowDiscussionDetail: (discussionId: number) => void;
+  handleUpdateTaskScore: (
+    taskId: number,
+    score: number,
+  ) => Promise<ApiResponse>;
+};
+
+const TaskScoreEditor = ({
+  taskId,
+  grade,
+  isUpdating,
+  handleUpdateTaskScore,
+}: {
+  taskId: number;
+  grade?: number | string | null;
+  isUpdating: boolean;
+  handleUpdateTaskScore: Props["handleUpdateTaskScore"];
+}) => {
+  const [score, setScore] = useState(grade?.toString() ?? "");
+
+  useEffect(() => {
+    setScore(grade?.toString() ?? "");
+  }, [grade]);
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const numericScore = Number(score);
+
+    if (
+      score.trim() === "" ||
+      !Number.isFinite(numericScore) ||
+      numericScore < 0
+    ) {
+      toast.error("Nilai harus berupa angka 0 atau lebih.");
+      return;
+    }
+
+    const response = await handleUpdateTaskScore(taskId, numericScore);
+
+    if (response.success) {
+      toast.success(response.message || "Nilai tugas berhasil diperbarui.");
+      return;
+    }
+
+    toast.error(response.message || "Nilai tugas gagal diperbarui.");
+  };
+
+  return (
+    <form className="flex items-center gap-2" onSubmit={handleSubmit}>
+      <Input
+        type="number"
+        min="0"
+        step="any"
+        value={score}
+        disabled={isUpdating}
+        onChange={(event) => setScore(event.target.value)}
+        className="h-8 w-20"
+        aria-label="Nilai tugas"
+      />
+      <Button type="submit" size="sm" disabled={isUpdating}>
+        {isUpdating ? "Menyimpan..." : "Update Nilai"}
+      </Button>
+    </form>
+  );
 };
 
 export const ModuleParticipantPanel = ({
@@ -83,6 +152,7 @@ export const ModuleParticipantPanel = ({
   isLoadingEvaluationDetail,
   isLoadingDiscussion,
   isLoadingDiscussionDetail,
+  updatingTaskId,
   moduleParticipantFilter,
   setModuleParticipantFilter,
   filteredModuleParticipants,
@@ -104,6 +174,7 @@ export const ModuleParticipantPanel = ({
   handleShowQuizDetail,
   handleShowEvaluationDetail,
   handleShowDiscussionDetail,
+  handleUpdateTaskScore,
 }: Props) => {
   if (!selectedModuleProgress) {
     return (
@@ -146,6 +217,28 @@ export const ModuleParticipantPanel = ({
                   </p>
                 </div>
                 <div className="flex shrink-0 flex-wrap justify-end gap-2">
+                  {isQuizModule(selectedModuleProgress.type) ? (
+                    <Button asChild size="sm" variant="outline">
+                      <a
+                        href={`http://localhost:3003/admin/quiz/export/${selectedModuleProgress.moduleId}`}
+                        download
+                      >
+                        <Download className="mr-2 h-4 w-4" />
+                        Export to CSV
+                      </a>
+                    </Button>
+                  ) : null}
+                  {isTaskModule(selectedModuleProgress.type) ? (
+                    <Button asChild size="sm" variant="outline">
+                      <a
+                        href={`http://localhost:3003/admin/task/export/${selectedModuleProgress.moduleId}`}
+                        download
+                      >
+                        <Download className="mr-2 h-4 w-4" />
+                        Export to CSV
+                      </a>
+                    </Button>
+                  ) : null}
                   <Badge variant="secondary">
                     {selectedModuleProgress.type}
                   </Badge>
@@ -262,6 +355,14 @@ export const ModuleParticipantPanel = ({
                       </div>
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
+                      {isTask && participant.task?.taskId ? (
+                        <TaskScoreEditor
+                          taskId={participant.task?.id}
+                          grade={participant.task.grade}
+                          isUpdating={updatingTaskId === participant.task.taskId}
+                          handleUpdateTaskScore={handleUpdateTaskScore}
+                        />
+                      ) : null}
                       {isQuizModule(selectedModuleProgress.type) ? (
                         <Button
                           type="button"

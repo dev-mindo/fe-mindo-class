@@ -1,4 +1,12 @@
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -19,12 +27,38 @@ import {
 import { ApiResponse, fetchApi } from "@/lib/utils/fetchApi";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { Loader2, Minus, Plus, UserPlus, Users } from "lucide-react";
+import { toast } from "sonner";
 
 type Props = {
   selectedClass: string | null;
 };
 
 const pageSize = 5;
+
+type AvailableParticipant = {
+  id: string;
+  name: string;
+  username: string;
+  email: string;
+  role: string;
+  status: string;
+};
+
+type UserApiResponse = {
+  errorCode: number;
+  message: string;
+  error: unknown;
+  statusCode: number;
+  data: {
+    results: AvailableParticipant[];
+    total: number;
+    page: number;
+    limit: number;
+    hasNext: boolean;
+    hasPrevious: boolean;
+  };
+};
 
 const getPaginationPages = (currentPage: number, totalPage: number) => {
   const maxVisiblePage = 5;
@@ -47,6 +81,25 @@ export const ParticipantComponent = ({ selectedClass }: Props) => {
   const [certificateFilter, setCertificateFilter] = useState<
     "all" | "eligible" | "not_eligible"
   >("all");
+  const [showAddParticipantDialog, setShowAddParticipantDialog] =
+    useState(false);
+  const [selectedParticipants, setSelectedParticipants] = useState<
+    AvailableParticipant[]
+  >([]);
+  const [participantSearch, setParticipantSearch] = useState("");
+  const [participantOrderBy, setParticipantOrderBy] = useState<
+    "latest" | "oldest"
+  >("latest");
+  const [availableParticipants, setAvailableParticipants] = useState<
+    AvailableParticipant[]
+  >([]);
+  const [participantPage, setParticipantPage] = useState(1);
+  const [participantTotal, setParticipantTotal] = useState(0);
+  const [participantHasNext, setParticipantHasNext] = useState(false);
+  const [participantHasPrevious, setParticipantHasPrevious] = useState(false);
+  const [isLoadingAvailableParticipants, setIsLoadingAvailableParticipants] =
+    useState(false);
+  const [participantError, setParticipantError] = useState("");
 
   const fetchParticipantByClassModule = async () => {
     if (!selectedClass) {
@@ -97,6 +150,118 @@ export const ParticipantComponent = ({ selectedClass }: Props) => {
     setCurrentPage(1);
   }, [search, certificateFilter]);
 
+  useEffect(() => {
+    if (!showAddParticipantDialog) return;
+
+    const controller = new AbortController();
+    const timeout = window.setTimeout(async () => {
+      setIsLoadingAvailableParticipants(true);
+      setParticipantError("");
+
+      const query = new URLSearchParams({
+        page: String(participantPage),
+        limit: String(pageSize),
+        orderBy: participantOrderBy,
+      });
+
+      if (participantSearch.trim()) {
+        query.set("search", participantSearch.trim());
+      }
+
+      try {
+        const response = await fetch(`/api/users?${query.toString()}`, {          
+          signal: controller.signal,
+          cache: "no-store",
+        });
+        const result: UserApiResponse = await response.json();
+
+        if (!response.ok || result.statusCode !== 200) {
+          throw new Error(result.message || "Gagal mengambil daftar peserta");
+        }
+
+        setAvailableParticipants(result.data?.results ?? []);
+        setParticipantTotal(result.data?.total ?? 0);
+        setParticipantHasNext(Boolean(result.data?.hasNext));
+        setParticipantHasPrevious(Boolean(result.data?.hasPrevious));
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") {
+          return;
+        }
+
+        setAvailableParticipants([]);
+        setParticipantTotal(0);
+        setParticipantHasNext(false);
+        setParticipantHasPrevious(false);
+        setParticipantError(
+          error instanceof Error
+            ? error.message
+            : "Gagal mengambil daftar peserta"
+        );
+      } finally {
+        if (!controller.signal.aborted) {
+          setIsLoadingAvailableParticipants(false);
+        }
+      }
+    }, 350);
+
+    return () => {
+      window.clearTimeout(timeout);
+      controller.abort();
+    };
+  }, [
+    participantOrderBy,
+    participantPage,
+    participantSearch,
+    showAddParticipantDialog,
+  ]);
+
+  const participantTotalPages = Math.max(
+    1,
+    Math.ceil(participantTotal / pageSize)
+  );
+  const participantPaginationPages = getPaginationPages(
+    participantPage,
+    participantTotalPages
+  );
+
+  const filteredAvailableParticipants = availableParticipants.filter(
+    (participant) =>
+      !selectedParticipants.some(
+        (selected) => selected.id === participant.id
+      ) &&
+      !dataParticipant.some(
+        (classParticipant) =>
+          String(classParticipant.userId ?? classParticipant.id) ===
+          participant.id
+      )
+  );
+  const addParticipant = (participant: AvailableParticipant) => {
+    setSelectedParticipants((current) => [...current, participant]);
+  };
+  const removeParticipant = (participantId: string) => {
+    setSelectedParticipants((current) =>
+      current.filter((participant) => participant.id !== participantId)
+    );
+  };
+  const handleSaveParticipants = () => {
+    toast.info(
+      `${selectedParticipants.length} peserta siap dimasukkan ke kelas`
+    );
+    handleAddParticipantDialogChange(false);
+  };
+
+  const handleAddParticipantDialogChange = (open: boolean) => {
+    setShowAddParticipantDialog(open);
+
+    if (!open) {
+      setSelectedParticipants([]);
+      setParticipantSearch("");
+      setParticipantOrderBy("latest");
+      setParticipantPage(1);
+      setParticipantError("");
+    }
+  };
+
   return (
     <div>
       <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -106,25 +271,36 @@ export const ParticipantComponent = ({ selectedClass }: Props) => {
           value={search}
           onChange={(event) => setSearch(event.target.value)}
         />
-        <Select
-          value={certificateFilter}
-          onValueChange={(value) =>
-            setCertificateFilter(
-              value as "all" | "eligible" | "not_eligible"
-            )
-          }
-        >
-          <SelectTrigger className="md:w-[240px]">
-            <SelectValue placeholder="Filter sertifikat" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Semua Sertifikat</SelectItem>
-            <SelectItem value="eligible">Sudah Mendapat Sertifikat</SelectItem>
-            <SelectItem value="not_eligible">
-              Belum Mendapat Sertifikat
-            </SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Select
+            value={certificateFilter}
+            onValueChange={(value) =>
+              setCertificateFilter(
+                value as "all" | "eligible" | "not_eligible"
+              )
+            }
+          >
+            <SelectTrigger className="md:w-[240px]">
+              <SelectValue placeholder="Filter sertifikat" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Semua Sertifikat</SelectItem>
+              <SelectItem value="eligible">
+                Sudah Mendapat Sertifikat
+              </SelectItem>
+              <SelectItem value="not_eligible">
+                Belum Mendapat Sertifikat
+              </SelectItem>
+            </SelectContent>
+          </Select>
+          <Button
+            onClick={() => setShowAddParticipantDialog(true)}
+            type="button"
+          >
+            <UserPlus className="mr-2 h-4 w-4" />
+            Tambah Peserta
+          </Button>
+        </div>
       </div>
       <Table className="w-full">
         <TableCaption>List Peserta</TableCaption>
@@ -211,6 +387,251 @@ export const ParticipantComponent = ({ selectedClass }: Props) => {
           </Button>
         </div>
       </div>
+      <Dialog
+        open={showAddParticipantDialog}
+        onOpenChange={handleAddParticipantDialogChange}
+      >
+        <DialogContent className="flex max-h-[90vh] w-[calc(100%-2rem)] max-w-6xl flex-col gap-0 overflow-hidden p-0">
+          <DialogHeader className="border-b px-6 py-5 pr-12">
+            <div className="flex items-center gap-3">
+              <div className="rounded-lg bg-primary/10 p-2 text-primary">
+                <UserPlus className="h-5 w-5" />
+              </div>
+              <div>
+                <DialogTitle>Tambah Peserta Kelas</DialogTitle>
+                <DialogDescription className="mt-1">
+                  Pilih peserta dari tabel kiri untuk dimasukkan ke kelas.
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+          <div className="min-h-0 flex-1 overflow-y-auto bg-muted/20 p-6">
+            <div className="grid gap-5 lg:grid-cols-2">
+              <div className="overflow-hidden rounded-lg border bg-background">
+                <div className="border-b p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <h3 className="font-semibold">Daftar Peserta</h3>
+                      <p className="text-xs text-muted-foreground">
+                        {participantTotal} peserta ditemukan
+                      </p>
+                    </div>
+                    <Users className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                  <div className="mt-3 grid gap-2 sm:grid-cols-[minmax(0,1fr)_150px]">
+                    <Input
+                      onChange={(event) => {
+                        setParticipantSearch(event.target.value);
+                        setParticipantPage(1);
+                      }}
+                      placeholder="Cari nama atau email..."
+                      value={participantSearch}
+                    />
+                    <Select
+                      value={participantOrderBy}
+                      onValueChange={(value) => {
+                        setParticipantOrderBy(
+                          value as "latest" | "oldest"
+                        );
+                        setParticipantPage(1);
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Urutkan" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="latest">Terbaru</SelectItem>
+                        <SelectItem value="oldest">Terlama</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="max-h-[420px] overflow-y-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Peserta</TableHead>
+                        <TableHead className="w-16 text-center">Aksi</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {isLoadingAvailableParticipants ? (
+                        <TableRow>
+                          <TableCell
+                            className="h-32 text-center text-muted-foreground"
+                            colSpan={2}
+                          >
+                            <div className="flex items-center justify-center gap-2">
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              Memuat peserta...
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ) : null}
+                      {!isLoadingAvailableParticipants &&
+                        filteredAvailableParticipants.map((participant) => (
+                          <TableRow key={participant.id}>
+                            <TableCell>
+                              <p className="font-medium">{participant.name}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {participant.email}
+                              </p>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <Button
+                                aria-label={`Tambah ${participant.name}`}
+                                onClick={() => addParticipant(participant)}
+                                size="icon"
+                                type="button"
+                              >
+                                <Plus className="h-4 w-4" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      {!isLoadingAvailableParticipants &&
+                      filteredAvailableParticipants.length === 0 ? (
+                        <TableRow>
+                          <TableCell
+                            className="h-24 text-center text-muted-foreground"
+                            colSpan={2}
+                          >
+                            {participantError ||
+                              "Peserta tidak ditemukan atau sudah terdaftar"}
+                          </TableCell>
+                        </TableRow>
+                      ) : null}
+                    </TableBody>
+                  </Table>
+                </div>
+                <div className="flex flex-col gap-3 border-t p-3 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-xs text-muted-foreground">
+                    Halaman {participantPage} dari {participantTotalPages}
+                  </p>
+                  <div className="flex flex-wrap items-center gap-1">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      disabled={
+                        isLoadingAvailableParticipants ||
+                        !participantHasPrevious
+                      }
+                      onClick={() =>
+                        setParticipantPage((page) => Math.max(1, page - 1))
+                      }
+                    >
+                      Previous
+                    </Button>
+                    {participantPaginationPages.map((page) => (
+                      <Button
+                        key={page}
+                        type="button"
+                        size="icon"
+                        variant={
+                          page === participantPage ? "default" : "outline"
+                        }
+                        disabled={isLoadingAvailableParticipants}
+                        aria-label={`Halaman ${page}`}
+                        aria-current={
+                          page === participantPage ? "page" : undefined
+                        }
+                        onClick={() => setParticipantPage(page)}
+                      >
+                        {page}
+                      </Button>
+                    ))}
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      disabled={
+                        isLoadingAvailableParticipants || !participantHasNext
+                      }
+                      onClick={() =>
+                        setParticipantPage((page) => page + 1)
+                      }
+                    >
+                      Next
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="overflow-hidden rounded-lg border bg-background">
+                <div className="flex items-center justify-between gap-3 border-b p-4">
+                  <div>
+                    <h3 className="font-semibold">Peserta Terpilih</h3>
+                    <p className="text-xs text-muted-foreground">
+                      {selectedParticipants.length} peserta akan masuk kelas
+                    </p>
+                  </div>
+                  <UserPlus className="h-5 w-5 text-primary" />
+                </div>
+                <div className="max-h-[474px] overflow-y-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Peserta</TableHead>
+                        <TableHead className="w-16 text-center">Aksi</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {selectedParticipants.map((participant) => (
+                        <TableRow key={participant.id}>
+                          <TableCell>
+                            <p className="font-medium">{participant.name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {participant.email}
+                            </p>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <Button
+                              aria-label={`Hapus ${participant.name}`}
+                              onClick={() => removeParticipant(participant.id)}
+                              size="icon"
+                              type="button"
+                              variant="destructive"
+                            >
+                              <Minus className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {selectedParticipants.length === 0 ? (
+                        <TableRow>
+                          <TableCell
+                            className="h-24 text-center text-muted-foreground"
+                            colSpan={2}
+                          >
+                            Belum ada peserta dipilih
+                          </TableCell>
+                        </TableRow>
+                      ) : null}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            </div>
+          </div>
+          <DialogFooter className="border-t bg-background px-6 py-4">
+            <Button
+              onClick={() => handleAddParticipantDialogChange(false)}
+              type="button"
+              variant="outline"
+            >
+              Batal
+            </Button>
+            <Button
+              disabled={selectedParticipants.length === 0}
+              onClick={handleSaveParticipants}
+              type="button"
+            >
+              Tambahkan {selectedParticipants.length} Peserta
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -50,6 +50,10 @@ export function DashboardBreadcrumb() {
     }));
   }, [pathname]);
 
+  if (pathname === "/dashboard/login") {
+    return null;
+  }
+
   return (
     <nav
       aria-label="Breadcrumb"

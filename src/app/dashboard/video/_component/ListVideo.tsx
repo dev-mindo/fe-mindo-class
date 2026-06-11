@@ -25,26 +25,21 @@ type BunnyVideoResponse = {
   itemsPerPage?: number;
 };
 
-const ITEMS_PER_PAGE = 10;
+const ITEMS_PER_PAGE = 2;
 
 export const ListVideo = () => {
   const [videoList, setVideoList] = useState<BunnyVideo[]>([]);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [totalItems, setTotalItems] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [search, setSearch] = useState<string>("");
+  const [debouncedSearch, setDebouncedSearch] = useState<string>("");
 
   const fetchListVideo = async () => {
     setIsLoading(true);
     try {
       const getListVideoBunny = await fetch(
-        `https://video.bunnycdn.com/library/361202/videos?page=${currentPage}&itemsPerPage=${ITEMS_PER_PAGE}&orderBy=date`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            AccessKey: "a6fd3f68-f0a7-4e0a-8e52f27607bb-58cb-4937",
-          },
-        }
+        `/admin/video?page=${currentPage}&limit=${ITEMS_PER_PAGE}&search=${encodeURIComponent(debouncedSearch)}`
       );
 
       const data: BunnyVideoResponse = await getListVideoBunny.json();
@@ -57,8 +52,16 @@ export const ListVideo = () => {
   };
 
   useEffect(() => {
+    const timeout = setTimeout(() => {
+      setDebouncedSearch(search.trim());
+    }, 500);
+
+    return () => clearTimeout(timeout);
+  }, [search]);
+
+  useEffect(() => {
     fetchListVideo();
-  }, [currentPage]);
+  }, [currentPage, debouncedSearch]);
 
   const totalPage = Math.max(Math.ceil(totalItems / ITEMS_PER_PAGE), 1);
   const startItem = totalItems === 0 ? 0 : (currentPage - 1) * ITEMS_PER_PAGE + 1;
@@ -74,7 +77,14 @@ export const ListVideo = () => {
 
   return (
     <div>
-      <Input placeholder="Cari Video"></Input>
+      <Input
+        onChange={(event) => {
+          setSearch(event.target.value);
+          setCurrentPage(1);
+        }}
+        placeholder="Cari Video"
+        value={search}
+      />
       <Table className="w-full">
         <TableCaption>List Video</TableCaption>
         <TableHeader>

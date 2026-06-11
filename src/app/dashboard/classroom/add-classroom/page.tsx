@@ -35,13 +35,22 @@ import { ApiResponse, fetchApi } from "@/lib/utils/fetchApi";
 import { fetchProductApi } from "@/lib/utils/fetchProductApi";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import {
+  Check,
+  ChevronDown,
+  Loader2,
+  Search,
+  UserRound,
+} from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { UIEvent } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 import { DashboardPageTitle } from "../../_component/page-title";
 
 const classSchema = z.object({
+  instructorId: z.string().min(1, "Instruktur wajib dipilih"),
   productType: z.string().min(1, "Tipe produk wajib dipilih"),
   productId: z.string().min(1, "Produk wajib dipilih"),
   publish: z.boolean(),
@@ -79,6 +88,73 @@ type ProductApiError = {
   message: string;
   statusCode: number;
 };
+
+type InstructorOption = {
+  id: string;
+  name: string;
+  username: string;
+  role: "PIC" | "PENGAJAR";
+};
+
+const instructorOptions: InstructorOption[] = [
+  { id: "1", name: "Aulia Rahman", username: "aulia.pic", role: "PIC" },
+  { id: "2", name: "Siti Rahma", username: "siti.rahma", role: "PENGAJAR" },
+  {
+    id: "3",
+    name: "Budi Santoso",
+    username: "budi.santoso",
+    role: "PENGAJAR",
+  },
+  { id: "4", name: "Nadia Putri", username: "nadia.pic", role: "PIC" },
+  {
+    id: "5",
+    name: "Rizky Maulana",
+    username: "rizky.maulana",
+    role: "PENGAJAR",
+  },
+  {
+    id: "6",
+    name: "Dewi Lestari",
+    username: "dewi.lestari",
+    role: "PENGAJAR",
+  },
+  { id: "7", name: "Fajar Nugraha", username: "fajar.pic", role: "PIC" },
+  { id: "8", name: "Maya Sari", username: "maya.sari", role: "PENGAJAR" },
+  {
+    id: "9",
+    name: "Ahmad Fauzi",
+    username: "ahmad.fauzi",
+    role: "PENGAJAR",
+  },
+  { id: "10", name: "Rina Wulandari", username: "rina.pic", role: "PIC" },
+  {
+    id: "11",
+    name: "Dimas Saputra",
+    username: "dimas.saputra",
+    role: "PENGAJAR",
+  },
+  {
+    id: "12",
+    name: "Putri Ananda",
+    username: "putri.ananda",
+    role: "PENGAJAR",
+  },
+  { id: "13", name: "Yoga Pratama", username: "yoga.pic", role: "PIC" },
+  {
+    id: "14",
+    name: "Nanda Permata",
+    username: "nanda.permata",
+    role: "PENGAJAR",
+  },
+  {
+    id: "15",
+    name: "Ilham Ramadhan",
+    username: "ilham.ramadhan",
+    role: "PENGAJAR",
+  },
+];
+
+const instructorBatchSize = 5;
 
 const productTypeOptions = [
   {
@@ -141,10 +217,18 @@ const Page = () => {
   const [hasNextProduct, setHasNextProduct] = useState(false);
   const [hasPreviousProduct, setHasPreviousProduct] = useState(false);
   const [isLoadingProduct, setIsLoadingProduct] = useState(false);
+  const [isInstructorOpen, setIsInstructorOpen] = useState(false);
+  const [instructorSearch, setInstructorSearch] = useState("");
+  const [visibleInstructorCount, setVisibleInstructorCount] =
+    useState(instructorBatchSize);
+  const [isLoadingMoreInstructors, setIsLoadingMoreInstructors] =
+    useState(false);
+  const instructorComboboxRef = useRef<HTMLDivElement>(null);
 
   const form = useForm<ClassFormValues>({
     resolver: zodResolver(classSchema),
     defaultValues: {
+      instructorId: "",
       productType: "",
       productId: "",
       publish: false,
@@ -153,6 +237,29 @@ const Page = () => {
       isAutoGetCertificate: false,
     },
   });
+
+  const selectedInstructorId = form.watch("instructorId");
+  const selectedInstructor = instructorOptions.find(
+    (instructor) => instructor.id === selectedInstructorId
+  );
+  const filteredInstructors = useMemo(() => {
+    const keyword = instructorSearch.trim().toLowerCase();
+
+    if (!keyword) return instructorOptions;
+
+    return instructorOptions.filter(
+      (instructor) =>
+        instructor.name.toLowerCase().includes(keyword) ||
+        instructor.username.toLowerCase().includes(keyword) ||
+        instructor.role.toLowerCase().includes(keyword)
+    );
+  }, [instructorSearch]);
+  const visibleInstructors = filteredInstructors.slice(
+    0,
+    visibleInstructorCount
+  );
+  const hasMoreInstructors =
+    visibleInstructorCount < filteredInstructors.length;
 
   const fetchProduct = async () => {
     setIsLoadingProduct(true);
@@ -209,6 +316,9 @@ const Page = () => {
     if (store.statusCode === 200 || store.statusCode === 201) {
       toast.info("Success menambahkan kelas");
       form.reset();
+      setIsInstructorOpen(false);
+      setInstructorSearch("");
+      setVisibleInstructorCount(instructorBatchSize);
       setSelectedProductId("");
       setSelectedProduct(null);
       fetchProduct();
@@ -221,6 +331,27 @@ const Page = () => {
   useEffect(() => {
     fetchProduct();
   }, [currentPage, orderByDate, searchProduct]);
+
+  useEffect(() => {
+    const closeInstructorCombobox = (event: MouseEvent) => {
+      if (
+        instructorComboboxRef.current &&
+        !instructorComboboxRef.current.contains(event.target as Node)
+      ) {
+        setIsInstructorOpen(false);
+        setInstructorSearch("");
+      }
+    };
+
+    document.addEventListener("mousedown", closeInstructorCombobox);
+    return () =>
+      document.removeEventListener("mousedown", closeInstructorCombobox);
+  }, []);
+
+  useEffect(() => {
+    setVisibleInstructorCount(instructorBatchSize);
+    setIsLoadingMoreInstructors(false);
+  }, [instructorSearch]);
 
   const totalPage = Math.max(1, Math.ceil(totalProduct / pageSize));
 
@@ -243,6 +374,37 @@ const Page = () => {
       shouldDirty: true,
       shouldValidate: true,
     });
+  };
+
+  const handleInstructorScroll = (event: UIEvent<HTMLDivElement>) => {
+    const list = event.currentTarget;
+    const isNearBottom =
+      list.scrollHeight - list.scrollTop - list.clientHeight < 40;
+
+    if (!isNearBottom || !hasMoreInstructors || isLoadingMoreInstructors) {
+      return;
+    }
+
+    setIsLoadingMoreInstructors(true);
+    window.setTimeout(() => {
+      setVisibleInstructorCount((current) =>
+        Math.min(
+          current + instructorBatchSize,
+          filteredInstructors.length
+        )
+      );
+      setIsLoadingMoreInstructors(false);
+    }, 500);
+  };
+
+  const selectInstructor = (instructor: InstructorOption) => {
+    form.setValue("instructorId", instructor.id, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+    setInstructorSearch("");
+    setIsInstructorOpen(false);
+    setVisibleInstructorCount(instructorBatchSize);
   };
 
   useEffect(() => {
@@ -321,6 +483,99 @@ const Page = () => {
                   />
                 </div>
               </div>              
+              <FormField
+                control={form.control}
+                name="instructorId"
+                render={() => (
+                  <FormItem className="mt-4 max-w-2xl">
+                    <FormLabel>Instruktur</FormLabel>
+                    <div ref={instructorComboboxRef} className="relative">
+                      {isInstructorOpen ? (
+                        <div className="relative">
+                          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                          <Input
+                            autoFocus
+                            className="pl-9 pr-9"
+                            value={instructorSearch}
+                            onChange={(event) =>
+                              setInstructorSearch(event.target.value)
+                            }
+                            placeholder="Cari nama, username, atau role"
+                          />
+                          <ChevronDown className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                        </div>
+                      ) : (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="w-full justify-between px-3 font-normal"
+                          onClick={() => setIsInstructorOpen(true)}
+                        >
+                          <span className="flex min-w-0 items-center gap-2">
+                            <UserRound className="h-4 w-4 shrink-0 text-muted-foreground" />
+                            <span className="truncate">
+                              {selectedInstructor
+                                ? `${selectedInstructor.name} - ${selectedInstructor.username}`
+                                : "Cari dan pilih instruktur"}
+                            </span>
+                          </span>
+                          <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
+                        </Button>
+                      )}
+
+                      {isInstructorOpen ? (
+                        <div className="absolute z-50 mt-1 w-full overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md">
+                          <div
+                            className="max-h-56 overflow-y-auto p-1"
+                            onScroll={handleInstructorScroll}
+                          >
+                            {visibleInstructors.map((instructor) => (
+                              <button
+                                key={instructor.id}
+                                type="button"
+                                className="flex w-full items-center gap-3 rounded-sm px-2 py-2 text-left text-sm transition-colors hover:bg-accent"
+                                onClick={() => selectInstructor(instructor)}
+                              >
+                                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                                  <UserRound className="h-4 w-4" />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <p className="truncate font-medium">
+                                    {instructor.name}
+                                  </p>
+                                  <p className="truncate text-xs text-muted-foreground">
+                                    {instructor.username} · {instructor.role}
+                                  </p>
+                                </div>
+                                {instructor.id === selectedInstructorId ? (
+                                  <Check className="h-4 w-4 shrink-0 text-primary" />
+                                ) : null}
+                              </button>
+                            ))}
+
+                            {!visibleInstructors.length ? (
+                              <div className="px-3 py-8 text-center text-sm text-muted-foreground">
+                                Instruktur tidak ditemukan
+                              </div>
+                            ) : null}
+
+                            {isLoadingMoreInstructors ? (
+                              <div className="flex items-center justify-center gap-2 px-3 py-3 text-xs text-muted-foreground">
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                Memuat instruktur...
+                              </div>
+                            ) : null}
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Ketik untuk mencari, lalu scroll untuk memuat data lainnya.
+                    </p>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <div className="mt-6 grid gap-4">
                 <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
                   <div>

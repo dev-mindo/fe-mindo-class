@@ -2,6 +2,7 @@ import ICard from "@/components/base/ICard";
 import { EditModule } from "./EditModule";
 
 type Props = {
+  classId: string;
   moduleId: number;
   showEditModule: boolean;
   setShowEditModule: (isShowing: boolean) => void;
@@ -9,6 +10,7 @@ type Props = {
 };
 
 export const EditModuleAside = ({
+  classId,
   moduleId,
   showEditModule,
   setShowEditModule,
@@ -18,6 +20,7 @@ export const EditModuleAside = ({
     <ICard className="self-start overflow-hidden xl:sticky xl:top-4">
       {showEditModule && moduleId > 0 ? (
         <EditModule
+          classId={classId}
           moduleId={moduleId}
           setShowEditModule={setShowEditModule}
           showEditModule={showEditModule}

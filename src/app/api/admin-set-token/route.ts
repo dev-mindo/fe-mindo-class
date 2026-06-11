@@ -24,3 +24,13 @@ export async function POST(req: NextRequest) {
     message: "Token stored in cookies",
   });
 }
+
+export async function DELETE() {
+  cookies().delete("admin_auth_token");
+  cookies().delete("admin_refresh_token");
+
+  return NextResponse.json({
+    success: true,
+    message: "Admin session removed",
+  });
+}
