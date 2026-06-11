@@ -8,16 +8,17 @@ import {
   ReactNode,
 } from "react";
 
-type User = {
-  id: number;
+export type DashboardUser = {
+  id: number | string;
   name: string;
-  email: string;
-  role: string
+  email?: string;
+  username?: string;
+  role: string;
 };
 
 type AppContextType = {
-  user: User | null;
-  setUser: (user: User | null) => void;
+  user: DashboardUser | null;
+  setUser: (user: DashboardUser | null) => void;
   isLoggedIn: boolean;
   hideSidebar: boolean;
   setHideSidebar: (hideSidebar: boolean) => void;
@@ -32,7 +33,7 @@ type AppProviderProps = {
 };
 
 export function DashboardProvider({ children }: AppProviderProps) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<DashboardUser | null>(null);
   const [hideSidebar, setHideSidebar] = useState<boolean>(false)
   const [titleTopBar, setTitleTopBar] = useState<string>("")
 

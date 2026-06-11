@@ -1,218 +1,530 @@
 "use client";
-import ICard from "@/components/base/ICard";
+
+import { useEffect, useMemo, useState } from "react";
+import {
+  BookOpen,
+  ChevronRight,
+  Loader2,
+  MessageSquare,
+  Search,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import {
   Select,
   SelectContent,
-  SelectGroup,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
-  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
 import { ApiResponse, fetchApi } from "@/lib/utils/fetchApi";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+
+type Classroom = {
+  id: number;
+  title: string;
+};
+
+type DiscussionStatus = "ALL" | "OPEN" | "CLOSED";
+
+const pageSize = 5;
 
 export const DiscussionList = () => {
-  const router = useRouter()
-  const [discussionData, setDiscussionData] = useState();
-  const [dataClass, setDataClass] = useState<any[]>([]);
-  const [selectedClass, setSelectedClass] = useState<string | null>(null);
-  const [sectionData, setSectionData] = useState<TDiscussionSection | null>(
+  const router = useRouter();
+  const [classrooms, setClassrooms] = useState<Classroom[]>([]);
+  const [selectedClass, setSelectedClass] = useState("");
+  const [sections, setSections] = useState<TDiscussionSection>([]);
+  const [selectedModuleId, setSelectedModuleId] = useState("");
+  const [discussions, setDiscussions] = useState<TModuleDiscussion>([]);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] =
+    useState<DiscussionStatus>("ALL");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [loadingClassrooms, setLoadingClassrooms] = useState(true);
+  const [loadingModules, setLoadingModules] = useState(false);
+  const [loadingDiscussions, setLoadingDiscussions] = useState(false);
+  const [openingDiscussionId, setOpeningDiscussionId] = useState<number | null>(
     null
   );
-  const [selectedIdModule, setSelectedIdModule] = useState<string>("");
-
-  const [dataModules, setDataModule] = useState<TModuleDiscussion | null>(null);
-
-  const fetchDataClass = async () => {
-    const dataClass: ApiResponse = await fetchApi(`/admin/classroom/show-all`);
-    if (dataClass && dataClass.data) {
-      console.log(dataClass);
-      setDataClass(dataClass.data);
-    }
-  };
-
-  const fetchDiscussionByClass = async () => {
-    console.log(selectedClass);
-    const getSectionData: ApiResponse<TDiscussionSection> = await fetchApi(
-      `/admin/discussion/show-by-class/${selectedClass}`
-    );
-
-    if (getSectionData && getSectionData.data) {
-      setSectionData(getSectionData.data);
-    }
-
-    console.log(getSectionData);
-  };
-
-  const fetchDiscussionByModule = async () => {
-    const getDiscussionModule: ApiResponse = await fetchApi(
-      `/admin/discussion/show-by-module/${selectedIdModule}`
-    );
-    if (getDiscussionModule && getDiscussionModule.data) {
-      setDataModule(getDiscussionModule.data);
-      console.log(getDiscussionModule.data);
-    }
-  };
 
   useEffect(() => {
-    fetchDataClass();
+    const loadClassrooms = async () => {
+      setLoadingClassrooms(true);
+      const response: ApiResponse<Classroom[]> = await fetchApi(
+        "/admin/classroom/show-all"
+      );
+      setClassrooms(response.data ?? []);
+      setLoadingClassrooms(false);
+    };
+
+    loadClassrooms();
   }, []);
 
   useEffect(() => {
-    fetchDiscussionByClass();
+    if (!selectedClass) {
+      setSections([]);
+      setSelectedModuleId("");
+      setDiscussions([]);
+      return;
+    }
+
+    const loadModules = async () => {
+      setLoadingModules(true);
+      setSections([]);
+      setSelectedModuleId("");
+      setDiscussions([]);
+
+      const response: ApiResponse<TDiscussionSection> = await fetchApi(
+        `/admin/discussion/show-by-class/${selectedClass}`
+      );
+      const nextSections = response.data ?? [];
+
+      setSections(nextSections);
+      setSelectedModuleId(
+        nextSections
+          .flatMap((section) => section.module)
+          .at(0)
+          ?.id.toString() ?? ""
+      );
+      setLoadingModules(false);
+    };
+
+    loadModules();
   }, [selectedClass]);
 
   useEffect(() => {
-    fetchDiscussionByModule();
-  }, [selectedIdModule]);  
+    if (!selectedModuleId) {
+      setDiscussions([]);
+      return;
+    }
+
+    const loadDiscussions = async () => {
+      setLoadingDiscussions(true);
+      const response: ApiResponse<TModuleDiscussion> = await fetchApi(
+        `/admin/discussion/show-by-module/${selectedModuleId}`
+      );
+      setDiscussions(response.data ?? []);
+      setLoadingDiscussions(false);
+    };
+
+    loadDiscussions();
+  }, [selectedModuleId]);
+
+  const selectedModule = useMemo(
+    () =>
+      sections
+        .flatMap((section) =>
+          section.module.map((module) => ({
+            ...module,
+            sectionTitle: section.title,
+          }))
+        )
+        .find((module) => module.id.toString() === selectedModuleId),
+    [sections, selectedModuleId]
+  );
+
+  const filteredDiscussions = useMemo(() => {
+    const keyword = search.trim().toLowerCase();
+
+    return discussions.filter((discussion) => {
+      const matchesSearch =
+        discussion.title.toLowerCase().includes(keyword) ||
+        discussion.user?.name?.toLowerCase().includes(keyword);
+      const matchesStatus =
+        statusFilter === "ALL" ||
+        (statusFilter === "OPEN" && discussion.status) ||
+        (statusFilter === "CLOSED" && !discussion.status);
+
+      return matchesSearch && matchesStatus;
+    });
+  }, [discussions, search, statusFilter]);
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredDiscussions.length / pageSize)
+  );
+  const paginatedDiscussions = filteredDiscussions.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, statusFilter, selectedModuleId]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(totalPages);
+  }, [currentPage, totalPages]);
+
+  const formatDate = (value: string) =>
+    new Intl.DateTimeFormat("id-ID", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    }).format(new Date(value));
+
+  const openDiscussion = (id: number) => {
+    setOpeningDiscussionId(id);
+    router.push(`/dashboard/discussion/${id}`);
+  };
 
   return (
-    <div>
-      <h1>Diskusi</h1>
-      <div className="grid grid-cols-3 gap-4">
-        <div className="col-span-1">
-          <ICard>
-            <div className="mb-4">
-              <h2>List Modul</h2>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight">
+          Pengelolaan Diskusi
+        </h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Pilih kelas dan modul untuk memantau diskusi peserta.
+        </p>
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-[340px_minmax(0,1fr)]">
+        <Card className="h-fit">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <BookOpen className="h-5 w-5 text-primary" />
+              Kelas dan Modul
+            </CardTitle>
+            <CardDescription>
+              Pilih modul untuk menampilkan daftar diskusi.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            <Select
+              value={selectedClass}
+              disabled={loadingClassrooms}
+              onValueChange={setSelectedClass}
+            >
+              <SelectTrigger>
+                <SelectValue
+                  placeholder={
+                    loadingClassrooms ? "Memuat kelas..." : "Pilih kelas"
+                  }
+                />
+              </SelectTrigger>
+              <SelectContent>
+                {classrooms.map((classroom) => (
+                  <SelectItem
+                    key={classroom.id}
+                    value={classroom.id.toString()}
+                  >
+                    {classroom.title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {!selectedClass ? (
+              <EmptyState
+                icon={<BookOpen className="h-5 w-5" />}
+                title="Belum ada kelas dipilih"
+                description="Pilih kelas terlebih dahulu untuk melihat modul."
+              />
+            ) : loadingModules ? (
+              <div className="space-y-3">
+                {Array.from({ length: 4 }).map((_, index) => (
+                  <Skeleton key={index} className="h-20 w-full" />
+                ))}
+              </div>
+            ) : sections.length ? (
+              <div className="max-h-[520px] space-y-5 overflow-y-auto pr-1">
+                {sections.map((section) => (
+                  <div key={section.id} className="space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <h3 className="truncate text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        {section.title}
+                      </h3>
+                      <span className="text-xs text-muted-foreground">
+                        {section.module.length} modul
+                      </span>
+                    </div>
+                    <div className="space-y-2">
+                      {section.module.map((module) => {
+                        const isActive =
+                          selectedModuleId === module.id.toString();
+
+                        return (
+                          <button
+                            key={module.id}
+                            type="button"
+                            onClick={() =>
+                              setSelectedModuleId(module.id.toString())
+                            }
+                            className={`w-full rounded-lg border p-3 text-left transition-colors ${
+                              isActive
+                                ? "border-primary bg-primary/5"
+                                : "bg-background hover:bg-muted/60"
+                            }`}
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="truncate text-sm font-medium">
+                                  {module.title}
+                                </p>
+                                <div className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
+                                  <MessageSquare className="h-3.5 w-3.5" />
+                                  {module._count.discussion} diskusi
+                                </div>
+                              </div>
+                              <ChevronRight
+                                className={`mt-0.5 h-4 w-4 shrink-0 ${
+                                  isActive
+                                    ? "text-primary"
+                                    : "text-muted-foreground"
+                                }`}
+                              />
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                icon={<BookOpen className="h-5 w-5" />}
+                title="Modul tidak ditemukan"
+                description="Kelas ini belum memiliki modul diskusi."
+              />
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="min-w-0">
+          <CardHeader className="gap-4 lg:flex-row lg:items-start lg:justify-between lg:space-y-0">
+            <div className="min-w-0">
+              <CardTitle className="truncate">
+                {selectedModule?.title ?? "Daftar Diskusi"}
+              </CardTitle>
+              <CardDescription className="mt-1.5">
+                {selectedModule
+                  ? `${selectedModule.sectionTitle} - ${discussions.length} diskusi`
+                  : "Pilih modul untuk menampilkan diskusi"}
+              </CardDescription>
             </div>
-            <div className="flex gap-2 mb-2">
+
+            <div className="flex w-full flex-col gap-2 sm:flex-row lg:w-auto">
+              <div className="relative sm:min-w-64">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  className="pl-9"
+                  placeholder="Cari judul atau peserta..."
+                  disabled={!selectedModuleId}
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                />
+              </div>
               <Select
-                onValueChange={(value) => {
-                  setSelectedClass(value);
-                }}
+                value={statusFilter}
+                disabled={!selectedModuleId}
+                onValueChange={(value) =>
+                  setStatusFilter(value as DiscussionStatus)
+                }
               >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Pilih Kelas" />
+                <SelectTrigger className="sm:w-40">
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectGroup>
-                    <SelectLabel>List Kelas</SelectLabel>
-                    {dataClass?.map((item: any) => (
-                      <SelectItem
-                        key={item.id}
-                        value={item.id}
-                        // onClick={() => setSelectedClass(item.id)}
-                        // onChange={(e) => {
-                        //   setSelectedClass(e.target.value);
-                        // }}
-                      >
-                        {item.title}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
+                  <SelectItem value="ALL">Semua status</SelectItem>
+                  <SelectItem value="OPEN">Open</SelectItem>
+                  <SelectItem value="CLOSED">Close</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex flex-col gap-2 w-full">
-              {sectionData?.map((sectionItem) => (
-                <div
-                  onClick={() => {
-                    setSelectedIdModule(
-                      sectionItem.module.at(0)?.id.toString() || ""
-                    );
-                  }}
-                >
-                  <ICard className="border w-full cursor hover:bg-[#212121] cursor-pointer">
-                    <div className="flex flex-col gap-2">
-                      <div className="">{sectionItem.title}</div>
-                      <div className="">{sectionItem.module.at(0)?.title}</div>
-                      <div className="">
-                        Diskusi: {sectionItem.module.at(0)?._count.discussion}
-                      </div>
-                      <div className="">Tanggapan anda: 0</div>
-                    </div>
-                  </ICard>
+          </CardHeader>
+
+          <CardContent>
+            {!selectedModuleId ? (
+              <EmptyState
+                className="min-h-80"
+                icon={<MessageSquare className="h-6 w-6" />}
+                title="Pilih modul"
+                description="Daftar diskusi akan ditampilkan setelah modul dipilih."
+              />
+            ) : loadingDiscussions ? (
+              <DiscussionTableSkeleton />
+            ) : (
+              <>
+                <div className="overflow-hidden rounded-lg border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-muted/50">
+                        <TableHead>Diskusi</TableHead>
+                        <TableHead className="hidden md:table-cell">
+                          Peserta
+                        </TableHead>
+                        <TableHead className="hidden sm:table-cell">
+                          Tanggapan
+                        </TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="w-24 text-right">Aksi</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {paginatedDiscussions.map((discussion) => (
+                        <TableRow key={discussion.id}>
+                          <TableCell>
+                            <div className="max-w-md">
+                              <p className="line-clamp-1 font-medium">
+                                {discussion.title}
+                              </p>
+                              <p className="mt-1 text-xs text-muted-foreground">
+                                {formatDate(discussion.createdAt)}
+                                <span className="md:hidden">
+                                  {" "}
+                                  · {discussion.user?.name ?? "-"}
+                                </span>
+                              </p>
+                            </div>
+                          </TableCell>
+                          <TableCell className="hidden md:table-cell">
+                            {discussion.user?.name ?? "-"}
+                          </TableCell>
+                          <TableCell className="hidden sm:table-cell">
+                            <span className="inline-flex items-center gap-1.5">
+                              <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                              {discussion._count.discussionAnswer}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant={
+                                discussion.status ? "default" : "secondary"
+                              }
+                            >
+                              {discussion.status ? "Open" : "Close"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              size="sm"
+                              disabled={openingDiscussionId !== null}
+                              onClick={() => openDiscussion(discussion.id)}
+                            >
+                              {openingDiscussionId === discussion.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                "Detail"
+                              )}
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+
+                      {!paginatedDiscussions.length && (
+                        <TableRow>
+                          <TableCell
+                            colSpan={5}
+                            className="h-40 text-center text-muted-foreground"
+                          >
+                            Diskusi tidak ditemukan.
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
                 </div>
-              ))}
-            </div>
-            {/* <Table>
-              <TableCaption>List of Modul</TableCaption>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nama Section</TableHead>
-                  <TableHead>Nama Modul</TableHead>
-                  <TableHead>Total Diskusi</TableHead>
-                  <TableHead>Tanggapan Anda</TableHead>
-                  <TableHead></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>                
-                <TableRow>
-                  <TableCell>Bagian A</TableCell>
-                  <TableCell>Modul 1</TableCell>
-                  <TableCell>5</TableCell>
-                  <TableCell>10</TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
-                      <Button>Detail</Button>                      
-                    </div>
-                  </TableCell>
-                </TableRow>                
-              </TableBody>
-            </Table> */}
-          </ICard>
-        </div>
-        <div className="col-span-2">
-          <div>
-            <ICard>
-              <h2 className="mb-4">Tabel Diskusi</h2>
-              <Table>
-                <TableCaption>List of Diskusi</TableCaption>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Judul Diskusi</TableHead>
-                    <TableHead>Total Diskusi</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Tanggapan Anda</TableHead>
-                    <TableHead></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {/* Example data, replace with actual data */}
-                  {dataModules?.map((moduleItem) => (
-                    <TableRow>
-                      <TableCell>{moduleItem.title}</TableCell>
-                      <TableCell>
-                        {moduleItem._count.discussionAnswer}
-                      </TableCell>
-                      <TableCell>
-                        {moduleItem.status ? (
-                          <Badge variant={"default"}>open</Badge>
-                        ) : (
-                          <Badge variant={"destructive"}>close</Badge>
-                        )}
-                      </TableCell>
-                      <TableCell>5</TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Button onClick={() => {
-                            router.push(`/dashboard/discussion/${moduleItem.id}`)
-                          }}>Detail</Button>
-                          <Button className="bg-red-500">Hapus</Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {/* Repeat TableRow for more evaluations */}
-                </TableBody>
-              </Table>
-            </ICard>
-          </div>
-        </div>
+
+                <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-sm text-muted-foreground">
+                    Menampilkan {paginatedDiscussions.length} dari{" "}
+                    {filteredDiscussions.length} diskusi
+                  </p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      disabled={currentPage === 1}
+                      onClick={() => setCurrentPage((page) => page - 1)}
+                    >
+                      Previous
+                    </Button>
+                    {Array.from(
+                      { length: totalPages },
+                      (_, index) => index + 1
+                    ).map((page) => (
+                      <Button
+                        key={page}
+                        type="button"
+                        size="sm"
+                        variant={page === currentPage ? "default" : "outline"}
+                        onClick={() => setCurrentPage(page)}
+                      >
+                        {page}
+                      </Button>
+                    ))}
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      disabled={currentPage === totalPages}
+                      onClick={() => setCurrentPage((page) => page + 1)}
+                    >
+                      Next
+                    </Button>
+                  </div>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
 };
+
+type EmptyStateProps = {
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+  className?: string;
+};
+
+const EmptyState = ({
+  icon,
+  title,
+  description,
+  className = "",
+}: EmptyStateProps) => (
+  <div
+    className={`flex flex-col items-center justify-center rounded-lg border border-dashed p-8 text-center ${className}`}
+  >
+    <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
+      {icon}
+    </div>
+    <p className="text-sm font-medium">{title}</p>
+    <p className="mt-1 max-w-xs text-xs text-muted-foreground">
+      {description}
+    </p>
+  </div>
+);
+
+const DiscussionTableSkeleton = () => (
+  <div className="space-y-3 rounded-lg border p-4">
+    <Skeleton className="h-10 w-full" />
+    {Array.from({ length: pageSize }).map((_, index) => (
+      <Skeleton key={index} className="h-14 w-full" />
+    ))}
+  </div>
+);

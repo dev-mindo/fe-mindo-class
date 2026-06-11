@@ -605,6 +605,7 @@ declare global {
   }[];
 
   type TModuleTaskParticipant = {
+    id: number;
     userId: number;
     moduleId?: number;
     name: string;

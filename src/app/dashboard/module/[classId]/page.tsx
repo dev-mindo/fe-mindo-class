@@ -325,6 +325,7 @@ const Page = () => {
         />
 
         <EditModuleAside
+          classId={params.classId}
           moduleId={moduleId}
           showEditModule={showEditModule}
           setShowEditModule={setShowEditModule}

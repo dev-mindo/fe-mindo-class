@@ -19,6 +19,7 @@ type Props = {
   name: string;
   label?: string;
   placeholder?: string;
+  disabled?: boolean;
   options: {
     value: string;
     label: string;
@@ -33,7 +34,11 @@ const ISelect = (props: Props) => {
       render={({ field }) => (
         <FormItem>
           <FormLabel>{props.label}</FormLabel>
-          <Select onValueChange={field.onChange} defaultValue={field.value}>
+          <Select
+            disabled={props.disabled}
+            onValueChange={field.onChange}
+            value={field.value || undefined}
+          >
             <FormControl>
               <SelectTrigger>
                 <SelectValue placeholder={props.placeholder} />

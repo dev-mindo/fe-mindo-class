@@ -26,11 +26,15 @@ import {
 type Props = {
   selectedClass: string | null;
   selectedSetion: number | null;
+  viewMode?: ViewMode;
+  onViewModeChange?: (viewMode: ViewMode) => void;
 };
 
 export const ProgressParticipantComponent = ({
   selectedClass,
   selectedSetion,
+  viewMode: controlledViewMode,
+  onViewModeChange,
 }: Props) => {
   const [dataProgress, setDataProgress] = useState<TDTModuleProgress[]>([]);
   const [dataModule, setDataModule] = useState<TListModuleBySection[]>([]);
@@ -40,7 +44,10 @@ export const ProgressParticipantComponent = ({
   const [dataTaskParticipant, setDataTaskParticipant] = useState<
     TModuleTypeGrade[]
   >([]);
-  const [viewMode, setViewMode] = useState<ViewMode>("user");
+  const [internalViewMode, setInternalViewMode] =
+    useState<ViewMode>("module");
+  const viewMode = controlledViewMode ?? internalViewMode;
+  const setViewMode = onViewModeChange ?? setInternalViewMode;
   const [selectedModuleId, setSelectedModuleId] = useState<number | null>(null);
   const [selectedQuizDetail, setSelectedQuizDetail] =
     useState<SelectedQuizDetail | null>(null);
@@ -55,6 +62,7 @@ export const ProgressParticipantComponent = ({
   const [isLoadingDiscussion, setIsLoadingDiscussion] = useState(false);
   const [isLoadingDiscussionDetail, setIsLoadingDiscussionDetail] =
     useState(false);
+  const [updatingTaskId, setUpdatingTaskId] = useState<number | null>(null);
   const [moduleDiscussions, setModuleDiscussions] = useState<
     Record<number, TModuleDiscussion>
   >({});
@@ -123,6 +131,7 @@ export const ProgressParticipantComponent = ({
   };
 
   useEffect(() => {
+    setSelectedModuleId(null);
     fetchProgressByClassModule();
     fetchModuleBySectionId();
     fetchScoresByClassModule();
@@ -169,6 +178,8 @@ export const ProgressParticipantComponent = ({
       Record<
         string,
         {
+          id?: number | null;
+          taskId?: number;
           uploadUrl?: string | null;
           grade?: number | string | null;
           status?: string | null;
@@ -187,6 +198,8 @@ export const ProgressParticipantComponent = ({
       taskModule.data.forEach((participant) => {
         const participantModuleId = participant.moduleId ?? moduleId;
         acc[`${participant.userId}-${participantModuleId}`] = {
+          id: participant.id,
+          taskId: participant.taskId,
           uploadUrl: participant.uploadUrl,
           grade: participant.grade,
           status: participant.status,
@@ -555,6 +568,28 @@ export const ProgressParticipantComponent = ({
     }
   };
 
+  const handleUpdateTaskScore = async (taskId: number, score: number) => {
+    setUpdatingTaskId(taskId);
+
+    try {
+      const response: ApiResponse = await fetchApi(
+        `/admin/task/${taskId}/score`,
+        {
+          method: "PATCH",
+          body: { score },
+        },
+      );
+
+      if (response.success) {
+        await fetchTaskByClassModule();
+      }
+
+      return response;
+    } finally {
+      setUpdatingTaskId(null);
+    }
+  };
+
   if (!selectedClass || !selectedSetion) {
     return (
       <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
@@ -573,7 +608,9 @@ export const ProgressParticipantComponent = ({
 
   return (
     <div className="space-y-3">
-      <ProgressViewSelect viewMode={viewMode} setViewMode={setViewMode} />
+      {controlledViewMode === undefined ? (
+        <ProgressViewSelect viewMode={viewMode} setViewMode={setViewMode} />
+      ) : null}
 
       {viewMode === "module" ? (
         <div className="grid gap-4 xl:grid-cols-[minmax(260px,0.45fr)_minmax(520px,1.55fr)]">
@@ -598,6 +635,7 @@ export const ProgressParticipantComponent = ({
             }
             isLoadingDiscussion={isLoadingDiscussion}
             isLoadingDiscussionDetail={isLoadingDiscussionDetail}
+            updatingTaskId={updatingTaskId}
             moduleParticipantFilter={moduleParticipantFilter}
             setModuleParticipantFilter={setModuleParticipantFilter}
             filteredModuleParticipants={filteredModuleParticipants}
@@ -619,6 +657,7 @@ export const ProgressParticipantComponent = ({
             handleShowQuizDetail={handleShowQuizDetail}
             handleShowEvaluationDetail={handleShowEvaluationDetail}
             handleShowDiscussionDetail={handleShowDiscussionDetail}
+            handleUpdateTaskScore={handleUpdateTaskScore}
           />
         </div>
       ) : (

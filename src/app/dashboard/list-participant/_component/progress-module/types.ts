@@ -10,6 +10,8 @@ export type ModuleParticipantProgress = {
   status: string;
   score?: number;
   task?: {
+    id: number,
+    taskId?: number;
     uploadUrl?: string | null;
     grade?: number | string | null;
     status?: string | null;

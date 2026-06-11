@@ -31,6 +31,8 @@ import {
 import { ParticipantComponent } from "../../list-participant/_component/Participant";
 import { ScoresParticipantComponent } from "../../list-participant/_component/ScoresParticipant";
 import { ProgressParticipantComponent } from "../../list-participant/_component/ProgressModule";
+import { ProgressViewSelect } from "../../list-participant/_component/progress-module/ProgressViewSelect";
+import type { ViewMode } from "../../list-participant/_component/progress-module/types";
 
 type ClassSectionWithModules = TClassModuleDetail["sections"][number] & {
   modules?: TClassModuleDetail["sections"][number]["module"];
@@ -76,6 +78,8 @@ const Page = () => {
   const [progressSectionId, setProgressSectionId] = useState<number | null>(
     null
   );
+  const [progressViewMode, setProgressViewMode] =
+    useState<ViewMode>("module");
 
   const [showEditModule, setShowEditModule] = useState<boolean>(false);
   const [dragItem, setDragItem] = useState<DragItem | null>(null);
@@ -133,8 +137,12 @@ const Page = () => {
       ApiResponse<TClassModuleDetail>,
       ApiResponse<TClassModuleDetail>
     ] = await Promise.all([
-      fetchApi(`/admin/classroom/show-detail/${params.classId}`),
-      fetchApi(`/admin/module/show-detail/${params.classId}`),
+      fetchApi<ApiResponse<TClassModuleDetail>>(
+        `/admin/classroom/show-detail/${params.classId}`
+      ),
+      fetchApi<ApiResponse<TClassModuleDetail>>(
+        `/admin/module/show-detail/${params.classId}`
+      ),
     ]);
 
     if (
@@ -176,14 +184,25 @@ const Page = () => {
       return false;
     }
 
+    const productId =
+      (
+        dataClassModule as (TClassModuleDetail & { productId?: number }) | null
+      )?.productId ?? dataClassModule?.sections.at(0)?.productId;
+
+    if (!productId) {
+      toast.error("Product ID kelas tidak ditemukan");
+      return false;
+    }
+
     setIsUpdatingClass(true);
 
     try {
       const updateClass: ApiResponse<TClassModuleDetail> = await fetchApi(
-        `/admin/classroom/${params.classId}`,
+        `/admin/classroom/${productId}`,
         {
           method: "PUT",
           body: {
+            instructorId: values.instructorId || null,
             productType: values.productType,
             publish: values.publish,
             publishTime: values.publishTime
@@ -478,27 +497,35 @@ const Page = () => {
         </TabsContent>
 
         <TabsContent value="progress" className="rounded-lg border bg-card p-4">
-          <div className="mb-4 flex flex-col gap-2 md:max-w-xs">
-            <p className="text-sm font-medium">Section</p>
-            <Select
-              value={progressSectionId ? String(progressSectionId) : ""}
-              onValueChange={(value) => setProgressSectionId(Number(value))}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Pilih section" />
-              </SelectTrigger>
-              <SelectContent>
-                {dataClassModule?.sections.map((section) => (
-                  <SelectItem key={section.id} value={String(section.id)}>
-                    {section.title}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:max-w-2xl">
+            <div className="flex flex-col gap-2">
+              <p className="text-sm font-medium">Section</p>
+              <Select
+                value={progressSectionId ? String(progressSectionId) : ""}
+                onValueChange={(value) => setProgressSectionId(Number(value))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Pilih section" />
+                </SelectTrigger>
+                <SelectContent>
+                  {dataClassModule?.sections.map((section) => (
+                    <SelectItem key={section.id} value={String(section.id)}>
+                      {section.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <ProgressViewSelect
+              viewMode={progressViewMode}
+              setViewMode={setProgressViewMode}
+            />
           </div>
           <ProgressParticipantComponent
             selectedClass={params.classId}
             selectedSetion={progressSectionId}
+            viewMode={progressViewMode}
+            onViewModeChange={setProgressViewMode}
           />
         </TabsContent>
 
@@ -527,6 +554,7 @@ const Page = () => {
             />
 
             <EditModuleAside
+              classId={params.classId}
               moduleId={moduleId}
               showEditModule={showEditModule}
               setShowEditModule={setShowEditModule}

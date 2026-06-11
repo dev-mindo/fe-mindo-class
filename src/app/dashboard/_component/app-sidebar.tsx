@@ -3,9 +3,11 @@ import {
   ArrowLeftFromLine,
   ClipboardList,
   FileText,
+  GraduationCap,
   Home,
   Info,
   LayoutDashboard,
+  Loader2,
   Menu,
   MessageSquareText,
   MonitorPlay,
@@ -85,6 +87,11 @@ const items = [
     url: "/dashboard/user",
     icon: <User strokeWidth={1.5} size={20} />,
   },
+  {
+    title: "Instruktur",
+    url: "/dashboard/instructor",
+    icon: <GraduationCap strokeWidth={1.5} size={20} />,
+  },
 ];
 
 const menu = [
@@ -104,11 +111,20 @@ const isActiveMenu = (pathname: string, url: string) => {
 };
 
 export function AppSidebar() {
-  const { setTheme, theme } = useTheme();
-  const [getCurrentTheme, setCurrentTheme] = useState<string>("");
+  const { setTheme, resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  const [loadingUrl, setLoadingUrl] = useState<string | null>(null);
   // const { hideAll, hideSidebar, setHideSidebar } = useAppContext();
-  const {hideSidebar} = useDashboardContext()
+  const { hideSidebar, user } = useDashboardContext();
   const pathname = usePathname();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    setLoadingUrl(null);
+  }, [pathname]);
 
   if (pathname === "/dashboard/login") {
     return <></>;
@@ -138,12 +154,18 @@ export function AppSidebar() {
               size="icon"
               variant="ghost"
               onClick={() => {
-                theme === "system" || theme === "light"
-                  ? setTheme("dark")
-                  : setTheme("light");
+                setTheme(resolvedTheme === "dark" ? "light" : "dark");
               }}
             >
-              {theme === "system" || theme === "light" ? <Moon /> : <Sun />}
+              {mounted ? (
+                resolvedTheme === "dark" ? (
+                  <Sun />
+                ) : (
+                  <Moon />
+                )
+              ) : (
+                <span className="h-6 w-6" />
+              )}
             </Button>
           </div>
           {/* <Button
@@ -157,13 +179,11 @@ export function AppSidebar() {
             <X />
           </Button> */}
         </div>
-        <div className="flex flex-col gap-1 w-full border-b-[1px] py-3 px-3">
-            <p>
-              nama
-            </p>
-            <p>
-              role
-            </p>
+        <div className="flex w-full flex-col gap-1 border-b px-3 py-3">
+          <p className="truncate font-medium">{user?.name || "-"}</p>
+          <p className="text-sm uppercase text-muted-foreground">
+            {user?.role || "-"}
+          </p>
         </div>
         <div></div>
         <div className="mt-5 px-2 overflow-y-auto">
@@ -171,23 +191,56 @@ export function AppSidebar() {
             <div className="flex flex-col gap-2">
               {items.map((item, index) => {
                 const active = isActiveMenu(pathname, item.url);
+                const isLoading = loadingUrl === item.url;
 
                 return (
                   <Link
                     key={index}
                     href={item.url}
                     aria-current={active ? "page" : undefined}
+                    aria-disabled={isLoading}
                     className="mx-4"
+                    onClick={(event) => {
+                      if (active || isLoading) {
+                        event.preventDefault();
+                        return;
+                      }
+
+                      if (
+                        event.button !== 0 ||
+                        event.metaKey ||
+                        event.ctrlKey ||
+                        event.shiftKey ||
+                        event.altKey
+                      ) {
+                        return;
+                      }
+
+                      setLoadingUrl(item.url);
+                    }}
                   >
                     <div
                       className={`flex gap-2 items-center rounded-lg px-2 py-2 transition-colors ${
-                        active
+                        active || isLoading
                           ? "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90"
                           : "text-sidebar-foreground/80 hover:bg-[#E2E2E2] hover:text-sidebar-foreground dark:hover:bg-[#3A3A3A]"
                       }`}
                     >
-                      <div className="mr-2">{item.icon}</div>
+                      <div className="mr-2">
+                        {isLoading ? (
+                          <Loader2
+                            className="animate-spin"
+                            strokeWidth={1.5}
+                            size={20}
+                          />
+                        ) : (
+                          item.icon
+                        )}
+                      </div>
                       <div>{item.title}</div>
+                      {isLoading ? (
+                        <span className="ml-auto text-xs">Memuat...</span>
+                      ) : null}
                     </div>
                   </Link>
                 );
