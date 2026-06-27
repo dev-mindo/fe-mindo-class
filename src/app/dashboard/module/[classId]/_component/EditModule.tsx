@@ -274,6 +274,8 @@ export const EditModule = (props: Props) => {
       : null;
     const liveValue = showLiveForm ? liveForm.getValues() : null;
 
+    console.log('video id', videoId)
+
     const updateDataModule: ApiResponse = await fetchApi(
       `/admin/module/${props.moduleId}`,
       {
@@ -341,8 +343,8 @@ export const EditModule = (props: Props) => {
         const dataModule = fetchDataModule.data;
         if (dataModule) {
           setSectionTitle(dataModule.section.title);
-          form.setValue("hide", dataModule.hide);
-          form.setValue("isLocked", dataModule.isLocked);
+          form.setValue("hide", dataModule.hide ?? false);
+          form.setValue("isLocked", dataModule.isLocked ?? false);
           form.setValue("menuTitle", dataModule.menuTitle);
           form.setValue("sectionId", dataModule.section.id);
           form.setValue("step", dataModule.step);
@@ -351,7 +353,7 @@ export const EditModule = (props: Props) => {
           setDescription(dataModule.description || "");
           setDescriptionDraft(dataModule.description || "");
 
-          const videoData = dataModule as TDetailModule & {
+          const legacyModuleData = dataModule as TDetailModule & {
             videoId?: string;
             videoName?: string;
             dataVideo?: {
@@ -391,23 +393,37 @@ export const EditModule = (props: Props) => {
               } | null;
             } | null;
           };
-          const selectedVideo =
-            videoData.dataVideo ||
-            videoData.video ||
-            videoData.videoLive?.video ||
-            videoData.dataLive?.video ||
-            videoData.live?.video;
+
+          const selectedVideo = (
+            dataModule.videoData?.video ||
+            dataModule.liveData?.video ||
+            legacyModuleData.dataVideo ||
+            legacyModuleData.video ||
+            legacyModuleData.videoLive?.video ||
+            legacyModuleData.dataLive?.video ||
+            legacyModuleData.live?.video
+          ) as
+            | {
+                guid?: string;
+                id?: string;
+                title?: string;
+                name?: string;
+              }
+            | null
+            | undefined;
 
           setVideoId(
-            videoData.videoId ||
+            dataModule.videoData?.videoId ||
+              dataModule.liveData?.videoId ||
+              legacyModuleData.videoId ||
               selectedVideo?.guid ||
               selectedVideo?.id ||
               ""
           );
           setVideoName(
-            videoData.videoName ||
+            selectedVideo?.name ||
+              legacyModuleData.videoName ||
               selectedVideo?.title ||
-              selectedVideo?.name ||
               ""
           );
 
@@ -444,6 +460,7 @@ export const EditModule = (props: Props) => {
           }
 
           const assignmentData =
+            dataModule.dataTask ||
             dataModule.assignment ||
             dataModule.dataAssignment ||
             dataModule.task?.at(0) ||
@@ -466,6 +483,7 @@ export const EditModule = (props: Props) => {
           }
 
           const liveData =
+            dataModule.liveData ||
             dataModule.videoLive ||
             dataModule.dataLive ||
             dataModule.live ||
@@ -474,7 +492,9 @@ export const EditModule = (props: Props) => {
           if (liveData) {
             liveForm.reset({
               videoId:
-                videoData.videoId ||
+                dataModule.liveData?.videoId ||
+                dataModule.videoData?.videoId ||
+                legacyModuleData.videoId ||
                 selectedVideo?.guid ||
                 selectedVideo?.id ||
                 "",
@@ -485,7 +505,8 @@ export const EditModule = (props: Props) => {
           } else {
             liveForm.reset({
               videoId:
-                videoData.videoId ||
+                dataModule.videoData?.videoId ||
+                legacyModuleData.videoId ||
                 selectedVideo?.guid ||
                 selectedVideo?.id ||
                 "",

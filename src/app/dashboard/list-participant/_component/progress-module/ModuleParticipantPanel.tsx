@@ -66,6 +66,7 @@ type Props = {
     moduleId: number;
     moduleTitle: string;
   }) => void;
+  handleQuizAttemptDeleted: () => Promise<void>;
   handleShowEvaluationDetail: (params: {
     userId: number;
     name: string;
@@ -73,6 +74,25 @@ type Props = {
     moduleTitle: string;
   }) => void;
   handleShowDiscussionDetail: (discussionId: number) => void;
+  handleCreateDiscussionAnswer: (
+    discussionId: number,
+    answer: string,
+  ) => Promise<ApiResponse<TDiscussionAnswer>>;
+  handleUpdateDiscussionAnswer: (
+    discussionId: number,
+    answerId: number,
+    answer: string,
+  ) => Promise<ApiResponse<TDiscussionAnswer>>;
+  handleDeleteDiscussionAnswer: (
+    discussionId: number,
+    answerId: number,
+  ) => Promise<ApiResponse>;
+  handleCloseDiscussion: (
+    discussionId: number,
+  ) => Promise<ApiResponse<TDetailDiscussion>>;
+  handleDeleteDiscussion: (
+    discussionId: number,
+  ) => Promise<ApiResponse>;
   handleUpdateTaskScore: (
     taskId: number,
     score: number,
@@ -172,8 +192,14 @@ export const ModuleParticipantPanel = ({
   discussionPaginationPages,
   setDiscussionPage,
   handleShowQuizDetail,
+  handleQuizAttemptDeleted,
   handleShowEvaluationDetail,
   handleShowDiscussionDetail,
+  handleCreateDiscussionAnswer,
+  handleUpdateDiscussionAnswer,
+  handleDeleteDiscussionAnswer,
+  handleCloseDiscussion,
+  handleDeleteDiscussion,
   handleUpdateTaskScore,
 }: Props) => {
   if (!selectedModuleProgress) {
@@ -471,6 +497,7 @@ export const ModuleParticipantPanel = ({
               <QuizDetailPanel
                 selectedQuizDetail={selectedQuizDetail}
                 setSelectedQuizDetail={setSelectedQuizDetail}
+                onAttemptDeleted={handleQuizAttemptDeleted}
               />
             ) : null}
             {isEvaluationModule(selectedModuleProgress.type) ? (
@@ -499,6 +526,11 @@ export const ModuleParticipantPanel = ({
             discussionPaginationPages={discussionPaginationPages}
             setDiscussionPage={setDiscussionPage}
             handleShowDiscussionDetail={handleShowDiscussionDetail}
+            handleCreateDiscussionAnswer={handleCreateDiscussionAnswer}
+            handleUpdateDiscussionAnswer={handleUpdateDiscussionAnswer}
+            handleDeleteDiscussionAnswer={handleDeleteDiscussionAnswer}
+            handleCloseDiscussion={handleCloseDiscussion}
+            handleDeleteDiscussion={handleDeleteDiscussion}
           />
         )}
       </div>

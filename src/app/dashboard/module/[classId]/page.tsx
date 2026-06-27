@@ -121,34 +121,21 @@ const Page = () => {
     setOpenAddSectionDialog(true);
   };
 
-  const persistModulesOrder = async (sections: SectionItem[]) => {
-    const modules = sections.flatMap((section) =>
-      section.module.map((module, index) => ({
-        ...module,
-        sectionId: section.id,
-        step: index + 1,
-      }))
+  const persistModuleOrder = async (
+    moduleId: number,
+    sectionId: number,
+    step: number
+  ) => {
+    const response: ApiResponse = await fetchApi(
+      `/admin/module/${moduleId}/order`,
+      {
+        method: "PATCH",
+        body: { sectionId, step },
+      }
     );
 
-    const responses = await Promise.all(
-      modules.map((module) =>
-        fetchApi<ApiResponse>(`/admin/module/${module.id}`, {
-          method: "PUT",
-          body: {
-            sectionId: module.sectionId,
-            title: module.title,
-            type: module.type,
-            menuTitle: module.menuTitle,
-            step: module.step,
-            hide: module.hide,
-            isLocked: module.isLocked,
-          },
-        })
-      )
-    );
-
-    if (responses.some((response) => response.statusCode !== 200)) {
-      throw new Error("Failed to update module order");
+    if (!response.success) {
+      throw new Error(response.message || "Failed to update module order");
     }
   };
 
@@ -230,7 +217,19 @@ const Page = () => {
     setModuleDropTarget(null);
 
     try {
-      await persistModulesOrder(reorderedSections);
+      const movedModuleOrder = reorderedSections
+        .find((section) => section.id === targetSectionId)
+        ?.module.find((module) => module.id === movedModule.id);
+
+      if (!movedModuleOrder) {
+        throw new Error("Module order not found");
+      }
+
+      await persistModuleOrder(
+        movedModule.id,
+        targetSectionId,
+        movedModuleOrder.step
+      );
       toast.info("Urutan modul sudah diperbaharui");
       getClassModule();
     } catch (error) {

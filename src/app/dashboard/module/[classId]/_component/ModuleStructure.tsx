@@ -15,6 +15,7 @@ type Props = {
   totalModule: number;
   dragItem: DragItem | null;
   moduleDropTarget: ModuleDropTarget | null;
+  readOnly?: boolean;
   setDragItem: (dragItem: DragItem | null) => void;
   setModuleDropTarget: (target: ModuleDropTarget | null) => void;
   setDataSection: (section: SectionData) => void;
@@ -48,6 +49,7 @@ export const ModuleStructure = ({
   totalModule,
   dragItem,
   moduleDropTarget,
+  readOnly = false,
   setDragItem,
   setModuleDropTarget,
   setDataSection,
@@ -111,10 +113,12 @@ export const ModuleStructure = ({
             {dataClassModule?.sections.length ?? 0} section, {totalModule} modul
           </p>
         </div>
-        <Button onClick={handleAddSection} size="sm" variant="outline">
-          <Plus size={16} />
-          Section
-        </Button>
+        {!readOnly ? (
+          <Button onClick={handleAddSection} size="sm" variant="outline">
+            <Plus size={16} />
+            Section
+          </Button>
+        ) : null}
       </div>
 
       <div className="flex flex-1 flex-col gap-4">
@@ -138,7 +142,7 @@ export const ModuleStructure = ({
                       </div>
                     </div>
                   </div>
-                  <div className="flex shrink-0">
+                  {!readOnly ? <div className="flex shrink-0">
                     <Button
                       onClick={() => {
                         setDataSection({
@@ -165,13 +169,15 @@ export const ModuleStructure = ({
                     >
                       <Trash size={18} />
                     </Button>
-                  </div>
+                  </div> : null}
                 </div>
 
                 <div
-                  onDragOver={(event) =>
-                    handleModuleListDragOver(event, sectionItem.id)
-                  }
+                  onDragOver={(event) => {
+                    if (!readOnly) {
+                      handleModuleListDragOver(event, sectionItem.id);
+                    }
+                  }}
                   onDrop={(event) => {
                     if (dragItem?.type === "module") {
                       event.stopPropagation();
@@ -190,9 +196,9 @@ export const ModuleStructure = ({
                             "before"
                           )}
                         <div
-                          draggable
+                          draggable={!readOnly}
                           onDragStart={(event) => {
-                            if (isNoDragTarget(event.target)) {
+                            if (readOnly || isNoDragTarget(event.target)) {
                               event.preventDefault();
                               return;
                             }
@@ -212,13 +218,15 @@ export const ModuleStructure = ({
                             setDragItem(null);
                             setModuleDropTarget(null);
                           }}
-                          onDragOver={(event) =>
-                            handleModuleDragOver(
-                              event,
-                              sectionItem.id,
-                              moduleItem.id
-                            )
-                          }
+                          onDragOver={(event) => {
+                            if (!readOnly) {
+                              handleModuleDragOver(
+                                event,
+                                sectionItem.id,
+                                moduleItem.id
+                              );
+                            }
+                          }}
                           onDrop={(event) => {
                             if (dragItem?.type === "module") {
                               event.stopPropagation();
@@ -229,7 +237,11 @@ export const ModuleStructure = ({
                               );
                             }
                           }}
-                          className={`flex cursor-grab items-center justify-between gap-3 rounded-md border bg-card px-3 py-2 transition-colors active:cursor-grabbing ${
+                          className={`flex items-center justify-between gap-3 rounded-md border bg-card px-3 py-2 transition-colors ${
+                            readOnly
+                              ? ""
+                              : "cursor-grab active:cursor-grabbing"
+                          } ${
                             dragItem?.type === "module" &&
                             dragItem.moduleId === moduleItem.id
                               ? "opacity-50"
@@ -239,13 +251,13 @@ export const ModuleStructure = ({
                           }`}
                         >
                           <div className="flex min-w-0 gap-2">
-                            <button
+                            {!readOnly ? <button
                               type="button"
                               className="mt-0.5 rounded-md p-1 text-muted-foreground"
                               aria-label={`Pindahkan modul ${moduleItem.title}`}
                             >
                               <GripVertical size={18} />
-                            </button>
+                            </button> : null}
                             <div className="min-w-0">
                               <div className="truncate font-medium">
                                 {moduleItem.title}
@@ -264,7 +276,7 @@ export const ModuleStructure = ({
                               </div>
                             </div>
                           </div>
-                          <div className="flex shrink-0 gap-1" data-no-drag>
+                          {!readOnly ? <div className="flex shrink-0 gap-1" data-no-drag>
                             <Button
                               onClick={() => {
                                 setModuleId(moduleItem.id);
@@ -288,7 +300,7 @@ export const ModuleStructure = ({
                             >
                               <Trash size={18} />
                             </Button>
-                          </div>
+                          </div> : null}
                         </div>
                         {renderModuleDropPlaceholder(
                           sectionItem.id,
@@ -319,7 +331,7 @@ export const ModuleStructure = ({
                   )}
                 </div>
 
-                <Button
+                {!readOnly ? <Button
                   onClick={() => {
                     handleAddModule();
                     setDataSection({
@@ -340,7 +352,7 @@ export const ModuleStructure = ({
                 >
                   <Plus />
                   Tambah Module
-                </Button>
+                </Button> : null}
               </div>
             );
           })
@@ -350,7 +362,7 @@ export const ModuleStructure = ({
               <p className="text-sm text-muted-foreground">
                 Belum ada section untuk kelas ini.
               </p>
-              <Button
+              {!readOnly ? <Button
                 onClick={handleAddSection}
                 size="sm"
                 variant="outline"
@@ -358,7 +370,7 @@ export const ModuleStructure = ({
               >
                 <Plus size={16} />
                 Tambah Section
-              </Button>
+              </Button> : null}
             </div>
           </div>
         )}

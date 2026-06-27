@@ -1,4 +1,9 @@
 import { ApiResponse, fetchApi } from "@/lib/utils/fetchApi";
+import { socket } from "@/lib/service/socket";
+import {
+  publishDiscussionEvent,
+  subscribeModuleDiscussion,
+} from "@/lib/service/discussionRealtime";
 import { useEffect, useMemo, useState } from "react";
 import { ModuleList } from "./progress-module/ModuleList";
 import { ModuleParticipantPanel } from "./progress-module/ModuleParticipantPanel";
@@ -467,6 +472,36 @@ export const ProgressParticipantComponent = ({
   }, [moduleDiscussions, progressByModule]);
 
   useEffect(() => {
+    if (!selectedModuleId || !isDiscussionModule(
+      moduleTypeById[selectedModuleId],
+    )) {
+      return;
+    }
+
+    return subscribeModuleDiscussion(selectedModuleId, async () => {
+      const discussion: ApiResponse<TModuleDiscussion> = await fetchApi(
+        `/admin/discussion/show-by-module/${selectedModuleId}`,
+      );
+
+      setModuleDiscussions((current) => ({
+        ...current,
+        [selectedModuleId]: discussion.data ?? [],
+      }));
+
+      if (selectedDiscussionDetail) {
+        const detail: ApiResponse<TDetailDiscussion> = await fetchApi(
+          `/admin/discussion/detail/${selectedDiscussionDetail.id}`,
+        );
+        setSelectedDiscussionDetail(detail.data ?? null);
+      }
+    });
+  }, [
+    moduleTypeById,
+    selectedDiscussionDetail?.id,
+    selectedModuleId,
+  ]);
+
+  useEffect(() => {
     setModuleParticipantPage(1);
   }, [moduleParticipantFilter]);
 
@@ -522,6 +557,13 @@ export const ProgressParticipantComponent = ({
     }
   };
 
+  const handleQuizAttemptDeleted = async () => {
+    await Promise.all([
+      fetchProgressByClassModule(),
+      fetchScoresByClassModule(),
+    ]);
+  };
+
   const handleShowEvaluationDetail = async ({
     userId,
     name,
@@ -566,6 +608,302 @@ export const ProgressParticipantComponent = ({
     } finally {
       setIsLoadingDiscussionDetail(false);
     }
+  };
+
+  const handleCreateDiscussionAnswer = async (
+    discussionId: number,
+    answer: string,
+  ) => {
+    const response: ApiResponse<TDiscussionAnswer> = await fetchApi(
+      `/admin/discussion/answer/${discussionId}`,
+      {
+        method: "POST",
+        body: { answer },
+      },
+    );
+
+    if (response.success && response.data) {
+      const discussionModuleId = selectedDiscussionDetail?.moduleId;
+      const rawAnswer = response.data as TDiscussionAnswer & {
+        adminClass?: {
+          user?: { id: number; name: string; role: string };
+        } | null;
+        instructorClass?: {
+          user?: { id: number; name: string; role: string };
+        } | null;
+      };
+      const staffUser =
+        rawAnswer.adminClass?.user || rawAnswer.instructorClass?.user;
+      const createdAnswer = {
+        ...rawAnswer,
+        author:
+          rawAnswer.author ||
+          (staffUser
+            ? {
+                type: staffUser.role,
+                id: staffUser.id,
+                name: staffUser.name,
+              }
+            : null),
+        isUser: true,
+      };
+
+      setSelectedDiscussionDetail((current) => {
+        if (!current || current.id !== discussionId) return current;
+
+        return {
+          ...current,
+          discussionAnswer: [...current.discussionAnswer, createdAnswer],
+          _count: {
+            ...current._count,
+            discussionAnswer: current._count.discussionAnswer + 1,
+          },
+        };
+      });
+
+      if (discussionModuleId) {
+        setModuleDiscussions((current) => ({
+          ...current,
+          [discussionModuleId]: (
+            current[discussionModuleId] ?? []
+          ).map((discussion) =>
+            discussion.id === discussionId
+              ? {
+                  ...discussion,
+                  _count: {
+                    ...discussion._count,
+                    discussionAnswer:
+                      discussion._count.discussionAnswer + 1,
+                  },
+                }
+              : discussion,
+          ),
+        }));
+      }
+
+      socket.emit(
+        "sendDiscussionAnswer",
+        JSON.stringify({
+          messageEvent: "create",
+          eventTo: "answer",
+          data: {
+            ...createdAnswer,
+            isUser: false,
+          },
+        }),
+      );
+
+      await publishDiscussionEvent({
+        action: "create",
+        entity: "answer",
+        source: "admin",
+        moduleId: discussionModuleId,
+        discussionId,
+        data: createdAnswer,
+      });
+    }
+
+    return response;
+  };
+
+  const handleUpdateDiscussionAnswer = async (
+    discussionId: number,
+    answerId: number,
+    answer: string,
+  ) => {
+    const response: ApiResponse<TDiscussionAnswer> = await fetchApi(
+      `/admin/discussion/answer/${answerId}`,
+      {
+        method: "PATCH",
+        body: { answer },
+      },
+    );
+
+    if (response.success && response.data) {
+      const updatedAnswer = {
+        ...response.data,
+        isUser: true,
+      };
+      const discussionModuleId = selectedDiscussionDetail?.moduleId;
+
+      setSelectedDiscussionDetail((current) =>
+        current?.id === discussionId
+          ? {
+              ...current,
+              discussionAnswer: current.discussionAnswer.map((item) =>
+                item.id === answerId
+                  ? { ...item, ...updatedAnswer }
+                  : item,
+              ),
+            }
+          : current,
+      );
+
+      await publishDiscussionEvent({
+        action: "update",
+        entity: "answer",
+        source: "admin",
+        moduleId: discussionModuleId,
+        discussionId,
+        data: updatedAnswer,
+      });
+    }
+
+    return response;
+  };
+
+  const handleDeleteDiscussionAnswer = async (
+    discussionId: number,
+    answerId: number,
+  ) => {
+    const response: ApiResponse = await fetchApi(
+      `/admin/discussion/answer/${answerId}`,
+      {
+        method: "DELETE",
+      },
+    );
+
+    if (response.success) {
+      const discussionModuleId = selectedDiscussionDetail?.moduleId;
+
+      setSelectedDiscussionDetail((current) =>
+        current?.id === discussionId
+          ? {
+              ...current,
+              discussionAnswer: current.discussionAnswer.filter(
+                (item) => item.id !== answerId,
+              ),
+              _count: {
+                ...current._count,
+                discussionAnswer: Math.max(
+                  current._count.discussionAnswer - 1,
+                  0,
+                ),
+              },
+            }
+          : current,
+      );
+
+      if (discussionModuleId) {
+        setModuleDiscussions((current) => ({
+          ...current,
+          [discussionModuleId]: (
+            current[discussionModuleId] ?? []
+          ).map((discussion) =>
+            discussion.id === discussionId
+              ? {
+                  ...discussion,
+                  _count: {
+                    ...discussion._count,
+                    discussionAnswer: Math.max(
+                      discussion._count.discussionAnswer - 1,
+                      0,
+                    ),
+                  },
+                }
+              : discussion,
+          ),
+        }));
+      }
+
+      await publishDiscussionEvent({
+        action: "delete",
+        entity: "answer",
+        source: "admin",
+        moduleId: discussionModuleId,
+        discussionId,
+        data: { id: answerId },
+      });
+    }
+
+    return response;
+  };
+
+  const handleCloseDiscussion = async (discussionId: number) => {
+    const response: ApiResponse<TDetailDiscussion> = await fetchApi(
+      `/admin/discussion/close/${discussionId}`,
+      {
+        method: "PATCH",
+      },
+    );
+
+    if (response.success) {
+      const closedDiscussion = response.data;
+      const discussionModuleId =
+        closedDiscussion?.moduleId ?? selectedDiscussionDetail?.moduleId;
+
+      setSelectedDiscussionDetail((current) =>
+        current?.id === discussionId
+          ? {
+              ...current,
+              ...closedDiscussion,
+              status: false,
+            }
+          : current,
+      );
+
+      if (discussionModuleId) {
+        setModuleDiscussions((current) => ({
+          ...current,
+          [discussionModuleId]: (
+            current[discussionModuleId] ?? []
+          ).map((discussion) =>
+            discussion.id === discussionId
+              ? { ...discussion, ...closedDiscussion, status: false }
+              : discussion,
+          ),
+        }));
+      }
+
+      await publishDiscussionEvent({
+        action: "close",
+        entity: "discussion",
+        source: "admin",
+        moduleId: discussionModuleId,
+        discussionId,
+        data: {
+          ...closedDiscussion,
+          id: discussionId,
+          status: false,
+        },
+      });
+    }
+
+    return response;
+  };
+
+  const handleDeleteDiscussion = async (discussionId: number) => {
+    const discussionModuleId = selectedDiscussionDetail?.moduleId;
+    const response: ApiResponse = await fetchApi(
+      `/admin/discussion/destroy/${discussionId}`,
+      {
+        method: "DELETE",
+      },
+    );
+
+    if (response.success) {
+      if (discussionModuleId) {
+        setModuleDiscussions((current) => ({
+          ...current,
+          [discussionModuleId]: (
+            current[discussionModuleId] ?? []
+          ).filter((discussion) => discussion.id !== discussionId),
+        }));
+      }
+
+      setSelectedDiscussionDetail(null);
+
+      await publishDiscussionEvent({
+        action: "delete",
+        entity: "discussion",
+        source: "admin",
+        moduleId: discussionModuleId,
+        discussionId,
+        data: { id: discussionId },
+      });
+    }
+
+    return response;
   };
 
   const handleUpdateTaskScore = async (taskId: number, score: number) => {
@@ -654,9 +992,15 @@ export const ProgressParticipantComponent = ({
             discussionTotalPage={discussionTotalPage}
             discussionPaginationPages={discussionPaginationPages}
             setDiscussionPage={setDiscussionPage}
+            handleQuizAttemptDeleted={handleQuizAttemptDeleted}
             handleShowQuizDetail={handleShowQuizDetail}
             handleShowEvaluationDetail={handleShowEvaluationDetail}
             handleShowDiscussionDetail={handleShowDiscussionDetail}
+            handleCreateDiscussionAnswer={handleCreateDiscussionAnswer}
+            handleUpdateDiscussionAnswer={handleUpdateDiscussionAnswer}
+            handleDeleteDiscussionAnswer={handleDeleteDiscussionAnswer}
+            handleCloseDiscussion={handleCloseDiscussion}
+            handleDeleteDiscussion={handleDeleteDiscussion}
             handleUpdateTaskScore={handleUpdateTaskScore}
           />
         </div>

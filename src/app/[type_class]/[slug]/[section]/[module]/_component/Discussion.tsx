@@ -15,6 +15,7 @@ import { MessageSquare, Search, ThumbsDown, ThumbsUp } from "lucide-react";
 import { NewDialogDiscussion } from "./discussion/NewDiscussionDialog";
 import { useEffect, useState } from "react";
 import { socket } from "@/lib/service/socket";
+import { subscribeModuleDiscussion } from "@/lib/service/discussionRealtime";
 import moment from "moment";
 import { useRouter } from "next/navigation";
 
@@ -37,6 +38,39 @@ export const Discussion = ({ discussionData, baseUrl, moduleId }: Props) => {
   );
 
   useEffect(() => {
+    const unsubscribeFirebase = subscribeModuleDiscussion(
+      moduleId,
+      (event) => {
+        if (event.entity !== "discussion") return;
+
+        const discussion = event.data as any;
+
+        if (event.action === "create") {
+          setDiscussionDataList((current) =>
+            current.some((item) => item.id === discussion.id)
+              ? current
+              : [discussion, ...current],
+          );
+        }
+
+        if (event.action === "update" || event.action === "close") {
+          setDiscussionDataList((current) =>
+            current.map((item) =>
+              item.id === discussion.id ? discussion : item,
+            ),
+          );
+        }
+
+        if (event.action === "delete") {
+          setDiscussionDataList((current) =>
+            current.filter(
+              (item) => item.id !== (discussion?.id ?? event.discussionId),
+            ),
+          );
+        }
+      },
+    );
+
     socket.on("connect", () => {
       setSocketConnected(true);
     });
@@ -77,11 +111,12 @@ export const Discussion = ({ discussionData, baseUrl, moduleId }: Props) => {
     });
 
     return () => {
+      unsubscribeFirebase();
       socket.off("connect");
       socket.off("disconnect");
       socket.off("discussionQuestion");
     };
-  }, []);
+  }, [moduleId]);
 
   useEffect(() => {
     console.log('socket connected', isSocketConnected)

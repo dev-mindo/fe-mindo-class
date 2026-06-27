@@ -19,8 +19,12 @@ import { TaskParticipantComponent } from "./_component/TaskParticipant";
 import { ProgressParticipantComponent } from "./_component/ProgressModule";
 import { ScoresParticipantComponent } from "./_component/ScoresParticipant";
 import { DashboardPageTitle } from "../_component/page-title";
+import { useDashboardContext } from "@/context/DashboardContext";
+import { canManageClassroom } from "@/lib/dashboard-permissions";
 
 const Page = () => {
+  const { user } = useDashboardContext();
+  const canManage = canManageClassroom(user?.role);
   const [dataClass, setDataClass] = useState<any[]>([]);
   const [selectedClass, setSelectedClass] = useState<string | null>(null);
   const [listSection, setListSection] = useState<TLIstSection[] | []>([]);
@@ -150,7 +154,7 @@ const Page = () => {
           </div>
           <div className="flex gap-4">
             <Button className="">Export to CSV</Button>
-            <Button>Tambah Kelas</Button>
+            {canManage ? <Button>Tambah Kelas</Button> : null}
           </div>
         </div>
         <Tabs defaultValue="participant">

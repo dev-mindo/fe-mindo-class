@@ -9,6 +9,7 @@ import {
   useDashboardContext,
 } from "@/context/DashboardContext";
 import { ApiResponse, fetchApi } from "@/lib/utils/fetchApi";
+import { canAccessDashboardPath } from "@/lib/dashboard-permissions";
 
 const LOGIN_PATH = "/dashboard/login";
 
@@ -66,6 +67,11 @@ export function DashboardSessionGuard({
 
         if (!profile.name || !profile.role) {
           await logout();
+          return;
+        }
+
+        if (!canAccessDashboardPath(profile.role, pathname)) {
+          window.location.replace("/dashboard");
           return;
         }
 

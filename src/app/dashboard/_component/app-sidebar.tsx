@@ -39,6 +39,7 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useDashboardContext } from "@/context/DashboardContext";
+import { isLimitedClassroomRole } from "@/lib/dashboard-permissions";
 
 // Menu items.
 const items = [
@@ -117,6 +118,11 @@ export function AppSidebar() {
   // const { hideAll, hideSidebar, setHideSidebar } = useAppContext();
   const { hideSidebar, user } = useDashboardContext();
   const pathname = usePathname();
+  const visibleItems = isLimitedClassroomRole(user?.role)
+    ? items.filter((item) =>
+        ["Dashboard", "Kelas", "Peserta", "Diskusi"].includes(item.title)
+      )
+    : items;
 
   useEffect(() => {
     setMounted(true);
@@ -189,7 +195,7 @@ export function AppSidebar() {
         <div className="mt-5 px-2 overflow-y-auto">
           <div>
             <div className="flex flex-col gap-2">
-              {items.map((item, index) => {
+              {visibleItems.map((item, index) => {
                 const active = isActiveMenu(pathname, item.url);
                 const isLoading = loadingUrl === item.url;
 

@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/table";
 import { ApiResponse, fetchApi } from "@/lib/utils/fetchApi";
 import { fetchProductApi } from "@/lib/utils/fetchProductApi";
+import { useDashboardContext } from "@/context/DashboardContext";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
 import {
@@ -49,14 +50,27 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { DashboardPageTitle } from "../../_component/page-title";
 
+enum ProductType {
+  VIDEO_LEARNING = "VIDEO_LEARNING",
+  BOOTCAMP = "BOOTCAMP",
+}
+
 const classSchema = z.object({
-  instructorId: z.string().min(1, "Instruktur wajib dipilih"),
-  productType: z.string().min(1, "Tipe produk wajib dipilih"),
-  productId: z.string().min(1, "Produk wajib dipilih"),
-  publish: z.boolean(),
-  publishTime: z.string().min(1, "Publish time wajib diisi"),
+  productId: z.coerce.number().int().min(1, "Produk wajib dipilih"),
+  instructorId: z.coerce.number().int().min(1, "Instruktur wajib dipilih"),
+  adminIds: z.array(z.coerce.number().int().min(1)).optional().default([]),
   title: z.string().min(1, "Title wajib diisi"),
-  isAutoGetCertificate: z.boolean(),
+  productType: z.nativeEnum(ProductType, {
+    required_error: "Tipe produk wajib dipilih",
+    invalid_type_error: "Tipe produk wajib dipilih",
+  }),
+  publish: z.boolean().optional().default(true),
+  publishTime: z.preprocess(
+    (value) => (value === "" ? undefined : value),
+    z.coerce.date().optional()
+  ),
+  thumbnail: z.string().optional().default(""),
+  isAutoGetCertificate: z.boolean().optional().default(false),
 });
 
 type ClassFormValues = z.infer<typeof classSchema>;
@@ -96,80 +110,74 @@ type InstructorOption = {
   role: "PIC" | "PENGAJAR";
 };
 
-const instructorOptions: InstructorOption[] = [
-  { id: "1", name: "Aulia Rahman", username: "aulia.pic", role: "PIC" },
-  { id: "2", name: "Siti Rahma", username: "siti.rahma", role: "PENGAJAR" },
-  {
-    id: "3",
-    name: "Budi Santoso",
-    username: "budi.santoso",
-    role: "PENGAJAR",
-  },
-  { id: "4", name: "Nadia Putri", username: "nadia.pic", role: "PIC" },
-  {
-    id: "5",
-    name: "Rizky Maulana",
-    username: "rizky.maulana",
-    role: "PENGAJAR",
-  },
-  {
-    id: "6",
-    name: "Dewi Lestari",
-    username: "dewi.lestari",
-    role: "PENGAJAR",
-  },
-  { id: "7", name: "Fajar Nugraha", username: "fajar.pic", role: "PIC" },
-  { id: "8", name: "Maya Sari", username: "maya.sari", role: "PENGAJAR" },
-  {
-    id: "9",
-    name: "Ahmad Fauzi",
-    username: "ahmad.fauzi",
-    role: "PENGAJAR",
-  },
-  { id: "10", name: "Rina Wulandari", username: "rina.pic", role: "PIC" },
-  {
-    id: "11",
-    name: "Dimas Saputra",
-    username: "dimas.saputra",
-    role: "PENGAJAR",
-  },
-  {
-    id: "12",
-    name: "Putri Ananda",
-    username: "putri.ananda",
-    role: "PENGAJAR",
-  },
-  { id: "13", name: "Yoga Pratama", username: "yoga.pic", role: "PIC" },
-  {
-    id: "14",
-    name: "Nanda Permata",
-    username: "nanda.permata",
-    role: "PENGAJAR",
-  },
-  {
-    id: "15",
-    name: "Ilham Ramadhan",
-    username: "ilham.ramadhan",
-    role: "PENGAJAR",
-  },
-];
+type InstructorListData = {
+  data: Array<Omit<InstructorOption, "id"> & { id: string | number }>;
+  pagination: {
+    page: number;
+    limit: number;
+    totalData: number;
+    totalPage: number;
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+  };
+};
+
+type AdminOption = {
+  id: string;
+  name: string;
+  username: string;
+  role: "ADMIN" | "PIC";
+};
+
+type AdminListData = {
+  results?: Array<Omit<AdminOption, "id"> & { id: string | number }>;
+  data?: Array<Omit<AdminOption, "id"> & { id: string | number }>;
+  total?: number;
+  page?: number;
+  limit?: number;
+  hasNext?: boolean;
+  hasPrevious?: boolean;
+  pagination?: {
+    page: number;
+    limit: number;
+    totalData: number;
+    totalPage: number;
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+  };
+};
 
 const instructorBatchSize = 5;
 
 const productTypeOptions = [
   {
     label: "VIDEO_LEARNING",
-    value: "VIDEO_LEARNING",
+    value: ProductType.VIDEO_LEARNING,
   },
   {
     label: "BOOTCAMP",
-    value: "BOOTCAMP",
+    value: ProductType.BOOTCAMP,
   },
 ];
 
 const pageSize = 5;
 
 const loadingRows = Array.from({ length: pageSize });
+
+const normalizeAdminListData = (data?: AdminListData | null) => {
+  const accounts = data?.results ?? data?.data ?? [];
+
+  return {
+    accounts: accounts.map((account) => ({
+      ...account,
+      id: String(account.id),
+    })),
+    total: data?.total ?? data?.pagination?.totalData ?? 0,
+    hasNext: data?.hasNext ?? data?.pagination?.hasNextPage ?? false,
+    hasPrevious:
+      data?.hasPrevious ?? data?.pagination?.hasPreviousPage ?? false,
+  };
+};
 
 const formatDate = (date?: string) => {
   if (!date) return "-";
@@ -207,6 +215,7 @@ const isProductApiError = (
 };
 
 const Page = () => {
+  const { user } = useDashboardContext();
   const [dataProduct, setDataProduct] = useState<Product[]>([]);
   const [selectedProductId, setSelectedProductId] = useState("");
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -217,30 +226,71 @@ const Page = () => {
   const [hasNextProduct, setHasNextProduct] = useState(false);
   const [hasPreviousProduct, setHasPreviousProduct] = useState(false);
   const [isLoadingProduct, setIsLoadingProduct] = useState(false);
+  const [instructorOptions, setInstructorOptions] = useState<
+    InstructorOption[]
+  >([]);
   const [isInstructorOpen, setIsInstructorOpen] = useState(false);
   const [instructorSearch, setInstructorSearch] = useState("");
-  const [visibleInstructorCount, setVisibleInstructorCount] =
-    useState(instructorBatchSize);
+  const [instructorPage, setInstructorPage] = useState(1);
+  const [hasNextInstructor, setHasNextInstructor] = useState(false);
+  const [isLoadingInstructors, setIsLoadingInstructors] = useState(false);
   const [isLoadingMoreInstructors, setIsLoadingMoreInstructors] =
     useState(false);
+  const [instructorError, setInstructorError] = useState("");
+  const [adminAccounts, setAdminAccounts] = useState<AdminOption[]>([]);
+  const [selectedAdminAccounts, setSelectedAdminAccounts] = useState<
+    AdminOption[]
+  >([]);
+  const [adminSearch, setAdminSearch] = useState("");
+  const [adminPage, setAdminPage] = useState(1);
+  const [totalAdmin, setTotalAdmin] = useState(0);
+  const [hasNextAdmin, setHasNextAdmin] = useState(false);
+  const [hasPreviousAdmin, setHasPreviousAdmin] = useState(false);
+  const [isLoadingAdmin, setIsLoadingAdmin] = useState(false);
+  const [adminError, setAdminError] = useState("");
+  const [picAccounts, setPicAccounts] = useState<AdminOption[]>([]);
+  const [selectedPicAccounts, setSelectedPicAccounts] = useState<
+    AdminOption[]
+  >([]);
+  const [picSearch, setPicSearch] = useState("");
+  const [picPage, setPicPage] = useState(1);
+  const [totalPic, setTotalPic] = useState(0);
+  const [hasNextPic, setHasNextPic] = useState(false);
+  const [hasPreviousPic, setHasPreviousPic] = useState(false);
+  const [isLoadingPic, setIsLoadingPic] = useState(false);
+  const [picError, setPicError] = useState("");
   const instructorComboboxRef = useRef<HTMLDivElement>(null);
 
   const form = useForm<ClassFormValues>({
     resolver: zodResolver(classSchema),
     defaultValues: {
-      instructorId: "",
-      productType: "",
-      productId: "",
-      publish: false,
-      publishTime: "",
+      instructorId: 0,
+      adminIds: [],
+      productId: 0,
+      publish: true,
       title: "",
+      thumbnail: "",
       isAutoGetCertificate: false,
     },
   });
 
   const selectedInstructorId = form.watch("instructorId");
+  const selectedAccountIds = form.watch("adminIds") ?? [];
+  const currentAdminAccount = useMemo<AdminOption | null>(() => {
+    if (!user) return null;
+
+    return {
+      id: String(user.id),
+      name: user.name,
+      username: user.username ?? user.email ?? "-",
+      role: "ADMIN",
+    };
+  }, [user]);
+  const currentAdminId = currentAdminAccount
+    ? Number(currentAdminAccount.id)
+    : null;
   const selectedInstructor = instructorOptions.find(
-    (instructor) => instructor.id === selectedInstructorId
+    (instructor) => Number(instructor.id) === selectedInstructorId
   );
   const filteredInstructors = useMemo(() => {
     const keyword = instructorSearch.trim().toLowerCase();
@@ -253,13 +303,53 @@ const Page = () => {
         instructor.username.toLowerCase().includes(keyword) ||
         instructor.role.toLowerCase().includes(keyword)
     );
-  }, [instructorSearch]);
-  const visibleInstructors = filteredInstructors.slice(
-    0,
-    visibleInstructorCount
-  );
-  const hasMoreInstructors =
-    visibleInstructorCount < filteredInstructors.length;
+  }, [instructorOptions, instructorSearch]);
+
+  const fetchInstructors = async (page: number, append = false) => {
+    if (append) {
+      setIsLoadingMoreInstructors(true);
+    } else {
+      setIsLoadingInstructors(true);
+      setInstructorError("");
+    }
+
+    const response: ApiResponse<InstructorListData> = await fetchApi(
+      `/admin/instructor?page=${page}&limit=${instructorBatchSize}`
+    );
+
+    if (response.statusCode === 200 && response.data) {
+      const nextInstructors = (response.data.data ?? []).map((instructor) => ({
+        ...instructor,
+        id: String(instructor.id),
+      }));
+
+      setInstructorOptions((currentInstructors) => {
+        if (!append) return nextInstructors;
+
+        const instructorMap = new Map(
+          currentInstructors.map((instructor) => [instructor.id, instructor])
+        );
+        nextInstructors.forEach((instructor) => {
+          instructorMap.set(instructor.id, instructor);
+        });
+
+        return Array.from(instructorMap.values());
+      });
+      setInstructorPage(response.data.pagination?.page ?? page);
+      setHasNextInstructor(response.data.pagination?.hasNextPage ?? false);
+    } else if (!append) {
+      setInstructorOptions([]);
+      setHasNextInstructor(false);
+      setInstructorError(
+        response.message || "Gagal mengambil data instruktur."
+      );
+    } else {
+      toast.error(response.message || "Gagal memuat instruktur berikutnya.");
+    }
+
+    setIsLoadingInstructors(false);
+    setIsLoadingMoreInstructors(false);
+  };
 
   const fetchProduct = async () => {
     setIsLoadingProduct(true);
@@ -298,14 +388,84 @@ const Page = () => {
     }
   };
 
+  const fetchAccounts = async (role: "ADMIN" | "PIC") => {
+    const isAdmin = role === "ADMIN";
+    const page = isAdmin ? adminPage : picPage;
+    const search = isAdmin ? adminSearch : picSearch;
+
+    if (isAdmin) {
+      setIsLoadingAdmin(true);
+      setAdminError("");
+    } else {
+      setIsLoadingPic(true);
+      setPicError("");
+    }
+
+    const query = new URLSearchParams({
+      page: String(page),
+      limit: String(pageSize),
+      role,
+    });
+
+    if (search.trim()) query.set("search", search.trim());
+
+    const response: ApiResponse<AdminListData> = await fetchApi(
+      `/admin/admin?${query.toString()}`
+    );
+
+    if (response.statusCode === 200 && response.data) {
+      const normalized = normalizeAdminListData(response.data);
+
+      if (isAdmin) {
+        setAdminAccounts(normalized.accounts);
+        setTotalAdmin(normalized.total);
+        setHasNextAdmin(normalized.hasNext);
+        setHasPreviousAdmin(normalized.hasPrevious);
+      } else {
+        setPicAccounts(normalized.accounts);
+        setTotalPic(normalized.total);
+        setHasNextPic(normalized.hasNext);
+        setHasPreviousPic(normalized.hasPrevious);
+      }
+    } else if (isAdmin) {
+      setAdminAccounts([]);
+      setTotalAdmin(0);
+      setHasNextAdmin(false);
+      setHasPreviousAdmin(false);
+      setAdminError(response.message || "Gagal mengambil data admin.");
+    } else {
+      setPicAccounts([]);
+      setTotalPic(0);
+      setHasNextPic(false);
+      setHasPreviousPic(false);
+      setPicError(response.message || "Gagal mengambil data PIC.");
+    }
+
+    if (isAdmin) {
+      setIsLoadingAdmin(false);
+    } else {
+      setIsLoadingPic(false);
+    }
+  };
+
   const onFinish = async (value: ClassFormValues) => {
+    const body = {
+      productId: value.productId,
+      instructorId: value.instructorId,
+      adminIds: value.adminIds ?? [],
+      title: value.title,
+      productType: value.productType,
+      publish: value.publish ?? true,
+      ...(value.publishTime
+        ? { publishTime: value.publishTime.toISOString() }
+        : {}),
+      thumbnail: value.thumbnail ?? "",
+      isAutoGetCertificate: value.isAutoGetCertificate ?? false,
+    };
+
     const store: ApiResponse = await fetchApi("/admin/classroom/add", {
       method: "POST",
-      body: {
-        ...value,
-        productId: Number(value.productId),
-        publishTime: new Date(value.publishTime).toISOString(),
-      },
+      body,
     });
 
     if (!store) {
@@ -315,12 +475,23 @@ const Page = () => {
 
     if (store.statusCode === 200 || store.statusCode === 201) {
       toast.info("Success menambahkan kelas");
-      form.reset();
+      form.reset({
+        instructorId: 0,
+        adminIds: currentAdminId ? [currentAdminId] : [],
+        productId: 0,
+        publish: true,
+        title: "",
+        thumbnail: "",
+        isAutoGetCertificate: false,
+      });
       setIsInstructorOpen(false);
       setInstructorSearch("");
-      setVisibleInstructorCount(instructorBatchSize);
       setSelectedProductId("");
       setSelectedProduct(null);
+      setSelectedAdminAccounts(
+        currentAdminAccount ? [currentAdminAccount] : []
+      );
+      setSelectedPicAccounts([]);
       fetchProduct();
       return;
     }
@@ -331,6 +502,75 @@ const Page = () => {
   useEffect(() => {
     fetchProduct();
   }, [currentPage, orderByDate, searchProduct]);
+
+  useEffect(() => {
+    void fetchInstructors(1);
+  }, []);
+
+  useEffect(() => {
+    if (
+      !currentAdminAccount ||
+      currentAdminId === null ||
+      !Number.isInteger(currentAdminId)
+    ) {
+      return;
+    }
+
+    const currentValue = form.getValues("adminIds") ?? [];
+
+    if (!currentValue.includes(currentAdminId)) {
+      form.setValue("adminIds", [currentAdminId, ...currentValue], {
+        shouldValidate: true,
+      });
+    }
+
+    setSelectedAdminAccounts((currentAccounts) => {
+      if (
+        currentAccounts.some(
+          (account) => Number(account.id) === currentAdminId
+        )
+      ) {
+        return currentAccounts;
+      }
+
+      return [currentAdminAccount, ...currentAccounts];
+    });
+  }, [currentAdminAccount, currentAdminId, form]);
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      void fetchAccounts("ADMIN");
+    }, 350);
+
+    return () => window.clearTimeout(timeout);
+  }, [adminPage, adminSearch]);
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      void fetchAccounts("PIC");
+    }, 350);
+
+    return () => window.clearTimeout(timeout);
+  }, [picPage, picSearch]);
+
+  useEffect(() => {
+    if (
+      !instructorSearch.trim() ||
+      !hasNextInstructor ||
+      isLoadingInstructors ||
+      isLoadingMoreInstructors
+    ) {
+      return;
+    }
+
+    void fetchInstructors(instructorPage + 1, true);
+  }, [
+    hasNextInstructor,
+    instructorPage,
+    instructorSearch,
+    isLoadingInstructors,
+    isLoadingMoreInstructors,
+  ]);
 
   useEffect(() => {
     const closeInstructorCombobox = (event: MouseEvent) => {
@@ -348,12 +588,9 @@ const Page = () => {
       document.removeEventListener("mousedown", closeInstructorCombobox);
   }, []);
 
-  useEffect(() => {
-    setVisibleInstructorCount(instructorBatchSize);
-    setIsLoadingMoreInstructors(false);
-  }, [instructorSearch]);
-
   const totalPage = Math.max(1, Math.ceil(totalProduct / pageSize));
+  const totalAdminPage = Math.max(1, Math.ceil(totalAdmin / pageSize));
+  const totalPicPage = Math.max(1, Math.ceil(totalPic / pageSize));
 
   const handleSearchProduct = (value: string) => {
     setSearchProduct(value);
@@ -370,7 +607,74 @@ const Page = () => {
 
     setSelectedProductId(value);
     setSelectedProduct(product ?? null);
-    form.setValue("productId", value, {
+    form.setValue("productId", Number(value), {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+  };
+
+  const handleSelectAdmin = (account: AdminOption) => {
+    const accountId = Number(account.id);
+
+    if (accountId === currentAdminId) {
+      return;
+    }
+
+    const currentValue = form.getValues("adminIds") ?? [];
+    const isSelected = currentValue.includes(accountId);
+    const nextValue = currentValue.includes(accountId)
+      ? currentValue.filter((id) => id !== accountId)
+      : [...currentValue, accountId];
+
+    if (isSelected) {
+      setSelectedPicAccounts((currentAccounts) =>
+        currentAccounts.filter((item) => item.id !== account.id)
+      );
+    }
+
+    setSelectedAdminAccounts((currentAccounts) => {
+      if (!nextValue.includes(accountId)) {
+        return currentAccounts.filter((item) => item.id !== account.id);
+      }
+
+      if (currentAccounts.some((item) => item.id === account.id)) {
+        return currentAccounts;
+      }
+
+      return [...currentAccounts, account];
+    });
+    form.setValue("adminIds", nextValue, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+  };
+
+  const handleSelectPic = (account: AdminOption) => {
+    const accountId = Number(account.id);
+    const currentValue = form.getValues("adminIds") ?? [];
+    const isSelected = currentValue.includes(accountId);
+    const nextValue = currentValue.includes(accountId)
+      ? currentValue.filter((id) => id !== accountId)
+      : [...currentValue, accountId];
+
+    if (isSelected) {
+      setSelectedAdminAccounts((currentAccounts) =>
+        currentAccounts.filter((item) => item.id !== account.id)
+      );
+    }
+
+    setSelectedPicAccounts((currentAccounts) => {
+      if (!nextValue.includes(accountId)) {
+        return currentAccounts.filter((item) => item.id !== account.id);
+      }
+
+      if (currentAccounts.some((item) => item.id === account.id)) {
+        return currentAccounts;
+      }
+
+      return [...currentAccounts, account];
+    });
+    form.setValue("adminIds", nextValue, {
       shouldDirty: true,
       shouldValidate: true,
     });
@@ -381,37 +685,42 @@ const Page = () => {
     const isNearBottom =
       list.scrollHeight - list.scrollTop - list.clientHeight < 40;
 
-    if (!isNearBottom || !hasMoreInstructors || isLoadingMoreInstructors) {
+    if (
+      !isNearBottom ||
+      !hasNextInstructor ||
+      isLoadingInstructors ||
+      isLoadingMoreInstructors
+    ) {
       return;
     }
 
-    setIsLoadingMoreInstructors(true);
-    window.setTimeout(() => {
-      setVisibleInstructorCount((current) =>
-        Math.min(
-          current + instructorBatchSize,
-          filteredInstructors.length
-        )
-      );
-      setIsLoadingMoreInstructors(false);
-    }, 500);
+    void fetchInstructors(instructorPage + 1, true);
   };
 
   const selectInstructor = (instructor: InstructorOption) => {
-    form.setValue("instructorId", instructor.id, {
+    form.setValue("instructorId", Number(instructor.id), {
       shouldDirty: true,
       shouldValidate: true,
     });
     setInstructorSearch("");
     setIsInstructorOpen(false);
-    setVisibleInstructorCount(instructorBatchSize);
   };
 
   useEffect(() => {
     if (currentPage > totalPage) setCurrentPage(totalPage);
   }, [currentPage, totalPage]);
 
+  useEffect(() => {
+    if (adminPage > totalAdminPage) setAdminPage(totalAdminPage);
+  }, [adminPage, totalAdminPage]);
+
+  useEffect(() => {
+    if (picPage > totalPicPage) setPicPage(totalPicPage);
+  }, [picPage, totalPicPage]);
+
   const paginationPages = getPaginationPages(currentPage, totalPage);
+  const adminPaginationPages = getPaginationPages(adminPage, totalAdminPage);
+  const picPaginationPages = getPaginationPages(picPage, totalPicPage);
 
   return (
     <div className="w-full">
@@ -529,33 +838,45 @@ const Page = () => {
                             className="max-h-56 overflow-y-auto p-1"
                             onScroll={handleInstructorScroll}
                           >
-                            {visibleInstructors.map((instructor) => (
-                              <button
-                                key={instructor.id}
-                                type="button"
-                                className="flex w-full items-center gap-3 rounded-sm px-2 py-2 text-left text-sm transition-colors hover:bg-accent"
-                                onClick={() => selectInstructor(instructor)}
-                              >
-                                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                                  <UserRound className="h-4 w-4" />
-                                </div>
-                                <div className="min-w-0 flex-1">
-                                  <p className="truncate font-medium">
-                                    {instructor.name}
-                                  </p>
-                                  <p className="truncate text-xs text-muted-foreground">
-                                    {instructor.username} · {instructor.role}
-                                  </p>
-                                </div>
-                                {instructor.id === selectedInstructorId ? (
-                                  <Check className="h-4 w-4 shrink-0 text-primary" />
-                                ) : null}
-                              </button>
-                            ))}
+                            {isLoadingInstructors ? (
+                              <div className="flex items-center justify-center gap-2 px-3 py-8 text-sm text-muted-foreground">
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                Memuat instruktur...
+                              </div>
+                            ) : null}
 
-                            {!visibleInstructors.length ? (
+                            {!isLoadingInstructors &&
+                              filteredInstructors.map((instructor) => (
+                                <button
+                                  key={instructor.id}
+                                  type="button"
+                                  className="flex w-full items-center gap-3 rounded-sm px-2 py-2 text-left text-sm transition-colors hover:bg-accent"
+                                  onClick={() => selectInstructor(instructor)}
+                                >
+                                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                                    <UserRound className="h-4 w-4" />
+                                  </div>
+                                  <div className="min-w-0 flex-1">
+                                    <p className="truncate font-medium">
+                                      {instructor.name}
+                                    </p>
+                                    <p className="truncate text-xs text-muted-foreground">
+                                      {instructor.username} · {instructor.role}
+                                    </p>
+                                  </div>
+                                  {Number(instructor.id) ===
+                                  selectedInstructorId ? (
+                                    <Check className="h-4 w-4 shrink-0 text-primary" />
+                                  ) : null}
+                                </button>
+                              ))}
+
+                            {!isLoadingInstructors &&
+                            !isLoadingMoreInstructors &&
+                            !filteredInstructors.length ? (
                               <div className="px-3 py-8 text-center text-sm text-muted-foreground">
-                                Instruktur tidak ditemukan
+                                {instructorError ||
+                                  "Instruktur tidak ditemukan"}
                               </div>
                             ) : null}
 
@@ -576,6 +897,62 @@ const Page = () => {
                   </FormItem>
                 )}
               />
+              <div className="mt-4 grid gap-4 md:grid-cols-2">
+                <FormField
+                  control={form.control}
+                  name="adminIds"
+                  render={({ field }) => (
+                    <FormItem>
+                      <AccountSelectionTable
+                        label="Admin"
+                        searchId="search-admin"
+                        accounts={adminAccounts}
+                        selectedAccounts={selectedAdminAccounts}
+                        value={field.value ?? []}
+                        search={adminSearch}
+                        total={totalAdmin}
+                        currentPage={adminPage}
+                        paginationPages={adminPaginationPages}
+                        hasNext={hasNextAdmin}
+                        hasPrevious={hasPreviousAdmin}
+                        isLoading={isLoadingAdmin}
+                        error={adminError}
+                        lockedAccountIds={
+                          currentAdminId ? [currentAdminId] : []
+                        }
+                        onSearchChange={(value) => {
+                          setAdminSearch(value);
+                          setAdminPage(1);
+                        }}
+                        onPageChange={setAdminPage}
+                        onSelect={handleSelectAdmin}
+                      />
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <AccountSelectionTable
+                  label="PIC"
+                  searchId="search-pic"
+                  accounts={picAccounts}
+                  selectedAccounts={selectedPicAccounts}
+                  value={selectedAccountIds}
+                  search={picSearch}
+                  total={totalPic}
+                  currentPage={picPage}
+                  paginationPages={picPaginationPages}
+                  hasNext={hasNextPic}
+                  hasPrevious={hasPreviousPic}
+                  isLoading={isLoadingPic}
+                  error={picError}
+                  onSearchChange={(value) => {
+                    setPicSearch(value);
+                    setPicPage(1);
+                  }}
+                  onPageChange={setPicPage}
+                  onSelect={handleSelectPic}
+                />
+              </div>
               <div className="mt-6 grid gap-4">
                 <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
                   <div>
@@ -645,36 +1022,38 @@ const Page = () => {
                             </TableRow>
                           ))
                         : dataProduct.map((item) => (
-                        <TableRow
-                          key={item.id}
-                          className={`cursor-pointer transition-colors ${
-                            selectedProductId === item.id.toString()
-                              ? "bg-primary/10 hover:bg-primary/15"
-                              : "hover:bg-muted/50"
-                          }`}
-                          onClick={() => handleSelectProduct(item.id.toString())}
-                        >
-                          <TableCell>
-                            <RadioGroupItem
-                              aria-label={`Pilih ${item.name}`}
-                              type="button"
-                              value={item.id.toString()}
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                handleSelectProduct(item.id.toString());
-                              }}
-                            />
-                          </TableCell>
-                          <TableCell className="font-medium">
-                            {item.name}
-                          </TableCell>
-                          <TableCell>
-                            {formatDate(
-                              item.category?.created_at ?? item.time_start
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                            <TableRow
+                              key={item.id}
+                              className={`cursor-pointer transition-colors ${
+                                selectedProductId === item.id.toString()
+                                  ? "bg-primary/10 hover:bg-primary/15"
+                                  : "hover:bg-muted/50"
+                              }`}
+                              onClick={() =>
+                                handleSelectProduct(item.id.toString())
+                              }
+                            >
+                              <TableCell>
+                                <RadioGroupItem
+                                  aria-label={`Pilih ${item.name}`}
+                                  type="button"
+                                  value={item.id.toString()}
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    handleSelectProduct(item.id.toString());
+                                  }}
+                                />
+                              </TableCell>
+                              <TableCell className="font-medium">
+                                {item.name}
+                              </TableCell>
+                              <TableCell>
+                                {formatDate(
+                                  item.category?.created_at ?? item.time_start
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          ))}
                       {!isLoadingProduct && dataProduct.length === 0 ? (
                         <TableRow>
                           <TableCell
@@ -740,7 +1119,7 @@ const Page = () => {
                 </div>
               </div>
 
-            <FormField
+              <FormField
                 control={form.control}
                 name="productId"
                 render={({ field }) => (
@@ -784,3 +1163,209 @@ const Page = () => {
 };
 
 export default Page;
+
+type AccountSelectionTableProps = {
+  label: string;
+  searchId: string;
+  accounts: AdminOption[];
+  selectedAccounts: AdminOption[];
+  value: number[];
+  search: string;
+  total: number;
+  currentPage: number;
+  paginationPages: number[];
+  hasNext: boolean;
+  hasPrevious: boolean;
+  isLoading: boolean;
+  error?: string;
+  lockedAccountIds?: number[];
+  onSearchChange: (value: string) => void;
+  onPageChange: (value: number | ((page: number) => number)) => void;
+  onSelect: (account: AdminOption) => void;
+};
+
+function AccountSelectionTable({
+  label,
+  searchId,
+  accounts,
+  selectedAccounts,
+  value,
+  search,
+  total,
+  currentPage,
+  paginationPages,
+  hasNext,
+  hasPrevious,
+  isLoading,
+  error,
+  lockedAccountIds = [],
+  onSearchChange,
+  onPageChange,
+  onSelect,
+}: AccountSelectionTableProps) {
+  const selectedNames = selectedAccounts.map((account) => account.name);
+
+  return (
+    <div className="grid gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <FormLabel>{label}</FormLabel>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Pilih satu atau lebih {label}.
+          </p>
+        </div>
+        <div className="grid gap-2 sm:w-64">
+          <Label htmlFor={searchId}>Search</Label>
+          <Input
+            id={searchId}
+            placeholder={`Cari ${label.toLowerCase()}`}
+            value={search}
+            onChange={(event) => onSearchChange(event.target.value)}
+          />
+        </div>
+      </div>
+
+      <Table className="w-full">
+        <TableCaption>Table {label}</TableCaption>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-[64px]">Pilih</TableHead>
+            <TableHead>Nama</TableHead>
+            <TableHead>Username</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {isLoading
+            ? loadingRows.map((_, index) => (
+                <TableRow key={`loading-${label}-${index}`}>
+                  <TableCell>
+                    <Skeleton className="h-4 w-4 rounded" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-full max-w-[220px]" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-32" />
+                  </TableCell>
+                </TableRow>
+              ))
+            : accounts.map((account) => {
+                const accountId = Number(account.id);
+                const isSelected = value.includes(accountId);
+                const isLocked = lockedAccountIds.includes(accountId);
+
+                return (
+                  <TableRow
+                    key={account.id}
+                    className={`transition-colors ${
+                      isLocked
+                        ? "cursor-not-allowed opacity-75"
+                        : "cursor-pointer"
+                    } ${
+                      isSelected
+                        ? "bg-primary/10 hover:bg-primary/15"
+                        : "hover:bg-muted/50"
+                    }`}
+                    onClick={() => {
+                      if (!isLocked) onSelect(account);
+                    }}
+                  >
+                    <TableCell>
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant={isSelected ? "default" : "outline"}
+                        className="h-7 w-7"
+                        aria-label={
+                          isLocked
+                            ? `${account.name} otomatis dipilih`
+                            : `Pilih ${account.name}`
+                        }
+                        disabled={isLocked}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          if (!isLocked) onSelect(account);
+                        }}
+                      >
+                        {isSelected ? <Check className="h-4 w-4" /> : null}
+                      </Button>
+                    </TableCell>
+                    <TableCell className="font-medium">
+                      {account.name}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {account.username}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+          {!isLoading && accounts.length === 0 ? (
+            <TableRow>
+              <TableCell
+                className="h-24 text-center text-muted-foreground"
+                colSpan={3}
+              >
+                {error || `${label} tidak ditemukan`}
+              </TableCell>
+            </TableRow>
+          ) : null}
+        </TableBody>
+      </Table>
+
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm text-muted-foreground">
+          Menampilkan {accounts.length} dari {total} {label.toLowerCase()}
+        </p>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={!hasPrevious || isLoading}
+            onClick={() => onPageChange((page) => page - 1)}
+          >
+            Previous
+          </Button>
+          {paginationPages.map((page) => (
+            <Button
+              key={page}
+              type="button"
+              size="icon"
+              variant={page === currentPage ? "default" : "secondary"}
+              disabled={isLoading}
+              aria-label={`Halaman ${page} ${label}`}
+              aria-current={page === currentPage ? "page" : undefined}
+              onClick={() => {
+                if (page === currentPage) return;
+                onPageChange(page);
+              }}
+            >
+              {page}
+            </Button>
+          ))}
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={!hasNext || isLoading}
+            onClick={() => onPageChange((page) => page + 1)}
+          >
+            Next
+          </Button>
+        </div>
+      </div>
+
+      <div
+        className={`rounded-md border px-4 py-3 text-sm ${
+          selectedAccounts.length
+            ? "border-primary bg-primary/10"
+            : "border-dashed text-muted-foreground"
+        }`}
+      >
+        {selectedAccounts.length
+          ? `${selectedAccounts.length} ${label} dipilih: ${selectedNames.join(
+              ", "
+            )}`
+          : `Belum ada ${label} yang dipilih`}
+      </div>
+    </div>
+  );
+}

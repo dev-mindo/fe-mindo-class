@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Textarea } from "@/components/ui/textarea";
 import { socket } from "@/lib/service/socket";
+import { publishDiscussionEvent } from "@/lib/service/discussionRealtime";
 import { ApiResponse, fetchApi } from "@/lib/utils/fetchApi";
 import { EllipsisVertical, Loader2, ThumbsDown, ThumbsUp } from "lucide-react";
 import moment from "moment";
@@ -22,6 +23,7 @@ export type SocketAnswerData = {
 type Props = {
   discussionDataList: TDiscussionAnswer[];
   discussionId: string;
+  moduleId: number;
   productId: number
   setIsOpenAlertDestroy: (open: boolean) => void;
   setAlertDestroyData: (data: { title: string; message: string }) => void;
@@ -39,6 +41,7 @@ type Props = {
 export const DiscussionAnswer = ({
   discussionDataList,
   discussionId,
+  moduleId,
   productId,
   setIsOpenAlertDestroy,
   setAlertDestroyData,
@@ -135,7 +138,15 @@ export const DiscussionAnswer = ({
     );
 
     if (createDiscussionAnswer) {
-      if (createDiscussionAnswer.success) {        
+      if (createDiscussionAnswer.success) {
+        await publishDiscussionEvent({
+          action: "create",
+          entity: "answer",
+          source: "admin",
+          moduleId,
+          discussionId: Number(discussionId),
+          data: createDiscussionAnswer.data,
+        });
         console.log("create id", createDiscussionAnswer.data.id);
         setCreateAnswerId(createDiscussionAnswer.data.id);
         setUpdateAnswerId(createDiscussionAnswer.data.id)
@@ -197,6 +208,14 @@ export const DiscussionAnswer = ({
 
     if (updateDiscussionAnswer) {
       if (updateDiscussionAnswer.success) {
+        await publishDiscussionEvent({
+          action: "update",
+          entity: "answer",
+          source: "admin",
+          moduleId,
+          discussionId: Number(discussionId),
+          data: updateDiscussionAnswer.data,
+        });
         setLoading(false);
         setEditAnswerId(0);
         setEditAnswerField("");
@@ -239,6 +258,14 @@ export const DiscussionAnswer = ({
     );
     if (destroyDiscussionAnswer) {
       if (destroyDiscussionAnswer.success) {
+        await publishDiscussionEvent({
+          action: "delete",
+          entity: "answer",
+          source: "admin",
+          moduleId,
+          discussionId: Number(discussionId),
+          data: { id: deleteAnswerId },
+        });
         setIsOpenAlertDestroy(false);
         setConfirmDestroyAnswer(false);        
         toast.success("Tanggapan berhasil dihapus");
@@ -306,7 +333,7 @@ export const DiscussionAnswer = ({
                     item.isUser ? "text-green-500 font-bold" : "text-base"
                   }
                 >
-                  {item.user.name}
+                  {item.author?.name || item.user?.name || "Pengguna"}
                 </p>
                 <p className="text-sm">
                   {moment(item.createdAt).format("dddd, DD MMMM YYYY")}

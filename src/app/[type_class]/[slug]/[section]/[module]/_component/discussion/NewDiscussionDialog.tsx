@@ -1,5 +1,5 @@
-import IInput from "@/components/base/IInput";
-import ITextArea from "@/components/base/ITextArea";
+import { IInput } from "@/components/base/IInput";
+import { ITextArea } from "@/components/base/ITextArea";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { Form } from "@/components/ui/form";
 import { socket } from "@/lib/service/socket";
+import { publishDiscussionEvent } from "@/lib/service/discussionRealtime";
 import { ApiResponse, fetchApi } from "@/lib/utils/fetchApi";
 import discussionFormSchema from "@/schemas/DiscussionFormSchema";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -53,6 +54,13 @@ export const NewDialogDiscussion = ({
 
     if (res && res.statusCode === 200) {
       console.log("create disscusion", res.data);
+      await publishDiscussionEvent({
+        action: "create",
+        entity: "discussion",
+        moduleId,
+        discussionId: res.data.id,
+        data: res.data,
+      });
       socket.emit(
         "sendDiscussionQuestion",
         JSON.stringify({
