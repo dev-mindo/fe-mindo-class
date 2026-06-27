@@ -43,6 +43,8 @@ export default async function Page({ searchParams }: Props) {
     }
   );
 
+  console.log('')
+
   if (
     getCurrentPage &&
     getCurrentPage.statusCode === 404 &&

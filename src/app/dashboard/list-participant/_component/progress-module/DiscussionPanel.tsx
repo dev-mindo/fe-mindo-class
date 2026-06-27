@@ -1,6 +1,18 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Textarea } from "@/components/ui/textarea";
+import type { ApiResponse } from "@/lib/utils/fetchApi";
+import { subscribeDiscussionDetail } from "@/lib/service/discussionRealtime";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -8,12 +20,20 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  Loader2,
+  LockKeyhole,
   MessageCircle,
   MessageSquare,
+  MessageSquareText,
+  Pencil,
+  Send,
   ThumbsDown,
   ThumbsUp,
+  Trash2,
   X,
 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import type { DiscussionOrder, DiscussionStatusFilter } from "./types";
 import { formatDateTime } from "./utils";
 
@@ -35,6 +55,25 @@ type Props = {
   discussionPaginationPages: number[];
   setDiscussionPage: (page: number | ((page: number) => number)) => void;
   handleShowDiscussionDetail: (discussionId: number) => void;
+  handleCreateDiscussionAnswer: (
+    discussionId: number,
+    answer: string,
+  ) => Promise<ApiResponse<TDiscussionAnswer>>;
+  handleUpdateDiscussionAnswer: (
+    discussionId: number,
+    answerId: number,
+    answer: string,
+  ) => Promise<ApiResponse<TDiscussionAnswer>>;
+  handleDeleteDiscussionAnswer: (
+    discussionId: number,
+    answerId: number,
+  ) => Promise<ApiResponse>;
+  handleCloseDiscussion: (
+    discussionId: number,
+  ) => Promise<ApiResponse<TDetailDiscussion>>;
+  handleDeleteDiscussion: (
+    discussionId: number,
+  ) => Promise<ApiResponse>;
 };
 
 export const DiscussionPanel = ({
@@ -55,7 +94,196 @@ export const DiscussionPanel = ({
   discussionPaginationPages,
   setDiscussionPage,
   handleShowDiscussionDetail,
+  handleCreateDiscussionAnswer,
+  handleUpdateDiscussionAnswer,
+  handleDeleteDiscussionAnswer,
+  handleCloseDiscussion,
+  handleDeleteDiscussion,
 }: Props) => {
+  const [answer, setAnswer] = useState("");
+  const [isSubmittingAnswer, setIsSubmittingAnswer] = useState(false);
+  const [newMessage, setNewMessage] = useState<string | null>(null);
+  const [confirmationAction, setConfirmationAction] = useState<
+    "close" | "delete" | null
+  >(null);
+  const [isUpdatingDiscussion, setIsUpdatingDiscussion] = useState(false);
+  const [editingAnswerId, setEditingAnswerId] = useState<number | null>(null);
+  const [editingAnswer, setEditingAnswer] = useState("");
+  const [deletingAnswerId, setDeletingAnswerId] = useState<number | null>(
+    null,
+  );
+  const [isUpdatingAnswer, setIsUpdatingAnswer] = useState(false);
+  const notificationTimer = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+
+  useEffect(() => {
+    setAnswer("");
+  }, [selectedDiscussionDetail?.id]);
+
+  useEffect(() => {
+    const discussionId = selectedDiscussionDetail?.id;
+
+    if (!discussionId) return;
+
+    const unsubscribe = subscribeDiscussionDetail(
+      discussionId,
+      (event) => {
+        if (
+          event.entity !== "answer" ||
+          event.action !== "create" ||
+          event.source !== "participant"
+        ) {
+          return;
+        }
+
+        const eventData = event.data as
+          | {
+              author?: { name?: string } | null;
+              user?: { name?: string } | null;
+            }
+          | undefined;
+        const senderName =
+          eventData?.author?.name ||
+          eventData?.user?.name ||
+          "Peserta";
+
+        setNewMessage(`Pesan baru dari ${senderName}`);
+
+        if (notificationTimer.current) {
+          clearTimeout(notificationTimer.current);
+        }
+
+        notificationTimer.current = setTimeout(() => {
+          setNewMessage(null);
+        }, 5000);
+      },
+    );
+
+    return () => {
+      unsubscribe();
+
+      if (notificationTimer.current) {
+        clearTimeout(notificationTimer.current);
+      }
+    };
+  }, [selectedDiscussionDetail?.id]);
+
+  const submitAnswer = async () => {
+    if (!selectedDiscussionDetail) return;
+
+    const trimmedAnswer = answer.trim();
+
+    if (!trimmedAnswer) {
+      toast.error("Tanggapan tidak boleh kosong.");
+      return;
+    }
+
+    setIsSubmittingAnswer(true);
+
+    try {
+      const response = await handleCreateDiscussionAnswer(
+        selectedDiscussionDetail.id,
+        trimmedAnswer,
+      );
+
+      if (response.success) {
+        setAnswer("");
+        toast.success(response.message || "Tanggapan berhasil dikirim.");
+      } else {
+        toast.error(response.message || "Tanggapan gagal dikirim.");
+      }
+    } finally {
+      setIsSubmittingAnswer(false);
+    }
+  };
+
+  const confirmDiscussionAction = async () => {
+    if (!selectedDiscussionDetail || !confirmationAction) return;
+
+    setIsUpdatingDiscussion(true);
+
+    try {
+      const response =
+        confirmationAction === "close"
+          ? await handleCloseDiscussion(selectedDiscussionDetail.id)
+          : await handleDeleteDiscussion(selectedDiscussionDetail.id);
+
+      if (response.success) {
+        toast.success(
+          response.message ||
+            (confirmationAction === "close"
+              ? "Diskusi berhasil ditutup."
+              : "Diskusi berhasil dihapus."),
+        );
+        setConfirmationAction(null);
+        return;
+      }
+
+      toast.error(
+        response.message ||
+          (confirmationAction === "close"
+            ? "Diskusi gagal ditutup."
+            : "Diskusi gagal dihapus."),
+      );
+    } finally {
+      setIsUpdatingDiscussion(false);
+    }
+  };
+
+  const submitEditedAnswer = async () => {
+    if (!selectedDiscussionDetail || !editingAnswerId) return;
+
+    const trimmedAnswer = editingAnswer.trim();
+
+    if (!trimmedAnswer) {
+      toast.error("Tanggapan tidak boleh kosong.");
+      return;
+    }
+
+    setIsUpdatingAnswer(true);
+
+    try {
+      const response = await handleUpdateDiscussionAnswer(
+        selectedDiscussionDetail.id,
+        editingAnswerId,
+        trimmedAnswer,
+      );
+
+      if (response.success) {
+        setEditingAnswerId(null);
+        setEditingAnswer("");
+        toast.success(response.message || "Pesan berhasil diperbarui.");
+      } else {
+        toast.error(response.message || "Pesan gagal diperbarui.");
+      }
+    } finally {
+      setIsUpdatingAnswer(false);
+    }
+  };
+
+  const confirmDeleteAnswer = async () => {
+    if (!selectedDiscussionDetail || !deletingAnswerId) return;
+
+    setIsUpdatingAnswer(true);
+
+    try {
+      const response = await handleDeleteDiscussionAnswer(
+        selectedDiscussionDetail.id,
+        deletingAnswerId,
+      );
+
+      if (response.success) {
+        setDeletingAnswerId(null);
+        toast.success(response.message || "Pesan berhasil dihapus.");
+      } else {
+        toast.error(response.message || "Pesan gagal dihapus.");
+      }
+    } finally {
+      setIsUpdatingAnswer(false);
+    }
+  };
+
   const getInitials = (name?: string) => {
     if (!name) return "-";
 
@@ -244,9 +472,30 @@ export const DiscussionPanel = ({
           </div>
         </div>
 
-        <div className="flex min-h-0 flex-col bg-muted/30">
+        <div className="relative flex min-h-0 flex-col bg-muted/30">
           {selectedDiscussionDetail ? (
             <>
+              {newMessage ? (
+                <div className="absolute right-4 top-4 z-20 flex max-w-xs items-start gap-3 rounded-lg border bg-background px-4 py-3 shadow-lg">
+                  <div className="rounded-full bg-primary/10 p-2 text-primary">
+                    <MessageSquareText className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold">New message</p>
+                    <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                      {newMessage}
+                    </p>
+                  </div>
+                  <button
+                    aria-label="Tutup notifikasi pesan"
+                    className="text-muted-foreground hover:text-foreground"
+                    onClick={() => setNewMessage(null)}
+                    type="button"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              ) : null}
               <div className="shrink-0 border-b bg-background p-3">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
@@ -288,16 +537,40 @@ export const DiscussionPanel = ({
                       </span>
                     </div>
                   </div>
-                  <Button
-                    type="button"
-                    size="icon"
-                    variant="ghost"
-                    className="h-8 w-8 shrink-0"
-                    onClick={() => setSelectedDiscussionDetail(null)}
-                    aria-label="Tutup detail diskusi"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
+                  <div className="flex shrink-0 items-center gap-1">
+                    {selectedDiscussionDetail.status ? (
+                      <Button
+                        aria-label="Tutup diskusi"
+                        className="h-8 w-8"
+                        onClick={() => setConfirmationAction("close")}
+                        size="icon"
+                        type="button"
+                        variant="outline"
+                      >
+                        <LockKeyhole className="h-4 w-4" />
+                      </Button>
+                    ) : null}
+                    <Button
+                      aria-label="Hapus diskusi"
+                      className="h-8 w-8"
+                      onClick={() => setConfirmationAction("delete")}
+                      size="icon"
+                      type="button"
+                      variant="destructive"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="ghost"
+                      className="h-8 w-8"
+                      onClick={() => setSelectedDiscussionDetail(null)}
+                      aria-label="Tutup detail diskusi"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               </div>
 
@@ -323,8 +596,15 @@ export const DiscussionPanel = ({
 
                 {selectedDiscussionDetail.discussionAnswer.length ? (
                   selectedDiscussionDetail.discussionAnswer.map((answer) => {
-                    const isQuestionOwner =
-                      answer.userId === selectedDiscussionDetail.userId;
+                    const isCurrentStaff = answer.isUser;
+                    const authorName =
+                      answer.author?.name ||
+                      answer.user?.name ||
+                      "Pengguna";
+                    const authorType =
+                      answer.author?.type === "PESERTA"
+                        ? "Peserta"
+                        : answer.author?.type || "Staf";
                     const answerVotes =
                       answer.voteSummary ??
                       getVoteSummary(answer.discussionVote);
@@ -333,47 +613,131 @@ export const DiscussionPanel = ({
                       <div
                         key={answer.id}
                         className={`flex items-end gap-2 ${
-                          isQuestionOwner ? "justify-start" : "justify-end"
+                          isCurrentStaff ? "justify-end" : "justify-start"
                         }`}
                       >
-                        {isQuestionOwner ? (
+                        {!isCurrentStaff ? (
                           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-background text-[11px] font-semibold text-muted-foreground shadow-sm">
-                            {getInitials(answer.user.name)}
+                            {getInitials(authorName)}
                           </div>
                         ) : null}
                         <div
                           className={`max-w-[82%] rounded-2xl px-4 py-3 shadow-sm ${
-                            isQuestionOwner
-                              ? "rounded-bl-sm bg-background"
-                              : "rounded-br-sm bg-primary text-primary-foreground"
+                            isCurrentStaff
+                              ? "rounded-br-sm bg-primary text-primary-foreground"
+                              : "rounded-bl-sm bg-background"
                           }`}
                         >
                           <div className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-1">
                             <p
                               className={`text-xs font-semibold ${
-                                isQuestionOwner ? "text-primary" : ""
+                                isCurrentStaff ? "" : "text-primary"
                               }`}
                             >
-                              {answer.user.name}
+                              {authorName}
                             </p>
+                            <span
+                              className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
+                                isCurrentStaff
+                                  ? "bg-primary-foreground/15 text-primary-foreground"
+                                  : "bg-muted text-muted-foreground"
+                              }`}
+                            >
+                              {authorType}
+                            </span>
                             <p
                               className={`text-[11px] ${
-                                isQuestionOwner
-                                  ? "text-muted-foreground"
-                                  : "text-primary-foreground/75"
+                                isCurrentStaff
+                                  ? "text-primary-foreground/75"
+                                  : "text-muted-foreground"
                               }`}
                             >
                               {formatDateTime(answer.createdAt)}
                             </p>
                           </div>
-                          <p className="whitespace-pre-wrap text-sm">
-                            {answer.message}
-                          </p>
+                          <div className="whitespace-pre-wrap text-sm">
+                            {editingAnswerId === answer.id ? (
+                              <Textarea
+                                className="min-h-20 min-w-[280px] resize-none bg-background text-foreground"
+                                disabled={isUpdatingAnswer}
+                                onChange={(event) =>
+                                  setEditingAnswer(event.target.value)
+                                }
+                                value={editingAnswer}
+                              />
+                            ) : (
+                              answer.message
+                            )}
+                          </div>
+                          {isCurrentStaff ? (
+                            <div className="mt-3 flex justify-end gap-2">
+                              {editingAnswerId === answer.id ? (
+                                <>
+                                  <Button
+                                    disabled={isUpdatingAnswer}
+                                    onClick={() => {
+                                      setEditingAnswerId(null);
+                                      setEditingAnswer("");
+                                    }}
+                                    size="sm"
+                                    type="button"
+                                    variant="secondary"
+                                  >
+                                    Batal
+                                  </Button>
+                                  <Button
+                                    disabled={
+                                      !editingAnswer.trim() ||
+                                      isUpdatingAnswer
+                                    }
+                                    onClick={submitEditedAnswer}
+                                    size="sm"
+                                    type="button"
+                                    variant="secondary"
+                                  >
+                                    {isUpdatingAnswer ? (
+                                      <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                      "Simpan"
+                                    )}
+                                  </Button>
+                                </>
+                              ) : (
+                                <>
+                                  <Button
+                                    aria-label="Edit pesan"
+                                    className="h-7 w-7"
+                                    onClick={() => {
+                                      setEditingAnswerId(answer.id);
+                                      setEditingAnswer(answer.message);
+                                    }}
+                                    size="icon"
+                                    type="button"
+                                    variant="secondary"
+                                  >
+                                    <Pencil className="h-3.5 w-3.5" />
+                                  </Button>
+                                  <Button
+                                    aria-label="Hapus pesan"
+                                    className="h-7 w-7"
+                                    onClick={() =>
+                                      setDeletingAnswerId(answer.id)
+                                    }
+                                    size="icon"
+                                    type="button"
+                                    variant="destructive"
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </Button>
+                                </>
+                              )}
+                            </div>
+                          ) : null}
                           <div
                             className={`mt-2 flex items-center gap-3 text-[11px] ${
-                              isQuestionOwner
-                                ? "text-muted-foreground"
-                                : "text-primary-foreground/75"
+                              isCurrentStaff
+                                ? "text-primary-foreground/75"
+                                : "text-muted-foreground"
                             }`}
                           >
                             <span className="flex items-center gap-1">
@@ -386,9 +750,9 @@ export const DiscussionPanel = ({
                             </span>
                           </div>
                         </div>
-                        {!isQuestionOwner ? (
+                        {isCurrentStaff ? (
                           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-[11px] font-semibold text-primary-foreground shadow-sm">
-                            {getInitials(answer.user.name)}
+                            {getInitials(authorName)}
                           </div>
                         ) : null}
                       </div>
@@ -398,6 +762,47 @@ export const DiscussionPanel = ({
                   <div className="mx-auto flex max-w-sm flex-col items-center rounded-md border border-dashed bg-background p-5 text-center text-sm text-muted-foreground">
                     <MessageCircle className="mb-2 h-5 w-5" />
                     Belum ada jawaban pada diskusi ini.
+                  </div>
+                )}
+              </div>
+
+              <div className="shrink-0 border-t bg-background p-3">
+                {selectedDiscussionDetail.status ? (
+                  <div className="space-y-2">
+                    <Textarea
+                      className="min-h-20 resize-none"
+                      disabled={isSubmittingAnswer}
+                      onChange={(event) => setAnswer(event.target.value)}
+                      placeholder="Tulis tanggapan untuk diskusi ini..."
+                      value={answer}
+                    />
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-xs text-muted-foreground">
+                        Balasan akan ditampilkan kepada peserta.
+                      </p>
+                      <Button
+                        disabled={!answer.trim() || isSubmittingAnswer}
+                        onClick={submitAnswer}
+                        size="sm"
+                        type="button"
+                      >
+                        {isSubmittingAnswer ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Mengirim...
+                          </>
+                        ) : (
+                          <>
+                            <Send className="mr-2 h-4 w-4" />
+                            Kirim Balasan
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="rounded-md border border-dashed p-3 text-center text-sm text-muted-foreground">
+                    Diskusi telah ditutup dan tidak dapat dibalas.
                   </div>
                 )}
               </div>
@@ -418,6 +823,88 @@ export const DiscussionPanel = ({
           )}
         </div>
       </div>
+      <AlertDialog
+        open={confirmationAction !== null}
+        onOpenChange={(open) => {
+          if (!open && !isUpdatingDiscussion) {
+            setConfirmationAction(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {confirmationAction === "close"
+                ? "Tutup diskusi?"
+                : "Hapus diskusi?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmationAction === "close"
+                ? "Peserta tidak dapat menambahkan balasan baru setelah diskusi ditutup."
+                : "Diskusi beserta seluruh balasannya akan dihapus permanen. Tindakan ini tidak dapat dibatalkan."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isUpdatingDiscussion}>
+              Batal
+            </AlertDialogCancel>
+            <Button
+              disabled={isUpdatingDiscussion}
+              onClick={confirmDiscussionAction}
+              type="button"
+              variant="destructive"
+            >
+              {isUpdatingDiscussion ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Memproses...
+                </>
+              ) : confirmationAction === "close" ? (
+                "Tutup Diskusi"
+              ) : (
+                "Hapus Diskusi"
+              )}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <AlertDialog
+        open={deletingAnswerId !== null}
+        onOpenChange={(open) => {
+          if (!open && !isUpdatingAnswer) {
+            setDeletingAnswerId(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus pesan?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Pesan ini akan dihapus permanen dan tidak dapat dikembalikan.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isUpdatingAnswer}>
+              Batal
+            </AlertDialogCancel>
+            <Button
+              disabled={isUpdatingAnswer}
+              onClick={confirmDeleteAnswer}
+              type="button"
+              variant="destructive"
+            >
+              {isUpdatingAnswer ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Menghapus...
+                </>
+              ) : (
+                "Hapus Pesan"
+              )}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

@@ -33,6 +33,8 @@ import type { FormEvent, UIEvent } from "react";
 
 export type ClassProductFormValues = {
   instructorId: string;
+  adminIds: string[];
+  picIds: string[];
   productType: string;
   publish: boolean;
   publishTime: string;
@@ -42,7 +44,13 @@ export type ClassProductFormValues = {
 
 type Props = {
   dataClass: TClassModuleDetail | null;
+  instructors?: InstructorOption[];
+  adminOptions?: InstructorOption[];
+  picOptions?: InstructorOption[];
+  selectedAdmins?: InstructorOption[];
+  selectedPics?: InstructorOption[];
   isUpdating: boolean;
+  readOnly?: boolean;
   onSubmit: (values: ClassProductFormValues) => Promise<boolean | void> | boolean | void;
 };
 
@@ -52,76 +60,8 @@ type InstructorOption = {
   id: string;
   name: string;
   username: string;
-  role: "PIC" | "PENGAJAR";
+  role: string;
 };
-
-const INSTRUCTOR_OPTIONS: InstructorOption[] = [
-  { id: "1", name: "Aulia Rahman", username: "aulia.pic", role: "PIC" },
-  {
-    id: "2",
-    name: "Siti Rahma",
-    username: "siti.rahma",
-    role: "PENGAJAR",
-  },
-  {
-    id: "3",
-    name: "Budi Santoso",
-    username: "budi.santoso",
-    role: "PENGAJAR",
-  },
-  { id: "4", name: "Nadia Putri", username: "nadia.pic", role: "PIC" },
-  {
-    id: "5",
-    name: "Rizky Maulana",
-    username: "rizky.maulana",
-    role: "PENGAJAR",
-  },
-  {
-    id: "6",
-    name: "Dewi Lestari",
-    username: "dewi.lestari",
-    role: "PENGAJAR",
-  },
-  { id: "7", name: "Fajar Nugraha", username: "fajar.pic", role: "PIC" },
-  {
-    id: "8",
-    name: "Maya Sari",
-    username: "maya.sari",
-    role: "PENGAJAR",
-  },
-  {
-    id: "9",
-    name: "Ahmad Fauzi",
-    username: "ahmad.fauzi",
-    role: "PENGAJAR",
-  },
-  { id: "10", name: "Rina Wulandari", username: "rina.pic", role: "PIC" },
-  {
-    id: "11",
-    name: "Dimas Saputra",
-    username: "dimas.saputra",
-    role: "PENGAJAR",
-  },
-  {
-    id: "12",
-    name: "Putri Ananda",
-    username: "putri.ananda",
-    role: "PENGAJAR",
-  },
-  { id: "13", name: "Yoga Pratama", username: "yoga.pic", role: "PIC" },
-  {
-    id: "14",
-    name: "Nanda Permata",
-    username: "nanda.permata",
-    role: "PENGAJAR",
-  },
-  {
-    id: "15",
-    name: "Ilham Ramadhan",
-    username: "ilham.ramadhan",
-    role: "PENGAJAR",
-  },
-];
 
 const INSTRUCTOR_BATCH_SIZE = 5;
 
@@ -158,6 +98,8 @@ const formatDateTime = (value?: string) => {
 
 const defaultValues: ClassProductFormValues = {
   instructorId: "",
+  adminIds: [],
+  picIds: [],
   productType: "VIDEO_LEARNING",
   publish: true,
   publishTime: "",
@@ -173,12 +115,20 @@ const getFormValues = (dataClass: TClassModuleDetail | null) => {
   const classWithInstructor = dataClass as TClassModuleDetail & {
     instructorId?: string | number | null;
     instructor?: { id?: string | number | null } | null;
+    instructorClass?:
+      | { user?: { id?: string | number | null } | null }
+      | Array<{ user?: { id?: string | number | null } | null }>
+      | null;
   };
+  const instructorRelation = Array.isArray(classWithInstructor.instructorClass)
+    ? classWithInstructor.instructorClass[0]
+    : classWithInstructor.instructorClass;
 
   return {
     instructorId: String(
       classWithInstructor.instructorId ??
         classWithInstructor.instructor?.id ??
+        instructorRelation?.user?.id ??
         ""
     ),
     productType: dataClass.productType || "VIDEO_LEARNING",
@@ -191,7 +141,13 @@ const getFormValues = (dataClass: TClassModuleDetail | null) => {
 
 export const ClassProductForm = ({
   dataClass,
+  instructors = [],
+  adminOptions = [],
+  picOptions = [],
+  selectedAdmins = [],
+  selectedPics = [],
   isUpdating,
+  readOnly = false,
   onSubmit,
 }: Props) => {
   const [form, setForm] = useState<ClassProductFormValues>(defaultValues);
@@ -219,17 +175,17 @@ export const ClassProductForm = ({
   const filteredInstructors = useMemo(() => {
     const keyword = instructorSearch.trim().toLowerCase();
 
-    if (!keyword) return INSTRUCTOR_OPTIONS;
+    if (!keyword) return instructors;
 
-    return INSTRUCTOR_OPTIONS.filter(
+    return instructors.filter(
       (instructor) =>
         instructor.name.toLowerCase().includes(keyword) ||
         instructor.username.toLowerCase().includes(keyword) ||
         instructor.role.toLowerCase().includes(keyword)
     );
-  }, [instructorSearch]);
+  }, [instructorSearch, instructors]);
 
-  const selectedInstructor = INSTRUCTOR_OPTIONS.find(
+  const selectedInstructor = instructors.find(
     (instructor) => instructor.id === form.instructorId
   );
   const visibleInstructors = filteredInstructors.slice(
@@ -262,11 +218,15 @@ export const ClassProductForm = ({
       return;
     }
 
-    setForm(getFormValues(dataClass));
+    setForm({
+      ...getFormValues(dataClass),
+      adminIds: selectedAdmins.map((admin) => admin.id),
+      picIds: selectedPics.map((pic) => pic.id),
+    });
     setInstructorSearch("");
     setIsInstructorOpen(false);
     setVisibleInstructorCount(INSTRUCTOR_BATCH_SIZE);
-  }, [dataClass]);
+  }, [dataClass, selectedAdmins, selectedPics]);
 
   useEffect(() => {
     setVisibleInstructorCount(INSTRUCTOR_BATCH_SIZE);
@@ -288,7 +248,11 @@ export const ClassProductForm = ({
   };
 
   const handleCancelEdit = () => {
-    setForm(getFormValues(dataClass));
+    setForm({
+      ...getFormValues(dataClass),
+      adminIds: selectedAdmins.map((admin) => admin.id),
+      picIds: selectedPics.map((pic) => pic.id),
+    });
     setInstructorSearch("");
     setIsInstructorOpen(false);
     setVisibleInstructorCount(INSTRUCTOR_BATCH_SIZE);
@@ -330,6 +294,20 @@ export const ClassProductForm = ({
     setVisibleInstructorCount(INSTRUCTOR_BATCH_SIZE);
   };
 
+  const toggleAccount = (type: "adminIds" | "picIds", accountId: string) => {
+    setForm((current) => {
+      const currentValue = current[type];
+      const nextValue = currentValue.includes(accountId)
+        ? currentValue.filter((id) => id !== accountId)
+        : [...currentValue, accountId];
+
+      return {
+        ...current,
+        [type]: nextValue,
+      };
+    });
+  };
+
   return (
     <Card className="rounded-lg shadow-sm">
       <CardHeader className="gap-2 p-4">
@@ -351,7 +329,7 @@ export const ClassProductForm = ({
             <Badge variant="outline">
               {dataClass?._count?.userClass ?? 0} Peserta
             </Badge>
-            {!isEditing ? (
+            {!readOnly && !isEditing ? (
               <Button
                 type="button"
                 size="sm"
@@ -539,6 +517,23 @@ export const ClassProductForm = ({
             </p>
           </div>
 
+          <div className="grid gap-4 lg:grid-cols-2">
+            <AccountEditor
+              title="Admin"
+              options={adminOptions}
+              value={form.adminIds}
+              disabled={!isEditing || isUpdating}
+              onToggle={(accountId) => toggleAccount("adminIds", accountId)}
+            />
+            <AccountEditor
+              title="PIC"
+              options={picOptions}
+              value={form.picIds}
+              disabled={!isEditing || isUpdating}
+              onToggle={(accountId) => toggleAccount("picIds", accountId)}
+            />
+          </div>
+
           <div className="grid gap-3 md:grid-cols-2">
             <div className="flex items-center justify-between gap-3 rounded-md border px-3 py-2.5">
               <div>
@@ -610,3 +605,95 @@ export const ClassProductForm = ({
     </Card>
   );
 };
+
+function AccountEditor({
+  title,
+  options,
+  value,
+  disabled,
+  onToggle,
+}: {
+  title: string;
+  options: InstructorOption[];
+  value: string[];
+  disabled: boolean;
+  onToggle: (accountId: string) => void;
+}) {
+  const [search, setSearch] = useState("");
+
+  const filteredOptions = useMemo(() => {
+    const keyword = search.trim().toLowerCase();
+
+    if (!keyword) return options;
+
+    return options.filter(
+      (option) =>
+        option.name.toLowerCase().includes(keyword) ||
+        option.username.toLowerCase().includes(keyword) ||
+        option.role.toLowerCase().includes(keyword)
+    );
+  }, [options, search]);
+
+  return (
+    <div className="rounded-md border p-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-sm font-medium">{title}</p>
+          <p className="text-xs text-muted-foreground">
+            {value.length} akun dipilih
+          </p>
+        </div>
+        <div className="relative sm:w-56">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            className="h-9 pl-9"
+            disabled={disabled}
+            placeholder={`Cari ${title.toLowerCase()}`}
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+          />
+        </div>
+      </div>
+
+      <div className="mt-3 max-h-56 overflow-y-auto rounded-md border">
+        {filteredOptions.length ? (
+          filteredOptions.map((option) => {
+            const isSelected = value.includes(option.id);
+
+            return (
+              <button
+                key={option.id}
+                type="button"
+                disabled={disabled}
+                className="flex w-full items-center gap-3 border-b px-3 py-2 text-left text-sm last:border-b-0 hover:bg-muted/50 disabled:cursor-not-allowed disabled:opacity-70"
+                onClick={() => onToggle(option.id)}
+              >
+                <span
+                  className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border ${
+                    isSelected
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-input"
+                  }`}
+                >
+                  {isSelected ? <Check className="h-3.5 w-3.5" /> : null}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-medium">
+                    {option.name}
+                  </span>
+                  <span className="block truncate text-xs text-muted-foreground">
+                    {option.username} · {option.role}
+                  </span>
+                </span>
+              </button>
+            );
+          })
+        ) : (
+          <div className="px-3 py-8 text-center text-sm text-muted-foreground">
+            {title} tidak ditemukan
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

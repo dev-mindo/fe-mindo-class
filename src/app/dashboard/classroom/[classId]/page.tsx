@@ -1,5 +1,6 @@
 "use client";
 import { IAlertDialog } from "@/components/base/IAlertDialog";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -9,10 +10,18 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { useDashboardContext } from "@/context/DashboardContext";
 import { ApiResponse, fetchApi } from "@/lib/utils/fetchApi";
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { DragEvent } from "react";
 import { DashboardPageTitle } from "../../_component/page-title";
 import { toast } from "sonner";
@@ -33,9 +42,35 @@ import { ScoresParticipantComponent } from "../../list-participant/_component/Sc
 import { ProgressParticipantComponent } from "../../list-participant/_component/ProgressModule";
 import { ProgressViewSelect } from "../../list-participant/_component/progress-module/ProgressViewSelect";
 import type { ViewMode } from "../../list-participant/_component/progress-module/types";
+import { canManageClassroom } from "@/lib/dashboard-permissions";
 
 type ClassSectionWithModules = TClassModuleDetail["sections"][number] & {
   modules?: TClassModuleDetail["sections"][number]["module"];
+};
+
+type ClassAssignmentUser = {
+  id: number;
+  name: string;
+  username: string;
+  role: string;
+};
+
+type ClassAssignmentRelation = {
+  user?: ClassAssignmentUser | null;
+};
+
+type ClassDetailWithAssignments = TClassModuleDetail & {
+  instructorClass?: ClassAssignmentRelation | ClassAssignmentRelation[] | null;
+  adminClasses?: ClassAssignmentRelation[];
+};
+
+type AccountListData = {
+  results?: ClassAssignmentUser[];
+  data?: ClassAssignmentUser[];
+};
+
+type InstructorListData = {
+  data?: ClassAssignmentUser[];
 };
 
 const normalizeClassDetail = (
@@ -60,6 +95,42 @@ const normalizeClassDetail = (
   };
 };
 
+const getRelationUsers = (
+  relation?: ClassAssignmentRelation | ClassAssignmentRelation[] | null
+) => {
+  if (!relation) return [];
+
+  const relations = Array.isArray(relation) ? relation : [relation];
+
+  return relations
+    .map((item) => item.user)
+    .filter((user): user is ClassAssignmentUser => Boolean(user));
+};
+
+const normalizeAccountOptions = (data?: AccountListData | null) =>
+  (data?.results ?? data?.data ?? []).map((user) => ({
+    ...user,
+    id: Number(user.id),
+  }));
+
+const toAccountOption = (user: ClassAssignmentUser) => ({
+  ...user,
+  id: String(user.id),
+});
+
+const mergeAccountOptions = (
+  options: ClassAssignmentUser[],
+  selected: ClassAssignmentUser[]
+) => {
+  const accountMap = new Map<string, ReturnType<typeof toAccountOption>>();
+
+  [...selected, ...options].forEach((user) => {
+    accountMap.set(String(user.id), toAccountOption(user));
+  });
+
+  return Array.from(accountMap.values());
+};
+
 const Page = () => {
   const [dataClassModule, setDataClassModule] =
     useState<TClassModuleDetail | null>(null);
@@ -74,6 +145,15 @@ const Page = () => {
   const [moduleId, setModuleId] = useState<number>(0);
 
   const [isUpdatingClass, setIsUpdatingClass] = useState<boolean>(false);
+  const [instructorAccountOptions, setInstructorAccountOptions] = useState<
+    ClassAssignmentUser[]
+  >([]);
+  const [adminAccountOptions, setAdminAccountOptions] = useState<
+    ClassAssignmentUser[]
+  >([]);
+  const [picAccountOptions, setPicAccountOptions] = useState<
+    ClassAssignmentUser[]
+  >([]);
   const [scoreSectionId, setScoreSectionId] = useState<number | null>(null);
   const [progressSectionId, setProgressSectionId] = useState<number | null>(
     null
@@ -124,13 +204,39 @@ const Page = () => {
   const params = useParams<{
     classId: string;
   }>();
-  const { setHideSidebar } = useDashboardContext();
-
+  const { setHideSidebar, user } = useDashboardContext();
+  const canManage = canManageClassroom(user?.role);
   const totalModule =
     dataClassModule?.sections.reduce(
       (total, section) => total + (section.module?.length ?? 0),
       0
     ) ?? 0;
+
+  const classAssignments = dataClassModule as ClassDetailWithAssignments | null;
+  const instructorUsers = getRelationUsers(classAssignments?.instructorClass);
+  const assignmentUsers = getRelationUsers(classAssignments?.adminClasses);
+  const adminUsers = assignmentUsers.filter((user) => user.role === "ADMIN");
+  const picUsers = assignmentUsers.filter((user) => user.role === "PIC");
+  const instructorOptions = useMemo(
+    () => mergeAccountOptions(instructorAccountOptions, instructorUsers),
+    [instructorAccountOptions, instructorUsers]
+  );
+  const adminOptions = useMemo(
+    () => mergeAccountOptions(adminAccountOptions, adminUsers),
+    [adminAccountOptions, adminUsers]
+  );
+  const picOptions = useMemo(
+    () => mergeAccountOptions(picAccountOptions, picUsers),
+    [picAccountOptions, picUsers]
+  );
+  const selectedAdminOptions = useMemo(
+    () => adminUsers.map(toAccountOption),
+    [adminUsers]
+  );
+  const selectedPicOptions = useMemo(
+    () => picUsers.map(toAccountOption),
+    [picUsers]
+  );
 
   const getClassModule = async () => {
     const [fetchClass, fetchModule]: [
@@ -163,7 +269,13 @@ const Page = () => {
 
     const classDetail = normalizeClassDetail(fetchClass.data);
     const moduleDetail = normalizeClassDetail(fetchModule.data);
-    const mergedDetail = classDetail ?? moduleDetail;
+    const mergedDetail =
+      classDetail || moduleDetail
+        ? {
+            ...(classDetail ?? {}),
+            ...(moduleDetail ?? {}),
+          } as TClassModuleDetail
+        : null;
 
     if (!mergedDetail) {
       setDataClassModule(null);
@@ -178,7 +290,44 @@ const Page = () => {
     });
   };
 
+  const getAccountOptions = async () => {
+    const [instructorResponse, adminResponse, picResponse]: [
+      ApiResponse<InstructorListData>,
+      ApiResponse<AccountListData>,
+      ApiResponse<AccountListData>
+    ] = await Promise.all([
+      fetchApi<ApiResponse<InstructorListData>>(
+        "/admin/instructor?page=1&limit=100&role=PENGAJAR"
+      ),
+      fetchApi<ApiResponse<AccountListData>>(
+        "/admin/admin?page=1&limit=100&role=ADMIN"
+      ),
+      fetchApi<ApiResponse<AccountListData>>(
+        "/admin/admin?page=1&limit=100&role=PIC"
+      ),
+    ]);
+
+    if (instructorResponse.statusCode === 200 && instructorResponse.data) {
+      setInstructorAccountOptions(
+        normalizeAccountOptions(instructorResponse.data)
+      );
+    }
+
+    if (adminResponse.statusCode === 200 && adminResponse.data) {
+      setAdminAccountOptions(normalizeAccountOptions(adminResponse.data));
+    }
+
+    if (picResponse.statusCode === 200 && picResponse.data) {
+      setPicAccountOptions(normalizeAccountOptions(picResponse.data));
+    }
+  };
+
   const handleUpdateClass = async (values: ClassProductFormValues) => {
+    if (!canManage) {
+      toast.error("Anda tidak memiliki akses untuk mengubah kelas");
+      return false;
+    }
+
     if (!values.title.trim()) {
       toast.error("Title kelas wajib diisi");
       return false;
@@ -197,20 +346,37 @@ const Page = () => {
     setIsUpdatingClass(true);
 
     try {
+      const adminIds = Array.from(
+        new Set([...values.adminIds, ...values.picIds].map(Number))
+      ).filter((id) => Number.isInteger(id) && id > 0);
+      const body: {
+        productType: string;
+        publish: boolean;
+        publishTime?: string;
+        title: string;
+        isAutoGetCertificate: boolean;
+        instructorId?: number;
+        adminIds: number[];
+      } = {
+        adminIds,
+        productType: values.productType,
+        publish: values.publish,
+        publishTime: values.publishTime
+          ? new Date(values.publishTime).toISOString()
+          : dataClassModule?.publishTime,
+        title: values.title,
+        isAutoGetCertificate: values.isAutoGetCertificate,
+      };
+
+      if (values.instructorId) {
+        body.instructorId = Number(values.instructorId);
+      }
+
       const updateClass: ApiResponse<TClassModuleDetail> = await fetchApi(
         `/admin/classroom/${productId}`,
         {
           method: "PUT",
-          body: {
-            instructorId: values.instructorId || null,
-            productType: values.productType,
-            publish: values.publish,
-            publishTime: values.publishTime
-              ? new Date(values.publishTime).toISOString()
-              : dataClassModule?.publishTime,
-            title: values.title,
-            isAutoGetCertificate: values.isAutoGetCertificate,
-          },
+          body,
         }
       );
 
@@ -231,10 +397,13 @@ const Page = () => {
   };
 
   const handleAddModule = () => {
+    if (!canManage) return;
     setOpenDialogModule(true);
   };
 
   const handleAddSection = () => {
+    if (!canManage) return;
+
     const getLastPosition = dataClassModule?.sections.at(
       dataClassModule?.sections.length - 1
     );
@@ -243,34 +412,23 @@ const Page = () => {
     setOpenAddSectionDialog(true);
   };
 
-  const persistModulesOrder = async (sections: SectionItem[]) => {
-    const modules = sections.flatMap((section) =>
-      section.module.map((module, index) => ({
-        ...module,
-        sectionId: section.id,
-        step: index + 1,
-      }))
+  const persistModuleOrder = async (
+    moduleId: number,
+    sectionId: number,
+    step: number
+  ) => {
+    if (!canManage) return;
+
+    const response: ApiResponse = await fetchApi(
+      `/admin/module/${moduleId}/order`,
+      {
+        method: "PATCH",
+        body: { sectionId, step },
+      }
     );
 
-    const responses = await Promise.all(
-      modules.map((module) =>
-        fetchApi<ApiResponse>(`/admin/module/${module.id}`, {
-          method: "PUT",
-          body: {
-            sectionId: module.sectionId,
-            title: module.title,
-            type: module.type,
-            menuTitle: module.menuTitle,
-            step: module.step,
-            hide: module.hide,
-            isLocked: module.isLocked,
-          },
-        })
-      )
-    );
-
-    if (responses.some((response) => response.statusCode !== 200)) {
-      throw new Error("Failed to update module order");
+    if (!response.success) {
+      throw new Error(response.message || "Failed to update module order");
     }
   };
 
@@ -279,7 +437,7 @@ const Page = () => {
     targetModuleId?: number,
     position: ModuleDropTarget["position"] = "before"
   ) => {
-    if (!dataClassModule || dragItem?.type !== "module") {
+    if (!canManage || !dataClassModule || dragItem?.type !== "module") {
       return;
     }
 
@@ -352,7 +510,19 @@ const Page = () => {
     setModuleDropTarget(null);
 
     try {
-      await persistModulesOrder(reorderedSections);
+      const movedModuleOrder = reorderedSections
+        .find((section) => section.id === targetSectionId)
+        ?.module.find((module) => module.id === movedModule.id);
+
+      if (!movedModuleOrder) {
+        throw new Error("Module order not found");
+      }
+
+      await persistModuleOrder(
+        movedModule.id,
+        targetSectionId,
+        movedModuleOrder.step
+      );
       toast.info("Urutan modul sudah diperbaharui");
       getClassModule();
     } catch (error) {
@@ -395,6 +565,7 @@ const Page = () => {
 
   useEffect(() => {
     getClassModule();
+    getAccountOptions();
   }, []);
 
   useEffect(() => {
@@ -452,15 +623,22 @@ const Page = () => {
 
       <ClassProductForm
         dataClass={dataClassModule}
+        instructors={instructorOptions}
+        adminOptions={adminOptions}
+        picOptions={picOptions}
+        selectedAdmins={selectedAdminOptions}
+        selectedPics={selectedPicOptions}
         isUpdating={isUpdatingClass}
+        readOnly={!canManage}
         onSubmit={handleUpdateClass}
       />
 
       <Tabs defaultValue="participants" className="space-y-4">
-        <TabsList className="grid h-auto w-full grid-cols-2 md:w-fit md:grid-cols-4">
+        <TabsList className="grid h-auto w-full grid-cols-2 md:w-fit md:grid-cols-5">
           <TabsTrigger value="participants">Peserta</TabsTrigger>
           <TabsTrigger value="scores">Nilai Peserta</TabsTrigger>
           <TabsTrigger value="progress">Progress Peserta</TabsTrigger>
+          <TabsTrigger value="assignments">Admin & PIC</TabsTrigger>
           <TabsTrigger value="structure">Struktur Modul</TabsTrigger>
         </TabsList>
 
@@ -529,6 +707,24 @@ const Page = () => {
           />
         </TabsContent>
 
+        <TabsContent
+          value="assignments"
+          className="rounded-lg border bg-card p-4"
+        >
+          <div className="grid gap-5 lg:grid-cols-2">
+            <ClassAccountTable
+              title="Admin"
+              users={adminUsers}
+              emptyMessage="Belum ada admin untuk kelas ini."
+            />
+            <ClassAccountTable
+              title="PIC"
+              users={picUsers}
+              emptyMessage="Belum ada PIC untuk kelas ini."
+            />
+          </div>
+        </TabsContent>
+
         <TabsContent value="structure">
           <div className="grid gap-5 xl:grid-cols-[minmax(0,1.05fr)_minmax(420px,0.95fr)]">
             <ModuleStructure
@@ -536,6 +732,7 @@ const Page = () => {
               totalModule={totalModule}
               dragItem={dragItem}
               moduleDropTarget={moduleDropTarget}
+              readOnly={!canManage}
               setDragItem={setDragItem}
               setModuleDropTarget={setModuleDropTarget}
               setDataSection={setDataSection}
@@ -553,53 +750,116 @@ const Page = () => {
               handleModuleListDragOver={handleModuleListDragOver}
             />
 
-            <EditModuleAside
-              classId={params.classId}
-              moduleId={moduleId}
-              showEditModule={showEditModule}
-              setShowEditModule={setShowEditModule}
-              getClassModule={getClassModule}
-            />
+            {canManage ? (
+              <EditModuleAside
+                classId={params.classId}
+                moduleId={moduleId}
+                showEditModule={showEditModule}
+                setShowEditModule={setShowEditModule}
+                getClassModule={getClassModule}
+              />
+            ) : null}
           </div>
         </TabsContent>
       </Tabs>
-      <AddModuleDialog
-        isOpen={isOpenDialogModule}
-        section={dataSection}
-        step={addStepNumber}
-        setIsOpenDialog={setOpenDialogModule}
-        getClassModule={getClassModule}
-      />
-      <DestroyModuleDialog
-        getClassModule={getClassModule}
-        isOpen={openDeleteModuleDialog}
-        module={dataDeleteModuleDialog}
-        setIsOpenDialog={setOpenDeleteModuleDialog}
-      />
-      <AddSectionDialog
-        classData={classData}
-        getClassModule={getClassModule}
-        isOpen={openAddSectionDialog}
-        position={sectionPosition}
-        setIsOpenDialog={setOpenAddSectionDialog}
-      />
-      <EditSectionDialog
-        classData={classData}
-        getClassModule={getClassModule}
-        isOpen={openSectionEditDialog}
-        sectionId={dataSection.id}
-        sections={dataClassModule?.sections ?? []}
-        setIsOpenDialog={setOpenSectionEditDialog}
-      />
-
-      <DestroySectionDialog
-        getClassModule={getClassModule}
-        isOpen={openSectionDestroyDialog}
-        section={dataSection}
-        setIsOpenDialog={setOpenSectionDestroyDialog}
-      />
+      {canManage ? (
+        <>
+          <AddModuleDialog
+            isOpen={isOpenDialogModule}
+            section={dataSection}
+            step={addStepNumber}
+            setIsOpenDialog={setOpenDialogModule}
+            getClassModule={getClassModule}
+          />
+          <DestroyModuleDialog
+            getClassModule={getClassModule}
+            isOpen={openDeleteModuleDialog}
+            module={dataDeleteModuleDialog}
+            setIsOpenDialog={setOpenDeleteModuleDialog}
+          />
+          <AddSectionDialog
+            classData={classData}
+            getClassModule={getClassModule}
+            isOpen={openAddSectionDialog}
+            position={sectionPosition}
+            setIsOpenDialog={setOpenAddSectionDialog}
+          />
+          <EditSectionDialog
+            classData={classData}
+            getClassModule={getClassModule}
+            isOpen={openSectionEditDialog}
+            sectionId={dataSection.id}
+            sections={dataClassModule?.sections ?? []}
+            setIsOpenDialog={setOpenSectionEditDialog}
+          />
+          <DestroySectionDialog
+            getClassModule={getClassModule}
+            isOpen={openSectionDestroyDialog}
+            section={dataSection}
+            setIsOpenDialog={setOpenSectionDestroyDialog}
+          />
+        </>
+      ) : null}
     </div>
   );
 };
 
 export default Page;
+
+function ClassAccountTable({
+  title,
+  users,
+  emptyMessage,
+}: {
+  title: string;
+  users: ClassAssignmentUser[];
+  emptyMessage: string;
+}) {
+  return (
+    <div className="grid gap-3">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-medium">{title}</p>
+          <p className="text-sm text-muted-foreground">
+            Total {users.length} akun
+          </p>
+        </div>
+        <Badge variant="secondary">{users.length}</Badge>
+      </div>
+
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Nama</TableHead>
+            <TableHead>Username</TableHead>
+            <TableHead>Role</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {users.length ? (
+            users.map((user) => (
+              <TableRow key={user.id}>
+                <TableCell className="font-medium">{user.name}</TableCell>
+                <TableCell className="text-muted-foreground">
+                  {user.username}
+                </TableCell>
+                <TableCell>
+                  <Badge variant="outline">{user.role}</Badge>
+                </TableCell>
+              </TableRow>
+            ))
+          ) : (
+            <TableRow>
+              <TableCell
+                className="h-24 text-center text-muted-foreground"
+                colSpan={3}
+              >
+                {emptyMessage}
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}

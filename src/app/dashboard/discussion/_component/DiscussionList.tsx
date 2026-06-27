@@ -37,6 +37,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ApiResponse, fetchApi } from "@/lib/utils/fetchApi";
+import { subscribeModuleDiscussion } from "@/lib/service/discussionRealtime";
 
 type Classroom = {
   id: number;
@@ -126,6 +127,17 @@ export const DiscussionList = () => {
     };
 
     loadDiscussions();
+  }, [selectedModuleId]);
+
+  useEffect(() => {
+    if (!selectedModuleId) return;
+
+    return subscribeModuleDiscussion(Number(selectedModuleId), async () => {
+      const response: ApiResponse<TModuleDiscussion> = await fetchApi(
+        `/admin/discussion/show-by-module/${selectedModuleId}`,
+      );
+      setDiscussions(response.data ?? []);
+    });
   }, [selectedModuleId]);
 
   const selectedModule = useMemo(

@@ -50,9 +50,14 @@ export default async function Page({ params }: Props) {
         const quiz: ApiResponse<TQuizAll> = await fetchApi(
           `/quiz/${getModule.data.id}`
         );
-        // if ((quiz && !quiz.success) || !quiz) notFound();
+
         return (
-          <AttemptQuiz quiz={quiz?.data} params={params} baseUrl={baseUrl} />
+          <AttemptQuiz
+            quiz={quiz?.data}
+            errorMessage={!quiz.success ? quiz.message : undefined}
+            params={params}
+            baseUrl={baseUrl}
+          />
         );
       case "DISCUSSION":
         const discussion = await fetchApi(`/discussion/${getModule.data.id}`);

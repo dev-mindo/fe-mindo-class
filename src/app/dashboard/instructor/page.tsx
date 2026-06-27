@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   Edit3,
   GraduationCap,
+  Loader2,
   Plus,
   Search,
   Trash2,
@@ -11,6 +12,7 @@ import {
 import { toast } from "sonner";
 
 import { DashboardPageTitle } from "../_component/page-title";
+import { ApiResponse, fetchApi } from "@/lib/utils/fetchApi";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -59,48 +61,65 @@ import {
 type InstructorRole = "PIC" | "PENGAJAR";
 
 type Instructor = {
-  id: number;
+  id: string | number;
   name: string;
   username: string;
   role: InstructorRole;
 };
 
+type InstructorListData = {
+  data: Instructor[];
+  pagination: {
+    page: number;
+    limit: number;
+    totalData: number;
+    totalPage: number;
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+  };
+};
+
 type InstructorForm = {
   name: string;
   username: string;
-  password: string;
   role: InstructorRole | "";
 };
-
-const dummyInstructors: Instructor[] = [
-  { id: 1, name: "Aulia Rahman", username: "aulia.pic", role: "PIC" },
-  { id: 2, name: "Siti Rahma", username: "siti.rahma", role: "PENGAJAR" },
-  { id: 3, name: "Budi Santoso", username: "budi.santoso", role: "PENGAJAR" },
-  { id: 4, name: "Nadia Putri", username: "nadia.pic", role: "PIC" },
-  { id: 5, name: "Rizky Maulana", username: "rizky.maulana", role: "PENGAJAR" },
-  { id: 6, name: "Dewi Lestari", username: "dewi.lestari", role: "PENGAJAR" },
-  { id: 7, name: "Fajar Nugraha", username: "fajar.pic", role: "PIC" },
-  { id: 8, name: "Maya Sari", username: "maya.sari", role: "PENGAJAR" },
-  { id: 9, name: "Ahmad Fauzi", username: "ahmad.fauzi", role: "PENGAJAR" },
-  { id: 10, name: "Rina Wulandari", username: "rina.pic", role: "PIC" },
-  { id: 11, name: "Dimas Saputra", username: "dimas.saputra", role: "PENGAJAR" },
-];
 
 const emptyForm: InstructorForm = {
   name: "",
   username: "",
-  password: "",
   role: "",
 };
 
 const pageSize = 5;
 
+const getPaginationPages = (currentPage: number, totalPages: number) => {
+  const maxVisiblePages = 5;
+  const startPage = Math.max(
+    1,
+    Math.min(
+      currentPage - Math.floor(maxVisiblePages / 2),
+      totalPages - maxVisiblePages + 1
+    )
+  );
+  const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+  return Array.from(
+    { length: endPage - startPage + 1 },
+    (_, index) => startPage + index
+  );
+};
+
 export default function InstructorPage() {
-  const [instructors, setInstructors] =
-    useState<Instructor[]>(dummyInstructors);
+  const [instructors, setInstructors] = useState<Instructor[]>([]);
+  const [totalInstructors, setTotalInstructors] = useState(0);
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("ALL");
   const [currentPage, setCurrentPage] = useState(1);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [isLoadingInstructors, setIsLoadingInstructors] = useState(true);
+  const [isCreatingInstructor, setIsCreatingInstructor] = useState(false);
+  const [instructorError, setInstructorError] = useState("");
   const [form, setForm] = useState<InstructorForm>(emptyForm);
   const [editingInstructor, setEditingInstructor] =
     useState<Instructor | null>(null);
@@ -112,25 +131,58 @@ export default function InstructorPage() {
   const filteredInstructors = useMemo(() => {
     const keyword = search.trim().toLowerCase();
 
-    return instructors.filter((instructor) => {
-      const matchesKeyword =
+    return instructors.filter(
+      (instructor) =>
         instructor.name.toLowerCase().includes(keyword) ||
-        instructor.username.toLowerCase().includes(keyword);
-      const matchesRole =
-        roleFilter === "ALL" || instructor.role === roleFilter;
+        instructor.username.toLowerCase().includes(keyword)
+    );
+  }, [instructors, search]);
 
-      return matchesKeyword && matchesRole;
-    });
-  }, [instructors, roleFilter, search]);
+  const totalPages = Math.max(1, Math.ceil(totalInstructors / pageSize));
+  const pageNumbers = getPaginationPages(currentPage, totalPages);
 
-  const totalPages = Math.max(
-    1,
-    Math.ceil(filteredInstructors.length / pageSize)
-  );
-  const paginatedInstructors = filteredInstructors.slice(
-    (currentPage - 1) * pageSize,
-    currentPage * pageSize
-  );
+  useEffect(() => {
+    let isActive = true;
+
+    const loadInstructors = async () => {
+      setIsLoadingInstructors(true);
+      setInstructorError("");
+
+      const query = new URLSearchParams({
+        page: String(currentPage),
+        limit: String(pageSize),
+      });
+
+      if (roleFilter !== "ALL") {
+        query.set("role", roleFilter);
+      }
+
+      const response: ApiResponse<InstructorListData> = await fetchApi(
+        `/admin/instructor?${query.toString()}`
+      );
+
+      if (!isActive) return;
+
+      if (response.statusCode === 200 && response.data) {
+        setInstructors(response.data.data ?? []);
+        setTotalInstructors(response.data.pagination?.totalData ?? 0);
+      } else {
+        setInstructors([]);
+        setTotalInstructors(0);
+        setInstructorError(
+          response.message || "Gagal mengambil data instruktur."
+        );
+      }
+
+      setIsLoadingInstructors(false);
+    };
+
+    void loadInstructors();
+
+    return () => {
+      isActive = false;
+    };
+  }, [currentPage, refreshKey, roleFilter]);
 
   useEffect(() => {
     if (currentPage > totalPages) setCurrentPage(totalPages);
@@ -138,14 +190,14 @@ export default function InstructorPage() {
 
   const resetForm = () => setForm(emptyForm);
 
-  const validateForm = (currentId?: number, requirePassword = false) => {
+  const validateForm = (currentId?: string | number) => {
     if (!form.name.trim() || !form.username.trim() || !form.role) {
       toast.error("Nama, username, dan role wajib diisi.");
       return false;
     }
 
-    if (requirePassword && !form.password) {
-      toast.error("Password wajib diisi.");
+    if (form.username.trim().length < 3) {
+      toast.error("Username minimal 3 karakter.");
       return false;
     }
 
@@ -164,25 +216,40 @@ export default function InstructorPage() {
     return true;
   };
 
-  const handleCreate = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleCreate = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!validateForm(undefined, true)) return;
+    if (!validateForm()) return;
 
-    setInstructors((currentInstructors) => [
+    setIsCreatingInstructor(true);
+
+    const response: ApiResponse<Instructor> = await fetchApi(
+      "/admin/instructor",
       {
-        id:
-          Math.max(0, ...currentInstructors.map((instructor) => instructor.id)) +
-          1,
-        name: form.name.trim(),
-        username: form.username.trim(),
-        role: form.role as InstructorRole,
-      },
-      ...currentInstructors,
-    ]);
-    setCurrentPage(1);
+        method: "POST",
+        body: {
+          name: form.name.trim(),
+          username: form.username.trim(),
+          role: form.role as InstructorRole,
+        },
+      }
+    );
+
+    setIsCreatingInstructor(false);
+
+    if (
+      !response.success ||
+      response.statusCode < 200 ||
+      response.statusCode >= 300
+    ) {
+      toast.error(response.message || "Gagal menambahkan instruktur.");
+      return;
+    }
+
     setIsCreateOpen(false);
     resetForm();
-    toast.success("Instruktur berhasil ditambahkan.");
+    setCurrentPage(1);
+    setRefreshKey((key) => key + 1);
+    toast.success(response.message || "Instruktur berhasil ditambahkan.");
   };
 
   const openEditDialog = (instructor: Instructor) => {
@@ -190,7 +257,6 @@ export default function InstructorPage() {
     setForm({
       name: instructor.name,
       username: instructor.username,
-      password: "",
       role: instructor.role,
     });
     setIsEditOpen(true);
@@ -226,6 +292,7 @@ export default function InstructorPage() {
         (instructor) => instructor.id !== deletingInstructor.id
       )
     );
+    setTotalInstructors((total) => Math.max(0, total - 1));
     setDeletingInstructor(null);
     toast.success("Instruktur berhasil dihapus.");
   };
@@ -259,7 +326,7 @@ export default function InstructorPage() {
           <div>
             <CardTitle>Daftar Instruktur</CardTitle>
             <CardDescription className="mt-1.5">
-              Total {instructors.length} instruktur terdaftar
+              Total {totalInstructors} instruktur terdaftar
             </CardDescription>
           </div>
           <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
@@ -306,58 +373,73 @@ export default function InstructorPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {paginatedInstructors.map((instructor) => (
-                  <TableRow key={instructor.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                          <GraduationCap className="h-4 w-4" />
-                        </div>
-                        <span className="font-medium">{instructor.name}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {instructor.username}
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={
-                          instructor.role === "PIC" ? "default" : "secondary"
-                        }
-                      >
-                        {instructor.role === "PIC" ? "PIC" : "Pengajar"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          size="icon"
-                          variant="outline"
-                          aria-label={`Edit ${instructor.name}`}
-                          onClick={() => openEditDialog(instructor)}
-                        >
-                          <Edit3 className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="destructive"
-                          aria-label={`Hapus ${instructor.name}`}
-                          onClick={() => setDeletingInstructor(instructor)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-
-                {!paginatedInstructors.length && (
+                {isLoadingInstructors ? (
                   <TableRow>
                     <TableCell
                       className="h-32 text-center text-muted-foreground"
                       colSpan={4}
                     >
-                      Instruktur tidak ditemukan.
+                      <div className="flex items-center justify-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Memuat instruktur...
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : null}
+
+                {!isLoadingInstructors &&
+                  filteredInstructors.map((instructor) => (
+                    <TableRow key={instructor.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                            <GraduationCap className="h-4 w-4" />
+                          </div>
+                          <span className="font-medium">{instructor.name}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {instructor.username}
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={
+                            instructor.role === "PIC" ? "default" : "secondary"
+                          }
+                        >
+                          {instructor.role === "PIC" ? "PIC" : "Pengajar"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            size="icon"
+                            variant="outline"
+                            aria-label={`Edit ${instructor.name}`}
+                            onClick={() => openEditDialog(instructor)}
+                          >
+                            <Edit3 className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="destructive"
+                            aria-label={`Hapus ${instructor.name}`}
+                            onClick={() => setDeletingInstructor(instructor)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+
+                {!isLoadingInstructors && !filteredInstructors.length && (
+                  <TableRow>
+                    <TableCell
+                      className="h-32 text-center text-muted-foreground"
+                      colSpan={4}
+                    >
+                      {instructorError || "Instruktur tidak ditemukan."}
                     </TableCell>
                   </TableRow>
                 )}
@@ -367,37 +449,38 @@ export default function InstructorPage() {
 
           <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-muted-foreground">
-              Menampilkan {paginatedInstructors.length} dari{" "}
-              {filteredInstructors.length} instruktur
+              Menampilkan {filteredInstructors.length} dari {totalInstructors}{" "}
+              instruktur
             </p>
             <div className="flex flex-wrap items-center gap-2">
               <Button
                 type="button"
                 variant="secondary"
-                disabled={currentPage === 1}
+                disabled={currentPage === 1 || isLoadingInstructors}
                 onClick={() => setCurrentPage((page) => page - 1)}
               >
                 Previous
               </Button>
-              {Array.from({ length: totalPages }, (_, index) => index + 1).map(
-                (page) => (
-                  <Button
-                    key={page}
-                    type="button"
-                    size="icon"
-                    variant={page === currentPage ? "default" : "secondary"}
-                    aria-label={`Halaman ${page}`}
-                    aria-current={page === currentPage ? "page" : undefined}
-                    onClick={() => setCurrentPage(page)}
-                  >
-                    {page}
-                  </Button>
-                )
-              )}
+              {pageNumbers.map((page) => (
+                <Button
+                  key={page}
+                  type="button"
+                  size="icon"
+                  variant={page === currentPage ? "default" : "secondary"}
+                  aria-label={`Halaman ${page}`}
+                  aria-current={page === currentPage ? "page" : undefined}
+                  disabled={isLoadingInstructors}
+                  onClick={() => setCurrentPage(page)}
+                >
+                  {page}
+                </Button>
+              ))}
               <Button
                 type="button"
                 variant="secondary"
-                disabled={currentPage === totalPages}
+                disabled={
+                  currentPage === totalPages || isLoadingInstructors
+                }
                 onClick={() => setCurrentPage((page) => page + 1)}
               >
                 Next
@@ -413,7 +496,7 @@ export default function InstructorPage() {
         description="Buat akun baru untuk PIC atau pengajar."
         form={form}
         formId="create-instructor-form"
-        includePassword
+        isSubmitting={isCreatingInstructor}
         submitLabel="Simpan Instruktur"
         onChange={setForm}
         onSubmit={handleCreate}
@@ -476,7 +559,7 @@ type InstructorDialogProps = {
   description: string;
   form: InstructorForm;
   formId: string;
-  includePassword?: boolean;
+  isSubmitting?: boolean;
   submitLabel: string;
   onChange: (form: InstructorForm) => void;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
@@ -489,7 +572,7 @@ function InstructorDialog({
   description,
   form,
   formId,
-  includePassword = false,
+  isSubmitting = false,
   submitLabel,
   onChange,
   onSubmit,
@@ -528,21 +611,6 @@ function InstructorDialog({
               }
             />
           </div>
-          {includePassword && (
-            <div className="grid gap-2">
-              <Label htmlFor={`${formId}-password`}>Password</Label>
-              <Input
-                id={`${formId}-password`}
-                type="password"
-                autoComplete="new-password"
-                placeholder="Masukkan password"
-                value={form.password}
-                onChange={(event) =>
-                  onChange({ ...form, password: event.target.value })
-                }
-              />
-            </div>
-          )}
           <div className="grid gap-2">
             <Label>Role</Label>
             <Select
@@ -563,11 +631,22 @@ function InstructorDialog({
         </form>
 
         <DialogFooter>
-          <Button variant="secondary" onClick={() => onOpenChange(false)}>
+          <Button
+            variant="secondary"
+            disabled={isSubmitting}
+            onClick={() => onOpenChange(false)}
+          >
             Batal
           </Button>
-          <Button type="submit" form={formId}>
-            {submitLabel}
+          <Button type="submit" form={formId} disabled={isSubmitting}>
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Menyimpan...
+              </>
+            ) : (
+              submitLabel
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

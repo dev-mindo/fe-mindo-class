@@ -11,30 +11,49 @@ import {
 } from "@/components/ui/table";
 import { ApiResponse, fetchApi } from "@/lib/utils/fetchApi";
 import { Info, Loader2 } from "lucide-react";
-import {useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { convertTimeToWords } from "@/lib/utils";
 import Link from "next/link";
 import { ErrorDialogAttempt } from "./ErrorDialogAttempt";
+import { toast } from "sonner";
 
 type Props = {
   quiz: TQuizAll;
+  errorMessage?: string;
   params: {
     [key: string]: string;
   };
   baseUrl: string;
 };
 
-export const AttemptQuiz = ({ quiz, baseUrl }: Props) => {
-  // const {toast} = useToast()
+export const AttemptQuiz = ({ quiz, errorMessage, baseUrl }: Props) => {
   const [isOpenErrorAttempt, setIsOpenErrorAttempt] = useState(false);
   const [errorMessageAttempt, setMessageAttempt] = useState("");
   const [attemptLoading, setAttemptLoading] = useState<boolean>(false);
   const router = useRouter();
 
+  useEffect(() => {
+    if (errorMessage) {
+      toast.error(errorMessage, {
+        id: "quiz-not-available",
+      });
+    }
+  }, [errorMessage]);
+
   const attemptQuiz = async () => {
+    if (!quiz) {
+      toast.error(
+        errorMessage || "Quiz belum tersedia dan belum dapat dikerjakan.",
+        {
+          id: "quiz-not-available",
+        }
+      );
+      return;
+    }
+
     setAttemptLoading(true);
-    const attempt: ApiResponse = await fetchApi(`/attempt-quiz/${quiz?.id}`, {
+    const attempt: ApiResponse = await fetchApi(`/attempt-quiz/${quiz.id}`, {
       method: "POST",
     });
     if (attempt.success) {
@@ -46,6 +65,21 @@ export const AttemptQuiz = ({ quiz, baseUrl }: Props) => {
     }
   };
 
+  if (!quiz) {
+    return (
+      <div className="mx-auto w-full md:w-[90%] xl:w-[80%]">
+        <Alert variant="destructive">
+          <Info className="h-4 w-4" />
+          <AlertTitle>Quiz belum dapat dikerjakan</AlertTitle>
+          <AlertDescription>
+            {errorMessage ||
+              "Quiz belum tersedia dan belum dapat dikerjakan."}
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full">
       <div className="mx-auto w-[100%] md:w-[90%] xl:w-[80%]">
@@ -55,8 +89,8 @@ export const AttemptQuiz = ({ quiz, baseUrl }: Props) => {
             <Info className="h-4 w-4" />
             <AlertTitle>Info</AlertTitle>
             <AlertDescription>
-              Soal Berjumlah {quiz?._count.question} soal dengan waktu{" "}
-              {convertTimeToWords(quiz?.limitTime || "")}
+              Soal Berjumlah {quiz._count.question} soal dengan waktu{" "}
+              {convertTimeToWords(quiz.limitTime)}
             </AlertDescription>
           </Alert>
           <Table className="my-4">
@@ -69,7 +103,7 @@ export const AttemptQuiz = ({ quiz, baseUrl }: Props) => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {quiz?.quizAttempt.map((item, index) => (
+              {quiz.quizAttempt.map((item, index) => (
                 <TableRow key={index}>
                   <TableCell className="font-medium">
                     Percobaan ke {index + 1}
@@ -99,7 +133,10 @@ export const AttemptQuiz = ({ quiz, baseUrl }: Props) => {
           </Table>
           <div className="flex justify-center">
             <div className="my-2">
-              <Button onClick={attemptQuiz}>
+              <Button
+                disabled={attemptLoading}
+                onClick={attemptQuiz}
+              >
                 {attemptLoading ? (
                   <>
                     <Loader2 className="animate-spin" /> Please wait

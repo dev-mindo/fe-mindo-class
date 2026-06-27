@@ -1,14 +1,15 @@
-import IInput from "@/components/base/IInput";
+import { IInput } from "@/components/base/IInput";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogFooter,
-  DialogHeader,  
+  DialogHeader,
 } from "@/components/ui/dialog";
+import { Form } from "@/components/ui/form";
 import { fetchApi } from "@/lib/utils/fetchApi";
 import { useRouter } from "next/navigation";
-import { Form, useForm } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
 type Props = {

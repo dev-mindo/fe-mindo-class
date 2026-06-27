@@ -250,15 +250,21 @@ declare global {
 
   type TDiscussionAnswer = {
     id: number;
-    userId: number;
-    productId: number;
+    userId: number | null;
+    productId: number | null;
     discussionId: number;
     message: string;
     createdAt: string;
     updatedAt: string;
-    user: {
+    user?: {
+      userId?: number;
       name: string;
-    };
+    } | null;
+    author?: {
+      type: string;
+      id: number;
+      name: string;
+    } | null;
     discussionVote: Array<TDiscussionVote>;
     isUser: boolean;
     voteSummary: {
@@ -480,7 +486,59 @@ declare global {
       minimumScore: number;
       limitTime: string;
       limitTrial: number;
+      pagination: boolean;
+      random: boolean;
+      publish: boolean;
     } | null;
+    videoData?: {
+      moduleId: number;
+      videoId: string;
+      video: {
+        id: string;
+        name: string;
+      };
+    } | null;
+    evaluationData?: {
+      id: number;
+      moduleId: number;
+      linkUrl: string | null;
+      feedbackQuestion?: Array<{
+        evaluationId: number;
+        name: string;
+        position: number;
+        title: string;
+        required: boolean;
+        value: string | null;
+        type: string;
+      }>;
+    } | null;
+    dataTask?: {
+      id: number;
+      moduleId: number;
+      editable: boolean;
+      canLate: boolean;
+      startAt: string;
+      endAt: string;
+    } | null;
+    liveData?: {
+      id: number;
+      moduleId: number;
+      videoId: string | null;
+      link: string;
+      startAt: string;
+      endAt: string;
+      video?: {
+        id: string;
+        name: string;
+      } | null;
+    } | null;
+    materialData?: Array<{
+      id: number;
+      moduleId: number;
+      name: string;
+      url: string;
+    }>;
+    discussionData?: TModuleDiscussion;
     assignment?: TAssignment | null;
     dataAssignment?: TAssignment | null;
     task?: Array<{

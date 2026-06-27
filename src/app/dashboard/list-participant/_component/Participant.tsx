@@ -1,5 +1,14 @@
 import { Button } from "@/components/ui/button";
 import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -29,6 +38,8 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Loader2, Minus, Plus, UserPlus, Users } from "lucide-react";
 import { toast } from "sonner";
+import { useDashboardContext } from "@/context/DashboardContext";
+import { canManageClassroom } from "@/lib/dashboard-permissions";
 
 type Props = {
   selectedClass: string | null;
@@ -73,8 +84,17 @@ const getPaginationPages = (currentPage: number, totalPage: number) => {
   );
 };
 
+const getTodayDate = () => {
+  const date = new Date();
+  const timezoneOffset = date.getTimezoneOffset() * 60000;
+
+  return new Date(date.getTime() - timezoneOffset).toISOString().slice(0, 10);
+};
+
 export const ParticipantComponent = ({ selectedClass }: Props) => {
   const router = useRouter();
+  const { user } = useDashboardContext();
+  const canManage = canManageClassroom(user?.role);
   const [dataParticipant, setDataParticipant] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState("");
@@ -99,7 +119,12 @@ export const ParticipantComponent = ({ selectedClass }: Props) => {
   const [participantHasPrevious, setParticipantHasPrevious] = useState(false);
   const [isLoadingAvailableParticipants, setIsLoadingAvailableParticipants] =
     useState(false);
+  const [isSavingParticipants, setIsSavingParticipants] = useState(false);
   const [participantError, setParticipantError] = useState("");
+  const [deletingParticipant, setDeletingParticipant] = useState<any | null>(
+    null
+  );
+  const [isDeletingParticipant, setIsDeletingParticipant] = useState(false);
 
   const fetchParticipantByClassModule = async () => {
     if (!selectedClass) {
@@ -243,11 +268,57 @@ export const ParticipantComponent = ({ selectedClass }: Props) => {
       current.filter((participant) => participant.id !== participantId)
     );
   };
-  const handleSaveParticipants = () => {
-    toast.info(
-      `${selectedParticipants.length} peserta siap dimasukkan ke kelas`
+  const handleSaveParticipants = async () => {
+    if (!canManage) {
+      toast.error("Anda tidak memiliki akses untuk menambah peserta");
+      return;
+    }
+
+    const productId = Number(selectedClass);
+
+    if (!Number.isInteger(productId) || productId < 1) {
+      toast.error("Product ID kelas tidak valid");
+      return;
+    }
+
+    const data = selectedParticipants
+      .map((participant) => ({
+        productId,
+        userId: Number(participant.id),
+        name: participant.name,
+        classDate: getTodayDate(),
+      }))
+      .filter((participant) => Number.isInteger(participant.userId));
+
+    if (data.length !== selectedParticipants.length) {
+      toast.error("Ada peserta dengan User ID tidak valid");
+      return;
+    }
+
+    console.log('data', data)
+
+    setIsSavingParticipants(true);
+
+    const response: ApiResponse = await fetchApi(
+      "/admin/classroom/participants",
+      {
+        method: "POST",
+        body: { data },
+      }
     );
+
+    console.log('response', response)
+
+    setIsSavingParticipants(false);
+
+    if (response.statusCode !== 200 && response.statusCode !== 201) {
+      toast.error(response.message || "Gagal menambahkan peserta");
+      return;
+    }
+
+    toast.success(response.message || "Peserta berhasil ditambahkan ke kelas");
     handleAddParticipantDialogChange(false);
+    fetchParticipantByClassModule();
   };
 
   const handleAddParticipantDialogChange = (open: boolean) => {
@@ -260,6 +331,54 @@ export const ParticipantComponent = ({ selectedClass }: Props) => {
       setParticipantPage(1);
       setParticipantError("");
     }
+  };
+
+  const handleDeleteParticipant = async () => {
+    if (!canManage) {
+      toast.error("Anda tidak memiliki akses untuk menghapus peserta");
+      return;
+    }
+
+    const productId = Number(selectedClass);
+    const userId = Number(
+      deletingParticipant?.userId ?? deletingParticipant?.id
+    );
+
+    if (!Number.isInteger(productId) || productId < 1) {
+      toast.error("Product ID kelas tidak valid");
+      return;
+    }
+
+    if (!Number.isInteger(userId) || userId < 1) {
+      toast.error("User ID peserta tidak valid");
+      return;
+    }
+
+    setIsDeletingParticipant(true);
+
+    const response: ApiResponse = await fetchApi(
+      `/admin/classroom/${productId}/${userId}`,
+      {
+        method: "DELETE",
+      }
+    );
+
+    setIsDeletingParticipant(false);
+
+    if (
+      typeof response.statusCode !== "number" ||
+      response.statusCode < 200 ||
+      response.statusCode >= 300
+    ) {
+      toast.error(response.message || "Gagal menghapus peserta dari kelas");
+      return;
+    }
+
+    toast.success(
+      response.message || "Peserta berhasil dihapus dari kelas"
+    );
+    setDeletingParticipant(null);
+    await fetchParticipantByClassModule();
   };
 
   return (
@@ -293,13 +412,15 @@ export const ParticipantComponent = ({ selectedClass }: Props) => {
               </SelectItem>
             </SelectContent>
           </Select>
-          <Button
-            onClick={() => setShowAddParticipantDialog(true)}
-            type="button"
-          >
-            <UserPlus className="mr-2 h-4 w-4" />
-            Tambah Peserta
-          </Button>
+          {canManage ? (
+            <Button
+              onClick={() => setShowAddParticipantDialog(true)}
+              type="button"
+            >
+              <UserPlus className="mr-2 h-4 w-4" />
+              Tambah Peserta
+            </Button>
+          ) : null}
         </div>
       </div>
       <Table className="w-full">
@@ -333,8 +454,18 @@ export const ParticipantComponent = ({ selectedClass }: Props) => {
                 >
                   Detail
                 </Button>
-                <Button className="bg-yellow-500">Edit</Button>
-                <Button className="bg-red-500">Delete</Button>
+                {canManage ? (
+                  <>
+                    <Button className="bg-yellow-500">Edit</Button>
+                    <Button
+                      onClick={() => setDeletingParticipant(item)}
+                      type="button"
+                      variant="destructive"
+                    >
+                      Delete
+                    </Button>
+                  </>
+                ) : null}
               </TableCell>
             </TableRow>
           ))}
@@ -387,10 +518,11 @@ export const ParticipantComponent = ({ selectedClass }: Props) => {
           </Button>
         </div>
       </div>
-      <Dialog
-        open={showAddParticipantDialog}
-        onOpenChange={handleAddParticipantDialogChange}
-      >
+      {canManage ? (
+        <Dialog
+          open={showAddParticipantDialog}
+          onOpenChange={handleAddParticipantDialogChange}
+        >
         <DialogContent className="flex max-h-[90vh] w-[calc(100%-2rem)] max-w-6xl flex-col gap-0 overflow-hidden p-0">
           <DialogHeader className="border-b px-6 py-5 pr-12">
             <div className="flex items-center gap-3">
@@ -623,15 +755,60 @@ export const ParticipantComponent = ({ selectedClass }: Props) => {
               Batal
             </Button>
             <Button
-              disabled={selectedParticipants.length === 0}
+              disabled={
+                selectedParticipants.length === 0 || isSavingParticipants
+              }
               onClick={handleSaveParticipants}
               type="button"
             >
-              Tambahkan {selectedParticipants.length} Peserta
+              {isSavingParticipants
+                ? "Menambahkan..."
+                : `Tambahkan ${selectedParticipants.length} Peserta`}
             </Button>
           </DialogFooter>
         </DialogContent>
-      </Dialog>
+        </Dialog>
+      ) : null}
+      {canManage ? (
+        <AlertDialog
+          open={Boolean(deletingParticipant)}
+          onOpenChange={(open) => {
+            if (!open && !isDeletingParticipant) {
+              setDeletingParticipant(null);
+            }
+          }}
+        >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus peserta dari kelas?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Peserta {deletingParticipant?.name || "ini"} akan dihapus dari
+              kelas. Tindakan ini tidak dapat dibatalkan.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeletingParticipant}>
+              Batal
+            </AlertDialogCancel>
+            <Button
+              disabled={isDeletingParticipant}
+              onClick={handleDeleteParticipant}
+              type="button"
+              variant="destructive"
+            >
+              {isDeletingParticipant ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Menghapus...
+                </>
+              ) : (
+                "Hapus"
+              )}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+        </AlertDialog>
+      ) : null}
     </div>
   );
 };

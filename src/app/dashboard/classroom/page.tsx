@@ -22,6 +22,8 @@ import { ApiResponse, fetchApi } from "@/lib/utils/fetchApi";
 import { useEffect, useMemo, useState } from "react";
 import { DashboardPageTitle } from "../_component/page-title";
 import Link from "next/link";
+import { useDashboardContext } from "@/context/DashboardContext";
+import { canManageClassroom } from "@/lib/dashboard-permissions";
 
 const pageSize = 5;
 
@@ -39,6 +41,8 @@ const getPaginationPages = (currentPage: number, totalPage: number) => {
 };
 
 const Page = () => {
+  const { user } = useDashboardContext();
+  const canManage = canManageClassroom(user?.role);
   const [dataClass, setDataClass] = useState<any[]>([]);
   const [searchClassroom, setSearchClassroom] = useState("");
   const [orderByDate, setOrderByDate] = useState("desc");
@@ -137,11 +141,15 @@ const Page = () => {
               </Button>
             </div>
           </div>
-          <div className="">
-            <Button asChild>
-              <Link href="/dashboard/classroom/add-classroom">Tambah Kelas</Link>
-            </Button>
-          </div>
+          {canManage ? (
+            <div>
+              <Button asChild>
+                <Link href="/dashboard/classroom/add-classroom">
+                  Tambah Kelas
+                </Link>
+              </Button>
+            </div>
+          ) : null}
         </div>
         <Table className="w-full">
           <TableCaption>List Kelas</TableCaption>
@@ -174,7 +182,9 @@ const Page = () => {
                     </Link>
                   </Button>
                   {/* <Button className="bg-yellow-500">Edit</Button> */}
-                  <Button className="bg-red-500">Hapus</Button>
+                  {canManage ? (
+                    <Button variant="destructive">Hapus</Button>
+                  ) : null}
                 </TableCell>
               </TableRow>
             ))}
