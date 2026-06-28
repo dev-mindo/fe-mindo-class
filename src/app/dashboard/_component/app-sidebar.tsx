@@ -138,11 +138,11 @@ export function AppSidebar() {
 
   return (
     <div
-      className={`h-screen bg-sidebar w-[100%] lg:w-[30%] xl:w-[350px] flex flex-col justify-between ${
+      className={`h-full bg-sidebar w-[100%] lg:w-[30%] xl:w-[350px] shrink-0 flex flex-col overflow-hidden ${
         hideSidebar ? "hidden" : ""
       }`}
     >
-      <div>
+      <div className="flex min-h-0 flex-1 flex-col">
         {/* TODO fitur hide side bar */}
         <div className="flex justify-between border-b-[1px] py-3 px-3">
           <div className="flex w-full gap-3 items-center">
@@ -192,7 +192,7 @@ export function AppSidebar() {
           </p>
         </div>
         <div></div>
-        <div className="mt-5 px-2 overflow-y-auto">
+        <div className="mt-5 min-h-0 flex-1 overflow-y-auto px-2">
           <div>
             <div className="flex flex-col gap-2">
               {visibleItems.map((item, index) => {

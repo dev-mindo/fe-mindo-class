@@ -46,6 +46,10 @@ export const NewDialogDiscussion = ({
   const router = useRouter();
 
   const onSubmit = async (data: z.infer<typeof discussionFieldSchema>) => {
+    if (loading) {
+      return;
+    }
+
     setLoading(true);
     const res: ApiResponse = await fetchApi(`/discussion/${moduleId}`, {
       method: "POST",
@@ -113,6 +117,7 @@ export const NewDialogDiscussion = ({
                   disabled={loading}
                   className="bg-secondary"
                   onClick={() => setIsOpen(false)}
+                  type="button"
                 >
                   Cancel
                 </Button>

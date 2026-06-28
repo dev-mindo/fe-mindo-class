@@ -120,12 +120,16 @@ type UpdateQuizFormValues = z.infer<typeof updateQuizFormSchema>;
 
 const liveSchema = z
   .object({
-    videoId: z.string().trim().min(1, "Video ID wajib diisi"),
-    link: z.string().trim().min(1, "Link live wajib diisi"),
-    startAt: z.string().min(1, "Waktu mulai wajib diisi"),
-    endAt: z.string().min(1, "Waktu selesai wajib diisi"),
+    videoId: z.string().trim(),
+    link: z.string().trim(),
+    startAt: z.string(),
+    endAt: z.string(),
   })
   .superRefine((data, ctx) => {
+    if (!data.startAt || !data.endAt) {
+      return;
+    }
+
     const startAt = new Date(data.startAt);
     const endAt = new Date(data.endAt);
 
@@ -170,6 +174,7 @@ export const EditModule = (props: Props) => {
   const [showDescriptionDialog, setShowDescriptionDialog] =
     useState<boolean>(false);
   const [descriptionEditorKey, setDescriptionEditorKey] = useState<number>(0);
+  const [evaluationId, setEvaluationId] = useState<number>(0);
   const form = useForm<ModuleFormValues>({
     resolver: zodResolver(moduleSchema),
     defaultValues: {
@@ -218,6 +223,7 @@ export const EditModule = (props: Props) => {
   const showAssignmentForm = selectedModuleType === ModuleType.TASK;
   const showLiveForm = selectedModuleType === ModuleType.LIVE;
   const showVideoForm = selectedModuleType === ModuleType.VIDEO;
+  const showEvaluationForm = selectedModuleType === ModuleType.EVALUATION;
   const showVideoPicker = showVideoForm || showLiveForm;
   const isSuccessResponse = (response?: ApiResponse) =>
     response?.statusCode === 200 || response?.statusCode === 201;
@@ -236,6 +242,10 @@ export const EditModule = (props: Props) => {
     return new Date(date.getTime() - date.getTimezoneOffset() * 60000)
       .toISOString()
       .slice(0, 16);
+  };
+
+  const formatOptionalDateTimeIso = (value?: string) => {
+    return value ? new Date(value).toISOString() : null;
   };
 
   const handleUpdateModule = async (value: any) => {
@@ -310,10 +320,10 @@ export const EditModule = (props: Props) => {
           ...(liveValue
             ? {
                 live: {
-                  videoId: liveValue.videoId,
+                  videoId: liveValue.videoId || null,
                   link: liveValue.link,
-                  startAt: new Date(liveValue.startAt).toISOString(),
-                  endAt: new Date(liveValue.endAt).toISOString(),
+                  startAt: formatOptionalDateTimeIso(liveValue.startAt),
+                  endAt: formatOptionalDateTimeIso(liveValue.endAt),
                 },
               }
             : {}),
@@ -352,6 +362,7 @@ export const EditModule = (props: Props) => {
           form.setValue("type", dataModule.type as ModuleType);
           setDescription(dataModule.description || "");
           setDescriptionDraft(dataModule.description || "");
+          setEvaluationId(dataModule.evaluationData?.id ?? 0);
 
           const legacyModuleData = dataModule as TDetailModule & {
             videoId?: string;
@@ -692,10 +703,11 @@ export const EditModule = (props: Props) => {
                     </Button>
                   </div>
                   {descriptionText ? (
-                    <div className="rounded-md border bg-background p-3">
-                      <p className="line-clamp-3 text-sm text-muted-foreground">
-                        {descriptionText}
-                      </p>
+                    <div className="max-h-48 overflow-y-auto rounded-md border bg-background p-3">
+                      <div
+                        className="space-y-2 text-sm leading-relaxed text-foreground [&_a]:text-primary [&_a]:underline [&_blockquote]:border-l-4 [&_blockquote]:pl-3 [&_blockquote]:text-muted-foreground [&_h1]:text-xl [&_h1]:font-semibold [&_h2]:text-lg [&_h2]:font-semibold [&_h3]:text-base [&_h3]:font-semibold [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:text-sm [&_ul]:list-disc [&_ul]:pl-5"
+                        dangerouslySetInnerHTML={{ __html: description }}
+                      />
                     </div>
                   ) : (
                     <div className="rounded-md border border-dashed bg-background p-4 text-center">
@@ -797,6 +809,36 @@ export const EditModule = (props: Props) => {
                         <Label>Publish</Label>
                         <ISwitch control={quizForm.control} name="publish" />
                       </div>
+                    </div>
+                  </div>
+                ) : null}
+                {showEvaluationForm ? (
+                  <div className="grid gap-4 border-t pt-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <h2 className="text-sm font-semibold">
+                          Konfigurasi Evaluasi
+                        </h2>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Edit pertanyaan feedback melalui halaman khusus
+                          evaluasi.
+                        </p>
+                      </div>
+                      {evaluationId ? (
+                        <Button asChild size="sm" type="button" variant="default">
+                          <Link
+                            href={`/dashboard/classroom/${props.classId}/evaluation/${props.moduleId}`}
+                          >
+                            <Pencil className="mr-2 h-4 w-4" />
+                            Edit Evaluasi
+                          </Link>
+                        </Button>
+                      ) : (
+                        <Button disabled size="sm" type="button">
+                          <Pencil className="mr-2 h-4 w-4" />
+                          Edit Evaluasi
+                        </Button>
+                      )}
                     </div>
                   </div>
                 ) : null}

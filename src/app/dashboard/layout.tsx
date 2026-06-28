@@ -8,13 +8,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <DashboardProvider>
       <DashboardSessionGuard>
-        <main className="flex">
+        <main className="fixed inset-0 flex overflow-hidden">
           <AppSidebar />
-          <div className="flex h-screen w-full flex-col justify-between">
+          <div className="flex min-h-0 w-full flex-col">
             <AppTopBar />
             <DashboardBreadcrumb />
-            <div className="h-[100vh] overflow-y-auto">
-              <div className="mx-auto my-10 w-[95%]">{children}</div>
+            <div className="min-h-0 flex-1 overflow-y-auto">
+              <div className="mx-auto w-[95%] py-10">{children}</div>
             </div>
           </div>
         </main>

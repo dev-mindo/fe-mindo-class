@@ -57,7 +57,7 @@ export function DashboardBreadcrumb() {
   return (
     <nav
       aria-label="Breadcrumb"
-      className="border-b bg-background px-3 py-2"
+      className="shrink-0 border-b bg-background px-3 py-2"
     >
       <ol className="mx-auto flex w-[95%] min-w-0 flex-wrap items-center gap-1 text-sm text-muted-foreground">
         {breadcrumbs.map((breadcrumb, index) => {

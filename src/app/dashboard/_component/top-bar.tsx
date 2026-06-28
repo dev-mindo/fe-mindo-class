@@ -221,7 +221,7 @@ export function AppTopBar() {
 
   return (
     <>
-      <div className="flex w-full items-center justify-between gap-3 bg-sidebar p-3">
+      <div className="flex w-full shrink-0 items-center justify-between gap-3 bg-sidebar p-3">
         <div className="flex min-w-0 items-center gap-3">
           <Button
             onClick={hideSidebarHandler}

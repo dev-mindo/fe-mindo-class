@@ -36,6 +36,7 @@ import { ApiResponse, fetchApi } from "@/lib/utils/fetchApi";
 import { fetchProductApi } from "@/lib/utils/fetchProductApi";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -138,6 +139,7 @@ export const AddClass = ({
   initialProduct,
   initialProductError,
 }: AddClassProps) => {
+  const router = useRouter();
   const isInitialRender = useRef(true);
   const [dataProduct, setDataProduct] = useState<Product[]>(
     initialProduct?.results ?? []
@@ -225,7 +227,7 @@ export const AddClass = ({
       form.reset();
       setSelectedProductId("");
       setSelectedProduct(null);
-      fetchProduct();
+      router.push("/dashboard/classroom");
       return;
     }
 
