@@ -97,56 +97,63 @@ export const DetailDiscussion = ({ detailDiscussionDataProps }: Props) => {
   };
 
   const handleUpdateDiscussionQuestion = async () => {
+    if (loading) {
+      return;
+    }
+
     setLoading(true);
-    const updateDiscussion: ApiResponse = await fetchApi(
-      `/discussion/update/${params.id}`,
-      {
-        method: "PATCH",
-        body: editQuestionField,
-      }
-    );
 
-    if (updateDiscussion) {
-      if (updateDiscussion.statusCode === 200) {
-        await publishDiscussionEvent({
-          action: "update",
-          entity: "discussion",
-          moduleId: updateDiscussion.data.moduleId,
-          discussionId: Number(params.id),
-          data: updateDiscussion.data,
-        });
-        console.log("is user", detailDiscussionData?.isUser);
-        socket.emit(
-          "sendDiscussionQuestion",
-          JSON.stringify({
-            messageEvent: "update",
+    try {
+      const updateDiscussion: ApiResponse = await fetchApi(
+        `/discussion/update/${params.id}`,
+        {
+          method: "PATCH",
+          body: editQuestionField,
+        }
+      );
+
+      if (updateDiscussion) {
+        if (updateDiscussion.statusCode === 200) {
+          await publishDiscussionEvent({
+            action: "update",
+            entity: "discussion",
+            moduleId: updateDiscussion.data.moduleId,
+            discussionId: Number(params.id),
             data: updateDiscussion.data,
-          })
-        );
-        socket.emit(
-          "sendDiscussionAnswer",
-          JSON.stringify({
-            messageEvent: "update",
-            eventTo: "question",
-            data: {
-              ...updateDiscussion.data,
-              isUser: false,
-            },
-          })
-        );
-        setDetailDiscussionData({
-          ...updateDiscussion.data,
-          isUser: true,
-        });
-        setLoading(false);
-        setEditQuestion(false);
-        toast.success(updateDiscussion.message);
-      }
+          });
+          console.log("is user", detailDiscussionData?.isUser);
+          socket.emit(
+            "sendDiscussionQuestion",
+            JSON.stringify({
+              messageEvent: "update",
+              data: updateDiscussion.data,
+            })
+          );
+          socket.emit(
+            "sendDiscussionAnswer",
+            JSON.stringify({
+              messageEvent: "update",
+              eventTo: "question",
+              data: {
+                ...updateDiscussion.data,
+                isUser: false,
+              },
+            })
+          );
+          setDetailDiscussionData({
+            ...updateDiscussion.data,
+            isUser: true,
+          });
+          setEditQuestion(false);
+          toast.success(updateDiscussion.message);
+        }
 
-      if (updateDiscussion.statusCode === 404) {
-        toast.error(updateDiscussion.message);
-        setLoading(false);
+        if (updateDiscussion.statusCode === 404) {
+          toast.error(updateDiscussion.message);
+        }
       }
+    } finally {
+      setLoading(false);
     }
   };
 

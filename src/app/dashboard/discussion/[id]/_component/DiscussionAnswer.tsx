@@ -59,6 +59,7 @@ export const DiscussionAnswer = ({
   const refAnswer = useRef<HTMLTextAreaElement>(null);
   const refEditAnswer = useRef<HTMLTextAreaElement>(null);
   const [loading, setLoading] = useState<boolean>(false);
+  const [createLoading, setCreateLoading] = useState<boolean>(false);
   const [deleteAnswerId, setDeleteAnswerId] = useState<number>(0);
   const [createAnswerId, setCreateAnswerId] = useState<number>(0);
 
@@ -125,62 +126,72 @@ export const DiscussionAnswer = ({
     setIsOpenAlertDestroy(true);
   };
 
-  const handleCreateDiscussionAnswer = async () => {    
-    const createDiscussionAnswer: ApiResponse = await fetchApi(
-      `/admin/discussion/answer/${discussionId}`,
-      {
-        method: "POST",
-        body: {
-          answer: answerField,
-          productId
+  const handleCreateDiscussionAnswer = async () => {
+    if (createLoading) {
+      return;
+    }
+
+    setCreateLoading(true);
+
+    try {
+      const createDiscussionAnswer: ApiResponse = await fetchApi(
+        `/admin/discussion/answer/${discussionId}`,
+        {
+          method: "POST",
+          body: {
+            answer: answerField,
+            productId
+          },
         },
-      }
-    );
+      );
 
-    if (createDiscussionAnswer) {
-      if (createDiscussionAnswer.success) {
-        await publishDiscussionEvent({
-          action: "create",
-          entity: "answer",
-          source: "admin",
-          moduleId,
-          discussionId: Number(discussionId),
-          data: createDiscussionAnswer.data,
-        });
-        console.log("create id", createDiscussionAnswer.data.id);
-        setCreateAnswerId(createDiscussionAnswer.data.id);
-        setUpdateAnswerId(createDiscussionAnswer.data.id)
-        setAnswerField("");
-        toast.success("Discussion Answer Created");  
+      if (createDiscussionAnswer) {
+        if (createDiscussionAnswer.success) {
+          await publishDiscussionEvent({
+            action: "create",
+            entity: "answer",
+            source: "admin",
+            moduleId,
+            discussionId: Number(discussionId),
+            data: createDiscussionAnswer.data,
+          });
+          console.log("create id", createDiscussionAnswer.data.id);
+          setCreateAnswerId(createDiscussionAnswer.data.id);
+          setUpdateAnswerId(createDiscussionAnswer.data.id)
+          setAnswerField("");
+          toast.success("Discussion Answer Created");  
 
-        setDiscussionAnswerList((prevItems) => {
-          const alreadyExists = prevItems.some(
-            (item) => item.id === createDiscussionAnswer.data.id
+          setDiscussionAnswerList((prevItems) => {
+            const alreadyExists = prevItems.some(
+              (item) => item.id === createDiscussionAnswer.data.id
+            );
+            if (alreadyExists) return prevItems;
+            return [
+              {
+                ...createDiscussionAnswer.data,
+                isUser: true,
+              },
+              ...prevItems,
+            ];
+          });      
+
+          socket.emit(
+            "sendDiscussionAnswer",
+            JSON.stringify({
+              messageEvent: "create",
+              eventTo: "answer",
+              data: {
+                ...createDiscussionAnswer.data,
+                isUser: false,
+              },
+            })
           );
-          if (alreadyExists) return prevItems;
-          return [
-            {
-              ...createDiscussionAnswer.data,
-              isUser: true,
-            },
-            ...prevItems,
-          ];
-        });      
-
-        socket.emit(
-          "sendDiscussionAnswer",
-          JSON.stringify({
-            messageEvent: "create",
-            eventTo: "answer",
-            data: {
-              ...createDiscussionAnswer.data,
-              isUser: false,
-            },
-          })
-        );
-      } else {
-        toast.error(createDiscussionAnswer.message);
+        } else {
+          toast.error(createDiscussionAnswer.message);
+        }
       }
+    } finally {
+      setCreateLoading(false);
     }
   };
 
@@ -193,58 +204,66 @@ export const DiscussionAnswer = ({
   };
 
   const handleUpdateDiscussionAnswer = async () => {
-    setLoading(true);
-    setUpdateAnswerId(editAnswerId)    
-    const updateDiscussionAnswer: ApiResponse = await fetchApi(
-      `/admin/discussion/answer/${editAnswerId}`,
-      {
-        method: "PATCH",
-        body: {
-          answer: editAnswerField,
-          productId
-        },
-      }
-    );
+    if (loading) {
+      return;
+    }
 
-    if (updateDiscussionAnswer) {
-      if (updateDiscussionAnswer.success) {
-        await publishDiscussionEvent({
-          action: "update",
-          entity: "answer",
-          source: "admin",
-          moduleId,
-          discussionId: Number(discussionId),
-          data: updateDiscussionAnswer.data,
-        });
-        setLoading(false);
-        setEditAnswerId(0);
-        setEditAnswerField("");
-        toast.success("Berhasil Memperbaharui Tanggapan");
-        //TODO edit answer (send socket)        
-        setDiscussionAnswerList((prevItems) => {
-          return prevItems.map((item) =>
-            item.id === updateDiscussionAnswer.data.id
-              ? {
-                  ...updateDiscussionAnswer.data,
-                  isUser: true,
-                }
-              : item
-          );
-        });
-        socket.emit(
-          "sendDiscussionAnswer",
-          JSON.stringify({
-            messageEvent: "update",
-            eventTo: "answer",
-            data: {
-              ...updateDiscussionAnswer.data,
-              isUser: false,
-            },
-          }),
-        );       
-      } else {
-        toast.error(updateDiscussionAnswer.message);
+    setLoading(true);
+    setUpdateAnswerId(editAnswerId)
+
+    try {
+      const updateDiscussionAnswer: ApiResponse = await fetchApi(
+        `/admin/discussion/answer/${editAnswerId}`,
+        {
+          method: "PATCH",
+          body: {
+            answer: editAnswerField,
+            productId
+          },
+        },
+      );
+
+      if (updateDiscussionAnswer) {
+        if (updateDiscussionAnswer.success) {
+          await publishDiscussionEvent({
+            action: "update",
+            entity: "answer",
+            source: "admin",
+            moduleId,
+            discussionId: Number(discussionId),
+            data: updateDiscussionAnswer.data,
+          });
+          setEditAnswerId(0);
+          setEditAnswerField("");
+          toast.success("Berhasil Memperbaharui Tanggapan");
+          //TODO edit answer (send socket)        
+          setDiscussionAnswerList((prevItems) => {
+            return prevItems.map((item) =>
+              item.id === updateDiscussionAnswer.data.id
+                ? {
+                    ...updateDiscussionAnswer.data,
+                    isUser: true,
+                  }
+                : item
+            );
+          });
+          socket.emit(
+            "sendDiscussionAnswer",
+            JSON.stringify({
+              messageEvent: "update",
+              eventTo: "answer",
+              data: {
+                ...updateDiscussionAnswer.data,
+                isUser: false,
+              },
+            }),
+          );       
+        } else {
+          toast.error(updateDiscussionAnswer.message);
+        }
       }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -313,8 +332,15 @@ export const DiscussionAnswer = ({
             />
           </div>
           <div className="flex justify-end mt-4">
-            <Button onClick={handleCreateDiscussionAnswer}>
-              Simpan Tanggapan
+            <Button disabled={createLoading} onClick={handleCreateDiscussionAnswer}>
+              {createLoading ? (
+                <>
+                  <Loader2 className="animate-spin" />
+                  Loading
+                </>
+              ) : (
+                "Simpan Tanggapan"
+              )}
             </Button>
           </div>
         </div>

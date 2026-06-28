@@ -1,6 +1,16 @@
 "use client";
 import { Button } from "@/components/ui/button";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -24,6 +34,7 @@ import { DashboardPageTitle } from "../_component/page-title";
 import Link from "next/link";
 import { useDashboardContext } from "@/context/DashboardContext";
 import { canManageClassroom } from "@/lib/dashboard-permissions";
+import { toast } from "sonner";
 
 const pageSize = 5;
 
@@ -44,6 +55,8 @@ const Page = () => {
   const { user } = useDashboardContext();
   const canManage = canManageClassroom(user?.role);
   const [dataClass, setDataClass] = useState<any[]>([]);
+  const [deletingClassroom, setDeletingClassroom] = useState<any | null>(null);
+  const [isDeletingClassroom, setIsDeletingClassroom] = useState(false);
   const [searchClassroom, setSearchClassroom] = useState("");
   const [orderByDate, setOrderByDate] = useState("desc");
   const [currentPage, setCurrentPage] = useState(1);
@@ -97,6 +110,46 @@ const Page = () => {
     setSearchClassroom("");
     setOrderByDate("desc");
     setCurrentPage(1);
+  };
+
+  const handleDeleteClassroom = async () => {
+    if (!canManage) {
+      toast.error("Anda tidak memiliki akses untuk menghapus kelas");
+      return;
+    }
+
+    const classroomId = Number(deletingClassroom?.id);
+
+    if (!Number.isInteger(classroomId) || classroomId < 1) {
+      toast.error("ID kelas tidak valid");
+      return;
+    }
+
+    setIsDeletingClassroom(true);
+
+    const response: ApiResponse = await fetchApi(
+      `/admin/classroom/${classroomId}`,
+      {
+        method: "DELETE",
+      }
+    );
+
+    setIsDeletingClassroom(false);
+
+    if (
+      typeof response.statusCode !== "number" ||
+      response.statusCode < 200 ||
+      response.statusCode >= 300
+    ) {
+      toast.error(response.message || "Gagal menghapus kelas");
+      return;
+    }
+
+    setDataClass((currentClass) =>
+      currentClass.filter((item) => item.id !== classroomId)
+    );
+    setDeletingClassroom(null);
+    toast.success(response.message || "Kelas berhasil dihapus");
   };
 
   useEffect(() => {
@@ -183,7 +236,12 @@ const Page = () => {
                   </Button>
                   {/* <Button className="bg-yellow-500">Edit</Button> */}
                   {canManage ? (
-                    <Button variant="destructive">Hapus</Button>
+                    <Button
+                      variant="destructive"
+                      onClick={() => setDeletingClassroom(item)}
+                    >
+                      Hapus
+                    </Button>
                   ) : null}
                 </TableCell>
               </TableRow>
@@ -238,6 +296,37 @@ const Page = () => {
           </div>
         </div>
       </div>
+      <AlertDialog
+        open={Boolean(deletingClassroom)}
+        onOpenChange={(open) => {
+          if (!open && !isDeletingClassroom) setDeletingClassroom(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus kelas?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Kelas {deletingClassroom?.title} akan dihapus. Tindakan ini tidak
+              dapat dibatalkan.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeletingClassroom}>
+              Batal
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={isDeletingClassroom}
+              onClick={(event) => {
+                event.preventDefault();
+                void handleDeleteClassroom();
+              }}
+            >
+              {isDeletingClassroom ? "Menghapus..." : "Hapus"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

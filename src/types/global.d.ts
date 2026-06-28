@@ -69,6 +69,7 @@ declare global {
     title: string;
     type: string;
     description: string;
+    instructorName?: string | null;
     videoUrl?: string;
     file?: TFile[];
     userNote?: string;
@@ -80,10 +81,11 @@ declare global {
     videoLive?: {
       id: number;
       link: string;
+      instructorName?: string | null;
       startAt: Date | string;
       endAt: Date | string;
       video: any;
-    };
+    } | null;
   };
 
   type TModuleRedirect = {

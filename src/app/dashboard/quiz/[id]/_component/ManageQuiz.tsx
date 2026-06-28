@@ -8,6 +8,15 @@ import { Form } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Toaster } from "@/components/ui/sonner";
 import updateAnswerFormSchema, {
   ModuleFormUpdateAnswer,
@@ -19,7 +28,7 @@ import quizSchema, { QuizFormSchema } from "@/entities/schema/quiz.schema";
 import { removePrefix } from "@/lib/utils";
 import { ApiResponse, fetchApi } from "@/lib/utils/fetchApi";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { SquarePen, Trash2 } from "lucide-react";
+import { Copy, Loader2, SquarePen, Trash2 } from "lucide-react";
 import Image from "next/image";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -51,6 +60,14 @@ export const ManageQuiz = () => {
 
   const [dataQuizDetail, setDataQuizDetail] =
     useState<TDataQuizDetail | null>();
+  const [dataClass, setDataClass] = useState<any[]>([]);
+  const [sourceClassId, setSourceClassId] = useState<string>("");
+  const [sourceQuizList, setSourceQuizList] = useState<TDataQuiz>([]);
+  const [selectedSourceQuizId, setSelectedSourceQuizId] = useState<string>("");
+  const [isLoadingSourceQuiz, setIsLoadingSourceQuiz] =
+    useState<boolean>(false);
+  const [isDuplicatingQuestion, setIsDuplicatingQuestion] =
+    useState<boolean>(false);
 
   const quizForm = useForm<QuizFormSchema>({
     resolver: zodResolver(quizSchema),
@@ -116,6 +133,75 @@ export const ManageQuiz = () => {
         setDataQuizDetail(null);
       }
     }
+  };
+
+  const fetchDataClass = async () => {
+    const response: ApiResponse = await fetchApi(`/admin/classroom/show-all`);
+
+    if (response?.statusCode === 200 && response.data) {
+      setDataClass(response.data);
+    }
+  };
+
+  const fetchSourceQuizByClass = async (classId: string) => {
+    if (!classId) {
+      setSourceQuizList([]);
+      return;
+    }
+
+    setIsLoadingSourceQuiz(true);
+
+    const response: ApiResponse<TDataQuiz> = await fetchApi(
+      `/admin/quiz/show-by-class/${classId}`
+    );
+
+    setIsLoadingSourceQuiz(false);
+
+    if (response?.statusCode === 200 && response.data) {
+      setSourceQuizList(
+        response.data.filter((quiz) => quiz.id.toString() !== params.id)
+      );
+      return;
+    }
+
+    setSourceQuizList([]);
+    toast.error(response?.message || "Gagal mengambil list quiz sumber");
+  };
+
+  const duplicateQuestionsFromQuiz = async (quizId: string) => {
+    if (!dataQuizDetail?.id) {
+      toast.error("Quiz tujuan belum siap");
+      return;
+    }
+
+    if (quizId === params.id) {
+      toast.error("Pilih quiz lain sebagai sumber duplikasi");
+      return;
+    }
+
+    setSelectedSourceQuizId(quizId);
+    setIsDuplicatingQuestion(true);
+
+    const duplicateQuiz: ApiResponse = await fetchApi(
+      `/admin/quiz/duplicate/${dataQuizDetail.id}`,
+      {
+        method: "POST",
+        body: {
+          duplicateQuizId: Number(quizId),
+        },
+      }
+    );
+
+    setIsDuplicatingQuestion(false);
+
+    if (duplicateQuiz.statusCode !== 200 && duplicateQuiz.statusCode !== 201) {
+      toast.error(duplicateQuiz.message || "Gagal menduplikasi soal quiz");
+      return;
+    }
+
+    toast.success(duplicateQuiz.message || "Soal quiz berhasil diduplikasi");
+    setSelectedSourceQuizId("");
+    handleReset();
   };
 
   const handleReset = () => {
@@ -193,7 +279,13 @@ export const ManageQuiz = () => {
 
   useEffect(() => {
     fetchDetailQuiz();
+    fetchDataClass();
   }, []);
+
+  useEffect(() => {
+    fetchSourceQuizByClass(sourceClassId);
+    setSelectedSourceQuizId("");
+  }, [sourceClassId]);
 
   useEffect(() => {}, [dataQuizDetail]);
 
@@ -310,6 +402,94 @@ export const ManageQuiz = () => {
                 </div>
               </form>
             </Form>
+          </ICard>
+          <ICard>
+            <div className="mb-4 flex items-start gap-3">
+              <div className="rounded-md bg-primary/10 p-2 text-primary">
+                <Copy className="h-4 w-4" />
+              </div>
+              <div>
+                <h1>Duplikat Soal</h1>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Pilih kelas dan judul quiz sumber. Setelah judul quiz dipilih,
+                  soal dari quiz sumber akan otomatis diduplikasi ke quiz ini.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid gap-3">
+              <div className="grid gap-2">
+                <Label>Kelas Sumber</Label>
+                <Select
+                  disabled={isDuplicatingQuestion}
+                  value={sourceClassId}
+                  onValueChange={setSourceClassId}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Pilih kelas" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectLabel>List Kelas</SelectLabel>
+                      {dataClass.map((item: any) => (
+                        <SelectItem key={item.id} value={String(item.id)}>
+                          {item.title}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid gap-2">
+                <Label>Judul Quiz Sumber</Label>
+                <Select
+                  disabled={
+                    !sourceClassId ||
+                    isLoadingSourceQuiz ||
+                    isDuplicatingQuestion ||
+                    sourceQuizList.length === 0
+                  }
+                  value={selectedSourceQuizId}
+                  onValueChange={(value) => {
+                    void duplicateQuestionsFromQuiz(value);
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue
+                      placeholder={
+                        isLoadingSourceQuiz
+                          ? "Memuat quiz..."
+                          : "Pilih judul quiz"
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectLabel>List Quiz</SelectLabel>
+                      {sourceQuizList.map((quiz) => (
+                        <SelectItem key={quiz.id} value={String(quiz.id)}>
+                          {quiz.title}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {isDuplicatingQuestion ? (
+                <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Menduplikasi soal...
+                </div>
+              ) : null}
+
+              {sourceClassId && !isLoadingSourceQuiz && !sourceQuizList.length ? (
+                <div className="rounded-md border border-dashed px-3 py-4 text-center text-sm text-muted-foreground">
+                  Tidak ada quiz lain pada kelas ini.
+                </div>
+              ) : null}
+            </div>
           </ICard>
           <ICard>
             <h1>List Soal</h1>
