@@ -2,7 +2,7 @@ module.exports = {
   apps: [
     {
       name: "classroom-app",
-      cwd: "/var/www/classroom-app",
+      cwd: "/home/ubuntu/fe-mindo-class",
       script: "npm",
       args: "start",
       interpreter: "none",
