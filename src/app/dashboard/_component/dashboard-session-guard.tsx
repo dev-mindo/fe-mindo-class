@@ -8,8 +8,8 @@ import {
   DashboardUser,
   useDashboardContext,
 } from "@/context/DashboardContext";
-import { ApiResponse, fetchApi } from "@/lib/utils/fetchApi";
 import { canAccessDashboardPath } from "@/lib/dashboard-permissions";
+import type { ApiResponse } from "@/lib/utils/fetchApi";
 
 const LOGIN_PATH = "/dashboard/login";
 
@@ -49,15 +49,20 @@ export function DashboardSessionGuard({
       setIsChecking(true);
 
       try {
-        const response: ApiResponse<ProfileResponse> = await fetchApi(
-          "/admin/user/profile"
-        );
+        const profileResponse = await fetch("/api/admin-profile", {
+          method: "GET",
+          credentials: "same-origin",
+          cache: "no-store",
+        });
+        const response: ApiResponse<ProfileResponse> =
+          await profileResponse.json();
 
         if (!isActive) {
           return;
         }
 
         if (response.statusCode !== 200 || !response.data) {
+          console.error("[dashboard-session] Profile invalid", response);
           await logout();
           return;
         }
@@ -66,6 +71,7 @@ export function DashboardSessionGuard({
           "user" in response.data ? response.data.user : response.data;
 
         if (!profile.name || !profile.role) {
+          console.error("[dashboard-session] Profile missing name or role", profile);
           await logout();
           return;
         }
@@ -81,11 +87,12 @@ export function DashboardSessionGuard({
         if (profile.username) {
           localStorage.setItem("username", profile.username);
         }
-      } catch {
+      } catch (error) {
         if (!isActive) {
           return;
         }
 
+        console.error("[dashboard-session] Profile check failed", error);
         await logout();
         return;
       }

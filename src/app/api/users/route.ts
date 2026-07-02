@@ -20,6 +20,7 @@ export async function GET(request: NextRequest) {
   const requestedOrderBy = searchParams.get("orderBy");
   const orderBy = requestedOrderBy === "oldest" ? "oldest" : "latest";
   const adminToken = cookies().get("admin_auth_token")?.value;
+  const normalizedAdminToken = adminToken?.replace(/^Bearer\s+/i, "");
   const userApiKey = process.env.USER_API_KEY ?? DEFAULT_USER_API_KEY;
 
   const upstreamUrl = new URL("/v1/user", userApiUrl);
@@ -38,10 +39,10 @@ export async function GET(request: NextRequest) {
       headers: {
         Accept: "application/json",
         "x-api-key": userApiKey,
-        ...(adminToken
+        ...(normalizedAdminToken
           ? {
-              Authorization: `Bearer ${adminToken}`,
-              admin_authorization: adminToken,
+              Authorization: `Bearer ${normalizedAdminToken}`,
+              admin_authorization: `Bearer ${normalizedAdminToken}`,
             }
           : {}),
       },

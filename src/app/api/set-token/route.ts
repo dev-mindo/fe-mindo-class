@@ -1,5 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies, headers } from "next/headers";
+import { cookies } from "next/headers";
+
+const getCookieOptions = (req: NextRequest) => ({
+  httpOnly: true,
+  sameSite: "lax" as const,
+  secure:
+    req.nextUrl.protocol === "https:" ||
+    req.headers.get("x-forwarded-proto") === "https",
+  path: "/",
+  maxAge: 60 * 60 * 24 * 7,
+});
 
 export async function POST(req: NextRequest) {
   const searchParams = req.nextUrl.searchParams
@@ -14,9 +24,14 @@ export async function POST(req: NextRequest) {
   
   // requestHeader.set('auth_token', token)
 
-  cookies().set("auth_token", token);
+  const response = NextResponse.json({
+    success: true,
+    message: "Token stored in cookies",
+  });
 
-  return NextResponse.json({ success: true, message: "Token stored in cookies" });
+  response.cookies.set("auth_token", token, getCookieOptions(req));
+
+  return response;
 }
 
 export async function GET() {

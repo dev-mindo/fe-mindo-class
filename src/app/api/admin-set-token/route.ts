@@ -1,5 +1,14 @@
-import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
+
+const getCookieOptions = (req: NextRequest) => ({
+  httpOnly: true,
+  sameSite: "lax" as const,
+  secure:
+    req.nextUrl.protocol === "https:" ||
+    req.headers.get("x-forwarded-proto") === "https",
+  path: "/",
+  maxAge: 60 * 60 * 24 * 7,
+});
 
 export async function POST(req: NextRequest) {
   const searchParams = req.nextUrl.searchParams;
@@ -13,24 +22,34 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // requestHeader.set('auth_token', token)
-  if (refreshToken) {
-    cookies().set("admin_refresh_token", refreshToken);
-  }
-  cookies().set("admin_auth_token", token);
-
-  return NextResponse.json({
+  const response = NextResponse.json({
     success: true,
     message: "Token stored in cookies",
   });
+  const cookieOptions = getCookieOptions(req);
+
+  if (refreshToken) {
+    response.cookies.set("admin_refresh_token", refreshToken, cookieOptions);
+  }
+  response.cookies.set("admin_auth_token", token, cookieOptions);
+
+  return response;
 }
 
 export async function DELETE() {
-  cookies().delete("admin_auth_token");
-  cookies().delete("admin_refresh_token");
-
-  return NextResponse.json({
+  const response = NextResponse.json({
     success: true,
     message: "Admin session removed",
   });
+
+  response.cookies.delete({
+    name: "admin_auth_token",
+    path: "/",
+  });
+  response.cookies.delete({
+    name: "admin_refresh_token",
+    path: "/",
+  });
+
+  return response;
 }

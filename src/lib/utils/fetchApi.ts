@@ -25,6 +25,7 @@ export async function fetchApi<ApiResponse>(
   const API_URL = process.env.API_URL;
   let authToken = await getAuthToken();
   let adminAuthToken = await getAdminAuthToken();
+  const normalizedAdminAuthToken = adminAuthToken?.replace(/^Bearer\s+/i, "");
 
   try {
     const response = await fetch(`${API_URL}${endpoint}`, {
@@ -32,7 +33,12 @@ export async function fetchApi<ApiResponse>(
       headers: {
         "Content-Type": "application/json",
         ...(authToken ? { authorization: `Bearer ${authToken}` } : {}),
-        ...(adminAuthToken ? { admin_authorization: `${adminAuthToken}` } : {}),
+        ...(normalizedAdminAuthToken
+          ? {
+              authorization: `Bearer ${normalizedAdminAuthToken}`,
+              admin_authorization: `Bearer ${normalizedAdminAuthToken}`,
+            }
+          : {}),
         ...options.headers,
       },
       body: options.body ? JSON.stringify(options.body) : undefined,
