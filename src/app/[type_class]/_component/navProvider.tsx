@@ -1,5 +1,6 @@
 "use client";
 import { clearCachesByServerAction } from "@/lib/action/quiz";
+import 'moment/locale/id';
 import { usePathname } from "next/navigation";
 import { createContext, ReactNode, useContext, useEffect, useState } from "react";
 
@@ -30,10 +31,10 @@ export const NavProvider = ({ children }: { children: ReactNode }) => {
   );
 
   const urlPathEvaluation = new RegExp(
-    /(\/[^/]+\/[^/]+\/[^/]+\/evaluation\/feedback-form\/\d+)$/
+    /(\/[^/]+\/[^/]+\/[^/]+\/[^/]+\/feedback-form\/[^/?]+)$/
   );
 
-  useEffect(() => {
+  useEffect(() => {    
     if (typeof window !== 'undefined') {
       if(size.width && size.width >= 1024){        
         setHidePagination(false)

@@ -1,14 +1,10 @@
 "use client";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { IRating } from "./IRating";
 import { Form } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
-import { useEffect, useLayoutEffect, useState } from "react";
-import { watch } from "fs";
-import ITextArea from "@/components/base/ITextArea";
+import { useEffect, useState } from "react";
+import { ITextArea } from "@/components/base/ITextArea";
 import ICheckbox from "@/components/base/ICheckbox";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { formFeedbackSchema } from "@/schemas/FormFeedback";
@@ -79,81 +75,86 @@ export const FeedbackForm = ({
     if (saveFeedback && saveFeedback.success) {
       router.push(baseUrl);
     } else {
-      if (saveFeedback.errorCode === 500) {
+      if (saveFeedback?.statusCode === 500) {
         toast.error("Server Error");
       }
-      toast.error(saveFeedback.message);
+      toast.error(saveFeedback?.message || "Gagal menyimpan evaluasi");
+      setLoading(false);
     }
   };
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)}>
-        <div className="w-[50%] mx-auto">
-          <div className="flex flex-col gap-4 my-4">
-            <div className="bg-card  p-4 rounded-lg">
-              <h1 className="text-3xl">Evaluasi (Semua Pertanyaan Wajib Disini)</h1>
-            </div>
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        className="h-screen overflow-hidden bg-muted/30"
+      >
+        <div className="mx-auto flex h-full w-full max-w-3xl flex-col px-4 py-5 sm:px-6">
+          <div className="mb-4 rounded-lg border bg-card p-5 shadow-sm">
+            <h1 className="text-2xl font-semibold">Evaluasi</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Semua pertanyaan wajib diisi sebelum menyelesaikan evaluasi.
+            </p>
+          </div>
+
+          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto pr-1">
             {showFormFeedback.map((item, index) => (
-              <>
-                {
-                  <div key={index} className="bg-card p-4 rounded-lg">
-                    <h1 className="text-2xl">{item.title}</h1>
-                    <div className="my-4">
-                      {item.type === "CHECKBOX" && (
-                        <div className="flex flex-col gap-4">
-                          <div className="flex items-center space-x-2">
-                            <ICheckbox
-                              control={form.control}
-                              name={item.name}
-                              items={item.value || []}
-                            />
-                          </div>
-                        </div>
-                      )}
-
-                      {item.type === "RATING" && (
-                        <IRating control={form.control} name={item.name} />
-                      )}
-
-                      {item.type === "TEXT" && (
-                        <div className="my-4">
-                          <ITextArea
-                            control={form.control}
-                            name={item.name}
-                            placeholder="Tuliskan Jawaban Disini"
-                            className="text-lg"
-                          />
-                        </div>
-                      )}
-
-                      {item.type === "RADIO" && (
-                        <div className="my-4">
-                          <IRadio
-                            control={form.control}
-                            items={item.value || []}
-                            name={item.name}
-                          />
-                        </div>
-                      )}
+              <div
+                key={item.name || index}
+                className="rounded-lg border bg-card p-5 shadow-sm"
+              >
+                <h2 className="text-lg font-medium leading-relaxed">
+                  {item.title}
+                </h2>
+                <div className="mt-4">
+                  {item.type === "CHECKBOX" && (
+                    <div className="flex flex-col gap-4">
+                      <div className="flex items-center space-x-2">
+                        <ICheckbox
+                          control={form.control}
+                          name={item.name}
+                          items={item.value || []}
+                        />
+                      </div>
                     </div>
-                  </div>
-                }
-              </>
-            ))}
+                  )}
 
-            <div className="w-full">
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? (
-                  <>
-                    <Loader2 className="animate-spin" />
-                    Please wait
-                  </>
-                ) : (
-                  "Selesai"
-                )}
-              </Button>
-            </div>
+                  {item.type === "RATING" && (
+                    <IRating control={form.control} name={item.name} />
+                  )}
+
+                  {item.type === "TEXT" && (
+                    <ITextArea
+                      control={form.control}
+                      name={item.name}
+                      placeholder="Tuliskan jawaban di sini"
+                      className="min-h-32 text-base"
+                    />
+                  )}
+
+                  {item.type === "RADIO" && (
+                    <IRadio
+                      control={form.control}
+                      items={item.value || []}
+                      name={item.name}
+                    />
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-4 border-t bg-muted/30 pt-4">
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? (
+                <>
+                  <Loader2 className="animate-spin" />
+                  Please wait
+                </>
+              ) : (
+                "Selesai"
+              )}
+            </Button>
           </div>
         </div>
       </form>

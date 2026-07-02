@@ -1,0 +1,15 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /discussion_modules/{moduleId}/events/{eventId} {
+      allow read, create: if request.auth != null;
+      allow update, delete: if false;
+    }
+
+    match /discussion_details/{discussionId}/events/{eventId} {
+      allow read, create: if request.auth != null;
+      allow update, delete: if false;
+    }
+  }
+}

@@ -13,6 +13,10 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { socket } from "@/lib/service/socket";
+import {
+  publishDiscussionEvent,
+  subscribeDiscussionDetail,
+} from "@/lib/service/discussionRealtime";
 import { ApiResponse, fetchApi } from "@/lib/utils/fetchApi";
 import {
   EllipsisVertical,
@@ -26,8 +30,8 @@ import { notFound, useParams, useRouter } from "next/navigation";
 import { use, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { DiscussionAnswer, SocketAnswerData } from "./DiscussionAnswer";
-import { ConfirmDialogDeleteDiscussion } from "./DialogConfirmDeleteDiscussion";
 import { DialogConfirmCloseDiscussion } from "./DialogConfirmCloseDiscussion";
+import { ConfirmDialogDeleteDiscussion } from "./DialogConfirmDeleteDiscussion";
 
 type Props = {
   detailDiscussionDataProps: TDetailDiscussion | undefined;
@@ -93,49 +97,63 @@ export const DetailDiscussion = ({ detailDiscussionDataProps }: Props) => {
   };
 
   const handleUpdateDiscussionQuestion = async () => {
+    if (loading) {
+      return;
+    }
+
     setLoading(true);
-    const updateDiscussion: ApiResponse = await fetchApi(
-      `/discussion/update/${params.id}`,
-      {
-        method: "PATCH",
-        body: editQuestionField,
-      }
-    );
 
-    if (updateDiscussion) {
-      if (updateDiscussion.statusCode === 200) {
-        console.log("is user", detailDiscussionData?.isUser);
-        socket.emit(
-          "sendDiscussionQuestion",
-          JSON.stringify({
-            messageEvent: "update",
+    try {
+      const updateDiscussion: ApiResponse = await fetchApi(
+        `/discussion/update/${params.id}`,
+        {
+          method: "PATCH",
+          body: editQuestionField,
+        }
+      );
+
+      if (updateDiscussion) {
+        if (updateDiscussion.statusCode === 200) {
+          await publishDiscussionEvent({
+            action: "update",
+            entity: "discussion",
+            moduleId: updateDiscussion.data.moduleId,
+            discussionId: Number(params.id),
             data: updateDiscussion.data,
-          })
-        );
-        socket.emit(
-          "sendDiscussionAnswer",
-          JSON.stringify({
-            messageEvent: "update",
-            eventTo: "question",
-            data: {
-              ...updateDiscussion.data,
-              isUser: false,
-            },
-          })
-        );
-        setDetailDiscussionData({
-          ...updateDiscussion.data,
-          isUser: true,
-        });
-        setLoading(false);
-        setEditQuestion(false);
-        toast.success(updateDiscussion.message);
-      }
+          });
+          console.log("is user", detailDiscussionData?.isUser);
+          socket.emit(
+            "sendDiscussionQuestion",
+            JSON.stringify({
+              messageEvent: "update",
+              data: updateDiscussion.data,
+            })
+          );
+          socket.emit(
+            "sendDiscussionAnswer",
+            JSON.stringify({
+              messageEvent: "update",
+              eventTo: "question",
+              data: {
+                ...updateDiscussion.data,
+                isUser: false,
+              },
+            })
+          );
+          setDetailDiscussionData({
+            ...updateDiscussion.data,
+            isUser: true,
+          });
+          setEditQuestion(false);
+          toast.success(updateDiscussion.message);
+        }
 
-      if (updateDiscussion.statusCode === 404) {
-        toast.error(updateDiscussion.message);
-        setLoading(false);
+        if (updateDiscussion.statusCode === 404) {
+          toast.error(updateDiscussion.message);
+        }
       }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -158,6 +176,13 @@ export const DetailDiscussion = ({ detailDiscussionDataProps }: Props) => {
 
     if (deleteDiscussion) {
       if (deleteDiscussion) {
+        await publishDiscussionEvent({
+          action: "delete",
+          entity: "discussion",
+          moduleId: detailDiscussionData?.moduleId,
+          discussionId: Number(params.id),
+          data: { id: Number(params.id) },
+        });
         setIsOpenAlertDestroy(false);
         setLoadingDestroy(false);
         //TODO send socket
@@ -202,6 +227,13 @@ export const DetailDiscussion = ({ detailDiscussionDataProps }: Props) => {
 
     if (updateDiscussion) {
       if (updateDiscussion.statusCode === 200) {
+        await publishDiscussionEvent({
+          action: "close",
+          entity: "discussion",
+          moduleId: updateDiscussion.data.moduleId,
+          discussionId: Number(params.id),
+          data: updateDiscussion.data,
+        });
         console.log('status updated',updateDiscussion.data)
         socket.emit(
           "sendDiscussionQuestion",
@@ -249,6 +281,25 @@ export const DetailDiscussion = ({ detailDiscussionDataProps }: Props) => {
     });
 
     observer.observe(document.body, { attributes: true });
+
+    const unsubscribeFirebase = subscribeDiscussionDetail(
+      Number(params.id),
+      async (event) => {
+        if (event.entity === "discussion" && event.action === "delete") {
+          router.push(baseUrl);
+          return;
+        }
+
+        const response: ApiResponse<TDetailDiscussion> = await fetchApi(
+          `/discussion/detail/${params.id}`,
+        );
+
+        if (response.data) {
+          setDetailDiscussionData(response.data);
+          setDiscussionAnswerList(response.data.discussionAnswer || []);
+        }
+      },
+    );
 
     if (detailDiscussionData) {
       console.log("detail discussion data", detailDiscussionData);
@@ -300,6 +351,7 @@ export const DetailDiscussion = ({ detailDiscussionDataProps }: Props) => {
       socket.off("connect");
       socket.off("disconnect");
       socket.off("discussionAnswer");
+      unsubscribeFirebase();
       observer.disconnect();
     };
   }, []);
@@ -519,6 +571,7 @@ export const DetailDiscussion = ({ detailDiscussionDataProps }: Props) => {
           </div>
 
           <DiscussionAnswer
+            moduleId={detailDiscussionData?.moduleId || 0}
             socketAnswerData={answerSocketData}
             discussionStatus={detailDiscussionData?.status || false}
             setDiscussionAnswerList={setDiscussionAnswerList}

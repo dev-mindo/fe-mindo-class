@@ -9,6 +9,7 @@ import { ApiResponse, fetchApi } from "@/lib/utils/fetchApi";
 import { Pagination } from "@/app/[type_class]/_component/pagination/pagination";
 import { NavProvider } from "@/app/[type_class]/_component/navProvider";
 import { MainContent } from "@/app/[type_class]/_component/content/MainContent";
+import { AlertDialogPageNotLoad } from "./_component/AlertDialogPageNotLoad";
 
 type Props = {
   params: {
@@ -28,16 +29,20 @@ export default async function Layout({ params, children }: Props) {
     `/classroom/nav-module/${params.section}/${params.module}`
   );
 
-  if (getClass && !getClass.success) notFound();  
+  // if (getClass && !getClass.success) notFound();
 
   // if (urlPath.test(pathname)) {
   //   return <>{children}</>;
   // }
 
-  const getCurrent = getClass.data?.sectionMenu
-    .map((item) => item.modules)
-    .flat()
-    .filter((item) => item.current)[0];
+  if(getClass && !getClass.success){
+    return (<AlertDialogPageNotLoad isOpen={true}/>)
+  }  
+
+  const getCurrent = getClass.data?.sectionMenu.flatMap((sectionItem) => sectionItem.modules.map(moduleItem => ({
+    sectionSlug: sectionItem.slug,
+    ...moduleItem
+  }))).flat().filter((item) => item.current)[0]
 
   return (
     <div>

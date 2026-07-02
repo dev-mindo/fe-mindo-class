@@ -57,19 +57,42 @@ declare global {
     };
   };
 
+  type TFile = {
+    moduleId: number;
+    name: string;
+    url: string;
+  };
+
   type TModuleMaterial = {
     id: number;
     productId: number;
     title: string;
     type: string;
     description: string;
+    instructorName?: string | null;
     videoUrl?: string;
-    file?: string;
+    file?: TFile[];
     userNote?: string;
     evaluation?: {
       id: number;
+      linkUrl: string;
       feedbackUser: Array<any>;
     };
+    videoLive?: {
+      id: number;
+      link: string;
+      instructorName?: string | null;
+      startAt: Date | string;
+      endAt: Date | string;
+      video: any;
+    } | null;
+  };
+
+  type TModuleRedirect = {
+    moduleSlug: string;
+    sectionSlug: string;
+    classSlug: string;
+    classType: string;
   };
 
   type TClassroom = {
@@ -97,7 +120,6 @@ declare global {
       slug: string;
       id: number;
     };
-    checkCurrentPage: boolean;
   };
 
   type TNavClass = {
@@ -124,8 +146,11 @@ declare global {
           createdAt: string;
           updatedAt: string;
         }>;
+        isLocked: boolean;
         status: string;
         current: boolean;
+        isFirst: boolean;
+        isLast: boolean;
       }>;
     }>;
   };
@@ -148,8 +173,12 @@ declare global {
           createdAt: string;
           updatedAt: string;
         }>;
+        isLocked: boolean;
         status: string;
         current: boolean;
+        sectionSlug: string;
+        isFirst: boolean;
+        isLast: boolean;
       }
     | undefined;
 
@@ -223,15 +252,21 @@ declare global {
 
   type TDiscussionAnswer = {
     id: number;
-    userId: number;
-    productId: number;
+    userId: number | null;
+    productId: number | null;
     discussionId: number;
     message: string;
     createdAt: string;
     updatedAt: string;
-    user: {
+    user?: {
+      userId?: number;
       name: string;
-    };
+    } | null;
+    author?: {
+      type: string;
+      id: number;
+      name: string;
+    } | null;
     discussionVote: Array<TDiscussionVote>;
     isUser: boolean;
     voteSummary: {
@@ -267,6 +302,443 @@ declare global {
       down: number;
     };
     isUser: boolean;
+  };
+
+  type TTaskUser = {
+    uploadUrl: string;
+    grade: number;
+    status: string;
+    createdAt: date;
+  };
+
+  type TAssignment = {
+    id: number;
+    moduleId: number;
+    editable: boolean;
+    canLate: boolean;
+    startAt: string;
+    endAt: string;
+    taskUser: TTaskUser[];
+  };
+
+  type TUserToken = {
+    token: string;
+    refreshToken: string;
+    user: {
+      id: string;
+      name: string;
+      username: string;
+      role: string;
+    };
+  };
+
+  type TDetailParticipant = {
+    userId: number;
+    name: string;
+    className: string;
+    classType: string;
+    progress: string;
+    isCertificateEligible: boolean;
+    totalScore: number;
+    sections: Array<{
+      sectionId: number;
+      sectionTitle: string;
+      modules: Array<{
+        moduleId: number;
+        moduleTitle: string;
+        moduleType: string;
+        quizAttempts: Array<{
+          attemptId: number;
+          quizId: number;
+          score: number;
+          startedAt: string;
+          completeAt: string;
+          quizTitle: string;
+          status: string;
+        }>;
+        tasks: Array<{
+          taskId: number;
+          userId: number;
+          productId: number;
+          uploadUrl: string;
+          grade: number;
+          status: string;
+          createdAt: string;
+          updatedAt: string;
+          task: {
+            id: number;
+          };
+        }>;
+      }>;
+    }>;
+  };
+
+  type TClassModuleAll = {
+    id: number;
+    productType: string;
+    publish: boolean;
+    publishTime: string;
+    thumbnail: string;
+    title: string;
+    slug: string;
+    isAutoGetCertificate: boolean;
+    createdAt: string;
+    updatedAt: string;
+    _count: {
+      sections: number;
+    };
+    sections: Array<{
+      _count: {
+        module: number;
+      };
+    }>;
+    totalModule: number;
+  };
+
+  type TClassModuleDetail = {
+    id: number;
+    productType: string;
+    publish: boolean;
+    publishTime: string;
+    thumbnail: string;
+    title: string;
+    slug: string;
+    isAutoGetCertificate: boolean;
+    createdAt: string;
+    updatedAt: string;
+    _count?: {
+      userClass?: number;
+    };
+    sections: Array<{
+      id: number;
+      productId: number;
+      position: number;
+      publish: boolean;
+      title: string;
+      slug: string;
+      type: string;
+      module: Array<{
+        id: number;
+        sectionId: number;
+        type: string;
+        step: number;
+        title: string;
+        menuTitle: string;
+        slug: string;
+        description: string;
+        hide: boolean;
+        isLocked: boolean;
+        showAt: any;
+        hideAt: any;
+      }>;
+    }>;
+  };
+
+  type TDiscussionSection = Array<{
+    id: number;
+    title: string;
+    module: Array<{
+      id: number;
+      title: string;
+      discussion: Array<{
+        id: number;
+      }>;
+      _count: {
+        discussion: number;
+      };
+    }>;
+  }>;
+
+  type TModuleDiscussion = Array<{
+    id: number;
+    moduleId: number;
+    userId: number;
+    productId: number;
+    status: boolean;
+    title: string;
+    question: string;
+    createdAt: string;
+    updatedAt: string;
+    _count: {
+      discussionAnswer: number;
+    };
+    discussionAnswer: Array<any>;
+    discussionVote: Array<any>;
+    user: {
+      name: string;
+    };
+  }>;
+
+  type TDetailModule = {
+    id: number;
+    type: string;
+    step: number;
+    title: string;
+    menuTitle: string;
+    description: string;
+    hide: boolean;
+    isLocked: boolean;
+    showAt: any;
+    hideAt: any;
+    section: {
+      id: number;
+      title: string;
+    };
+    dataQuiz?: {
+      id: number;
+      title: string | null;
+      minimumScore: number;
+      limitTime: string;
+      limitTrial: number;
+      pagination: boolean;
+      random: boolean;
+      publish: boolean;
+    } | null;
+    videoData?: {
+      moduleId: number;
+      videoId: string;
+      video: {
+        id: string;
+        name: string;
+      };
+    } | null;
+    evaluationData?: {
+      id: number;
+      moduleId: number;
+      linkUrl: string | null;
+      feedbackQuestion?: Array<{
+        evaluationId: number;
+        name: string;
+        position: number;
+        title: string;
+        required: boolean;
+        value: string | null;
+        type: string;
+      }>;
+    } | null;
+    dataTask?: {
+      id: number;
+      moduleId: number;
+      editable: boolean;
+      canLate: boolean;
+      startAt: string;
+      endAt: string;
+    } | null;
+    liveData?: {
+      id: number;
+      moduleId: number;
+      videoId: string | null;
+      link: string;
+      startAt: string;
+      endAt: string;
+      video?: {
+        id: string;
+        name: string;
+      } | null;
+    } | null;
+    materialData?: Array<{
+      id: number;
+      moduleId: number;
+      name: string;
+      url: string;
+    }>;
+    discussionData?: TModuleDiscussion;
+    assignment?: TAssignment | null;
+    dataAssignment?: TAssignment | null;
+    task?: Array<{
+      id: number;
+      moduleId: number;
+      editable: boolean;
+      canLate: boolean;
+      startAt: string;
+      endAt: string;
+    }>;
+    videoLive?: {
+      id: number;
+      moduleId: number;
+      link: string;
+      startAt: string;
+      endAt: string;
+    } | null;
+    dataLive?: {
+      id: number;
+      moduleId: number;
+      link: string;
+      startAt: string;
+      endAt: string;
+    } | null;
+    live?: {
+      id: number;
+      moduleId: number;
+      link: string;
+      startAt: string;
+      endAt: string;
+    } | null;
+  };
+
+  type TDetailSection = {
+    id: number;
+    productId: number;
+    position: number;
+    publish: boolean;
+    title: string;
+    slug: string;
+    type: string;
+  };
+
+  type TDataQuiz = Array<{
+    id: number;
+    title: string;
+    minimumScore: number;
+    limitTime: string;
+    limitTrial: number;
+    module: {
+      id: number;
+      title: string;
+      section: {
+        id: number;
+        title: string;
+      };
+    };
+  }>;
+
+  type TDataQuizDetail = {
+    module: {
+      id: number;
+      title: string;
+      section: {
+        id: number;
+        title: string;
+        classProduct: {
+          id: number;
+          title: string;
+        };
+      };
+    };
+    id: number;
+    title: string;
+    minimumScore: number;
+    limitTime: string;
+    limitTrial: number;
+    question: Array<{
+      id: number;
+      publish: boolean;
+      quizId: number;
+      questionText: string;
+      image: string;
+      Answer: Array<{
+        id: number;
+        questionId: number;
+        answerText: string;
+        isCorrect: boolean;
+      }>;
+    }>;
+  };
+
+  type TDTModuleProgress = {
+    userId: number;
+    name: string;
+    moduleProgress: Array<{
+      moduleId: number;
+      type: string;
+      status: string;
+    }>;
+    progress: string;
+  };
+
+  type TDTModuleScore = {
+    userId: number;
+    name: string;
+    modules: Array<{
+      moduleId: number;
+      title: string;
+      type: string;
+      score: number;
+    }>;
+    totalScore: number;
+  }[];
+
+  type TDTModuleType = {
+    name: string;
+    taskId: any;
+    uploadUrl: any;
+    grade: any;
+    status: string;
+  }[];
+
+  type TModuleTaskParticipant = {
+    id: number;
+    userId: number;
+    moduleId?: number;
+    name: string;
+    taskId: any;
+    uploadUrl: any;
+    grade: any;
+    status: string;
+  };
+
+  type TModuleTypeGrade = {
+    moduleId?: number;
+    moduleTitle: string;
+    data: TModuleTaskParticipant[];
+  };
+
+  type TLIstSection = {
+    id: number;
+    productId: number;
+    position: number;
+    publish: boolean;
+    title: string;
+    slug: string;
+    type: string;
+  };
+
+  type TListModuleBySection = {
+    id: number;
+    sectionId: number;
+    type: string;
+    step: number;
+    title: string;
+    menuTitle: string;
+    slug: string;
+    description: string;
+    hide: boolean;
+    isLocked: boolean;
+    showAt: any;
+    hideAt: any;
+    Quiz?: {
+      id: number;
+      moduleId: number;
+      title: string;
+      minimumScore: number;
+      limitTime: string;
+      limitTrial: number;
+      pagination: boolean;
+      random: boolean;
+      publish: boolean;
+      createdAt: string;
+      updatedAt: string;
+    };
+    task: Array<{
+      id: number;
+      moduleId: number;
+      editable: boolean;
+      canLate: boolean;
+      startAt: string;
+      endAt: string;
+    }>;
+  };
+
+  type TScoreList = {
+    userId: number;
+    name: string;
+    modules: Array<{
+      moduleId: number;
+      title: string;
+      type: string;
+      score: number;
+    }>;
+    totalScore: number;
   };
 }
 

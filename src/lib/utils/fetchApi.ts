@@ -1,6 +1,6 @@
 "use server";
 
-import { getAuthToken } from "../action/auth";
+import { getAdminAuthToken, getAuthToken } from "../action/auth";
 
 export type FetchMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
 
@@ -9,12 +9,12 @@ export interface ApiResponse<T = any> {
   message: string;
   statusCode: number;
   data?: T;
-  errorCode?: number;
+  errorCode?: string;
 }
 
 interface FetchOptions {
   method?: FetchMethod;
-  body?: any
+  body?: any;
   headers?: HeadersInit;
 }
 
@@ -23,7 +23,8 @@ export async function fetchApi<ApiResponse>(
   options: FetchOptions = {}
 ): Promise<ApiResponse> {
   const API_URL = process.env.API_URL;
-  const authToken = await getAuthToken();
+  let authToken = await getAuthToken();
+  let adminAuthToken = await getAdminAuthToken();
 
   try {
     const response = await fetch(`${API_URL}${endpoint}`, {
@@ -31,13 +32,14 @@ export async function fetchApi<ApiResponse>(
       headers: {
         "Content-Type": "application/json",
         ...(authToken ? { authorization: `Bearer ${authToken}` } : {}),
+        ...(adminAuthToken ? { admin_authorization: `${adminAuthToken}` } : {}),
         ...options.headers,
       },
       body: options.body ? JSON.stringify(options.body) : undefined,
       cache: "no-store",
     });
 
-    console.log((authToken ? { authorization: `Bearer ${authToken}` } : {}))
+    console.log(authToken ? { authorization: `Bearer ${authToken}` } : {});
 
     // if (!response.ok) {
     //   return

@@ -1,3 +1,4 @@
+import { FieldValues } from "react-hook-form";
 import {
   FormControl,
   FormDescription,
@@ -7,48 +8,30 @@ import {
   FormMessage,
 } from "../ui/form";
 import { Textarea } from "../ui/textarea";
+import { ReactElement } from "react";
+import { TTextAreaProps } from "@/entities/common";
 
-type Props = {
-  control: any;
-  name: string;
-  label?: string;
-  placeholder?: string;
-  description?: string;
-  className?: string
-};
-
-const ITextArea = ({
-  name,
-  control,
-  label,
-  placeholder,
-  description,
-  className
-}: Props) => {
+export const ITextArea = <T extends FieldValues>(
+  props: TTextAreaProps<T>
+): ReactElement => {
   return (
     <FormField
-      control={control}
-      name={name}
+      control={props.control}
+      name={props.name}
       render={({ field }) => (
         <FormItem>
-          {label && <FormLabel>{label}</FormLabel>}
+          {props.label && <FormLabel>{props.label}</FormLabel>}
           <FormControl>
             <Textarea
-              placeholder={placeholder}
-              className={`${className} resize-none`}
+              className={`${props.className} resize-none`}
               {...field}
+              {...props}
+              rows={props.rows || 4}
             />
           </FormControl>
-          {description && (
-            <FormDescription>
-              {description}
-            </FormDescription>
-          )}
           <FormMessage />
         </FormItem>
       )}
     />
   );
 };
-
-export default ITextArea;

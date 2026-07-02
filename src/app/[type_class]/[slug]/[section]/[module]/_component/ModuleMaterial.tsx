@@ -16,9 +16,9 @@ export const ModuleMaterial = ({ materialData }: Props) => {
         </div>
       )}      
       <div className="w-full mt-4">
-        {materialData?.file !== "" && (
+        {materialData?.file && materialData.file.length > 0 && (
           <Button asChild className="w-full">
-            <Link href={materialData?.file || ""} target="_blank">
+            <Link href={materialData?.file.at(0)?.url || ""} target="_blank">
               Akses Materi
             </Link>
           </Button>

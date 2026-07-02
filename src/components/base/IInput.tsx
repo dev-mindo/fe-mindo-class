@@ -1,22 +1,18 @@
-import { Control } from "react-hook-form";
+import { Control, FieldValues } from "react-hook-form";
 import {
-  FormControl,  
+  FormControl,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "../ui/form";
 import { Input } from "../ui/input";
+import { TInputProps } from "@/entities/common";
+import { ReactElement } from "react";
 
-type Props = {
-  control: Control<any>;
-  name: string;
-  label?: string;
-  placeholder?: string;
-  type?: string;
-};
-
-const IInput = (props: Props) => {
+export const IInput = <T extends FieldValues>(
+  props: TInputProps<T>
+): ReactElement => {
   return (
     <FormField
       control={props.control}
@@ -26,17 +22,14 @@ const IInput = (props: Props) => {
           <FormLabel>{props.label}</FormLabel>
           <FormControl>
             <Input
-              placeholder={props.placeholder}
+              {...props}              
               {...field}
               type={props.type ? props.type : "text"}
             />
           </FormControl>
-          {/* <FormDescription>This is your public display name.</FormDescription> */}
           <FormMessage />
         </FormItem>
       )}
     />
   );
 };
-
-export default IInput;

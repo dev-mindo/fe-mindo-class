@@ -1,6 +1,6 @@
 type CardProps = {    
     className?: string
-    children: React.ReactNode
+    children?: React.ReactNode
 }
 
 const ICard: React.FC<CardProps> = ({className, children}) => {

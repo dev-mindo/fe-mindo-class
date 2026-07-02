@@ -10,6 +10,7 @@ import {
   ListTodo,
   Lock,
   MessagesSquare,
+  RadioTower,
   SquarePlay,
   X,
 } from "lucide-react";
@@ -21,6 +22,12 @@ import { Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAppContext } from "../navProvider";
 import { usePathname } from "next/navigation";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 type Props = {
   dataSection: TNavClass["sectionMenu"] | null;
@@ -33,9 +40,13 @@ export const Sidebar = ({ dataSection, baseUrl }: Props) => {
   const { hideAll, hideSidebar, setHideSidebar } = useAppContext();
 
   useEffect(() => {
-    console.log(hideAll);
+    // console.log(hideAll);
     setCurrentTheme(theme || "");
   }, [theme]);
+
+  useEffect(() => {
+    console.log(dataSection);
+  }, []);
 
   if (hideAll || hideSidebar) {
     return <></>;
@@ -72,14 +83,19 @@ export const Sidebar = ({ dataSection, baseUrl }: Props) => {
     },
     {
       type: "TASK",
-      icon: <ClipboardCheck strokeWidth={1.5} size={20}/>
-    }
+      icon: <ClipboardCheck strokeWidth={1.5} size={20} />,
+    },
+    {
+      type: "LIVE",
+      icon: <RadioTower strokeWidth={1.5} size={20} />,
+    },
   ];
 
   const sectionMenu = dataSection?.map((section) => ({
     title: section.title,
     slug: section.slug,
     modules: section.modules.map((module) => ({
+      id: module.id,
       title: module.menuTitle,
       icon: iconModule.find((item) => item.type === module.type)?.icon,
       link: `${baseUrl}/${section.slug}/${module.slug}`,
@@ -97,7 +113,7 @@ export const Sidebar = ({ dataSection, baseUrl }: Props) => {
     {
       title: "Left Class",
       icon: <ArrowLeftFromLine strokeWidth={1.5} size={20} />,
-      link: "https://mindoeducation.co.id/dashboard/kelas-saya",
+      link: process.env.NEXT_PUBLIC_MINDO_MY_CLASS,
       isLocked: false,
       isDone: false,
     },
@@ -164,45 +180,58 @@ export const Sidebar = ({ dataSection, baseUrl }: Props) => {
                 hideSidebar ? setHideSidebar(false) : setHideSidebar(true);
               }}
             >
-              <X/>
+              <X />
             </Button>
           </div>
         </div>
-        <div className="mt-5 px-2">
+        <div className="mt-5 px-2 overflow-y-auto h-[calc(100vh-8rem)]">
           {sectionMenu?.map((item, index) => (
             <div>
-              <div className="font-bold text-lg mx-2">{item.title}</div>
-              <div className="flex flex-col gap-2 mt-4">
-                {item.modules.map((module) => (
-                  <Link
-                    key={index}
-                    href={module.link}
-                    className="mx-4"
-                    onClick={(e) => {
-                      if (module.isLocked) {
-                        e.preventDefault();
-                      }
-                    }}
-                  >
-                    <div
-                      className={`flex gap-2 items-center px-2 py-2 rounded-lg dark:hover:bg-[#3A3A3A] hover:bg-[#E2E2E2] ${
-                        getCurrentTheme === "light"
-                          ? `${
-                              module.current
-                                ? "bg-primary hover:bg-primary text-white"
-                                : ""
-                            } 
+              <Accordion
+                type="single"
+                defaultValue={`item-${
+                  item.modules.findIndex((item) => item.current) > -1
+                    ? index
+                    : -1
+                }`}
+                collapsible
+              >
+                <AccordionItem value={`item-${index}`}>
+                  <AccordionTrigger className="mx-2">
+                    <div className="font-bold text-lg mx-2">{item.title}</div>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <div className="flex flex-col gap-2">
+                      {item.modules.map((module) => (
+                        <Link
+                          key={index}
+                          href={module.link}
+                          className="mx-4"
+                          onClick={(e) => {
+                            if (module.isLocked) {
+                              e.preventDefault();
+                            }
+                          }}
+                        >
+                          <div
+                            className={`flex gap-2 items-center px-2 py-2 rounded-lg dark:hover:bg-[#3A3A3A] hover:bg-[#E2E2E2] ${
+                              getCurrentTheme === "light"
+                                ? `${
+                                    module.current
+                                      ? "bg-primary hover:bg-primary text-white"
+                                      : ""
+                                  } 
                            ${
                              module.isLocked
                                ? "cursor-not-allowed opacity-50 hover:bg-sidebar"
                                : ""
                            }`
-                          : getCurrentTheme === "dark"
-                          ? `${
-                              module.current
-                                ? "bg-primary hover:bg-primary text-white"
-                                : ""
-                            } 
+                                : getCurrentTheme === "dark"
+                                ? `${
+                                    module.current
+                                      ? "bg-primary hover:bg-primary text-white"
+                                      : ""
+                                  } 
                            ${
                              module.isLocked
                                ? "cursor-not-allowed opacity-50 hover:bg-sidebar"
@@ -211,43 +240,46 @@ export const Sidebar = ({ dataSection, baseUrl }: Props) => {
                            ${
                              module.current ? "bg-primary hover:bg-primary" : ""
                            }`
-                          : getCurrentTheme === "system"
-                          ? `${
-                              module.current
-                                ? "bg-primary hover:bg-primary text-white"
-                                : ""
-                            } 
+                                : getCurrentTheme === "system"
+                                ? `${
+                                    module.current
+                                      ? "bg-primary hover:bg-primary text-white"
+                                      : ""
+                                  } 
                            ${
                              module.isLocked
                                ? "cursor-not-allowed opacity-50 hover:bg-sidebar"
                                : ""
                            }`
-                          : ""
-                      }`}
-                    >
-                      <div className="mr-2">{module.icon}</div>
-                      <div>{module.title}</div>
-                      <div className="ml-auto">
-                        {module.isLocked && (
-                          <Lock strokeWidth={1.5} size={20} />
-                        )}
-                        {module.isDone && (
-                          <CircleCheckBig
-                            color="green"
-                            strokeWidth={1.5}
-                            size={20}
-                          />
-                        )}
-                      </div>
+                                : ""
+                            }`}
+                          >
+                            <div className="mr-2">{module.icon}</div>
+                            <div>{module.title}</div>
+                            <div className="ml-auto">
+                              {module.isLocked && (
+                                <Lock strokeWidth={1.5} size={20} />
+                              )}
+                              {module.isDone && (
+                                <CircleCheckBig
+                                  color="green"
+                                  strokeWidth={1.5}
+                                  size={20}
+                                />
+                              )}
+                            </div>
+                          </div>
+                        </Link>
+                      ))}
                     </div>
-                  </Link>
-                ))}
-              </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
             </div>
           ))}
         </div>
       </div>
-      <div className="flex flex-col gap-2 mb-5">
+      <div className="flex flex-col gap-2 mb-5 pt-2">
         {menu.map((item, index) => (
           <Link key={index} href={item.link} className="mx-4">
             <div
