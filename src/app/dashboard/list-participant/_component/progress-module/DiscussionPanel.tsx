@@ -314,7 +314,7 @@ export const DiscussionPanel = ({
     getVoteSummary(selectedDiscussionDetail?.discussionVote);
 
   return (
-    <div className="h-[calc(100vh-180px)] min-h-[560px] border-t">
+    <div className="flex h-full min-h-0 flex-col border-t">
       <div className="grid h-full min-h-0 grid-rows-[minmax(260px,0.85fr)_minmax(360px,1.15fr)] lg:grid-cols-[360px_minmax(0,1fr)] lg:grid-rows-none">
         <div className="flex min-h-0 flex-col border-b lg:border-b-0 lg:border-r">
           <div className="shrink-0 p-3">
@@ -766,24 +766,37 @@ export const DiscussionPanel = ({
                 )}
               </div>
 
-              <div className="shrink-0 border-t bg-background p-3">
+              <div className="shrink-0 border-t bg-background p-4 shadow-[0_-8px_18px_rgba(15,23,42,0.06)]">
                 {selectedDiscussionDetail.status ? (
-                  <div className="space-y-2">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold">
+                          Kirim tanggapan
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Balasan akan ditampilkan kepada peserta.
+                        </p>
+                      </div>
+                      <Badge variant="outline" className="shrink-0">
+                        Admin
+                      </Badge>
+                    </div>
                     <Textarea
-                      className="min-h-20 resize-none"
+                      className="min-h-24 resize-none bg-muted/30"
                       disabled={isSubmittingAnswer}
                       onChange={(event) => setAnswer(event.target.value)}
                       placeholder="Tulis tanggapan untuk diskusi ini..."
                       value={answer}
                     />
-                    <div className="flex items-center justify-between gap-3">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <p className="text-xs text-muted-foreground">
-                        Balasan akan ditampilkan kepada peserta.
+                        Pastikan tanggapan sudah sesuai sebelum dikirim.
                       </p>
                       <Button
+                        className="w-full sm:w-auto"
                         disabled={!answer.trim() || isSubmittingAnswer}
                         onClick={submitAnswer}
-                        size="sm"
                         type="button"
                       >
                         {isSubmittingAnswer ? (
@@ -794,7 +807,7 @@ export const DiscussionPanel = ({
                         ) : (
                           <>
                             <Send className="mr-2 h-4 w-4" />
-                            Kirim Balasan
+                            Kirim Tanggapan
                           </>
                         )}
                       </Button>

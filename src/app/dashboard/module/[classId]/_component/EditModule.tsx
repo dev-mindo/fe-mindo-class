@@ -41,6 +41,8 @@ import {
   Video,
   X,
 } from "lucide-react";
+import { useDashboardContext } from "@/context/DashboardContext";
+import { canManageClassroom } from "@/lib/dashboard-permissions";
 
 type VideoItem = {
   guid: string;
@@ -153,6 +155,9 @@ type Props = {
 };
 
 export const EditModule = (props: Props) => {
+  const { user } = useDashboardContext();
+  const canEditFullModule = user ? canManageClassroom(user.role) : false;
+  const isReadOnlyDetail = !canEditFullModule;
   const [showEditModule, setShowEditModule] = useState<boolean>(
     props.showEditModule
   );
@@ -185,6 +190,7 @@ export const EditModule = (props: Props) => {
       step: 0,
       hide: false,
       isLocked: false,
+      showAt: "",
     },
   });
   const quizForm = useForm<UpdateQuizFormValues>({
@@ -249,6 +255,36 @@ export const EditModule = (props: Props) => {
   };
 
   const handleUpdateModule = async (value: any) => {
+    const basePayload = {
+      hide: value.hide,
+      isLocked: value.isLocked,
+      showAt: formatOptionalDateTimeIso(value.showAt),
+    };
+
+    if (isReadOnlyDetail) {
+      const updateDataModule: ApiResponse = await fetchApi(
+        `/admin/classroom/module/${props.moduleId}/visibility`,
+        {
+          method: "PATCH",
+          body: basePayload,
+        }
+      );
+
+      if (updateDataModule) {
+        if (isSuccessResponse(updateDataModule)) {
+          toast.info(`Pengaturan modul sudah diperbaharui`);
+          props.getClassModule();
+          setShowEditModule(false);
+        } else {
+          toast.error(updateDataModule.message);
+        }
+      } else {
+        toast.error("Data gagal diperbaharui, kesalahan tidak diketahui");
+      }
+
+      return;
+    }
+
     if (showQuizForm) {
       const isValidQuizForm = await quizForm.trigger();
 
@@ -292,6 +328,7 @@ export const EditModule = (props: Props) => {
         method: "PUT",
         body: {
           ...value,
+          ...basePayload,
           description,
           ...(showVideoForm && videoId ? { videoId } : {}),
           ...(assignmentValue
@@ -360,6 +397,7 @@ export const EditModule = (props: Props) => {
           form.setValue("step", dataModule.step);
           form.setValue("title", dataModule.title);
           form.setValue("type", dataModule.type as ModuleType);
+          form.setValue("showAt", formatDateTimeLocal(dataModule.showAt));
           setDescription(dataModule.description || "");
           setDescriptionDraft(dataModule.description || "");
           setEvaluationId(dataModule.evaluationData?.id ?? 0);
@@ -628,7 +666,9 @@ export const EditModule = (props: Props) => {
   return (
     <>
       <div className="flex max-h-[calc(100vh-180px)] flex-col">
-        <h1 className="shrink-0">Edit Detail Modul</h1>
+        <h1 className="shrink-0">
+          {isReadOnlyDetail ? "Detail Modul" : "Edit Detail Modul"}
+        </h1>
         <div className="mt-4 min-h-0 overflow-y-auto pr-2">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleUpdateModule)}>
@@ -644,7 +684,11 @@ export const EditModule = (props: Props) => {
                 </div>
                 <div className="grid gap-2">
                   <Label>Judul</Label>
-                  <IInput control={form.control} name="title"></IInput>
+                  <IInput
+                    control={form.control}
+                    disabled={isReadOnlyDetail}
+                    name="title"
+                  ></IInput>
                 </div>
                 <div className="grid gap-2">
                   <Label>Tipe Modul</Label>
@@ -657,7 +701,11 @@ export const EditModule = (props: Props) => {
                 </div>
                 <div className="grid gap-2">
                   <Label>Judul Menu</Label>
-                  <IInput control={form.control} name="menuTitle"></IInput>
+                  <IInput
+                    control={form.control}
+                    disabled={isReadOnlyDetail}
+                    name="menuTitle"
+                  ></IInput>
                 </div>
                 <div className="grid gap-2">
                   <Label>Step</Label>
@@ -676,6 +724,17 @@ export const EditModule = (props: Props) => {
                   <Label>Terkunci</Label>
                   <ISwitch control={form.control} name="isLocked"></ISwitch>
                 </div>
+                <div className="grid gap-2">
+                  <Label>Tampil Pada</Label>
+                  <IInput
+                    control={form.control}
+                    name="showAt"
+                    type="datetime-local"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Kosongkan jika modul tidak perlu jadwal tampil khusus.
+                  </p>
+                </div>
                 <div className="grid gap-4 rounded-lg border bg-muted/20 p-4">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex items-start gap-3">
@@ -693,6 +752,7 @@ export const EditModule = (props: Props) => {
                     </div>
                     <Button
                       className="shrink-0"
+                      disabled={isReadOnlyDetail}
                       onClick={openDescriptionDialog}
                       size="sm"
                       type="button"
@@ -732,14 +792,21 @@ export const EditModule = (props: Props) => {
                         </p>
                       </div>
                       {quizId ? (
-                        <Button asChild size="sm" type="button" variant="outline">
-                          <Link
-                            href={`/dashboard/classroom/${props.classId}/quiz/${quizId}`}
-                          >
+                        isReadOnlyDetail ? (
+                          <Button disabled size="sm" type="button" variant="outline">
                             <Pencil className="mr-2 h-4 w-4" />
                             Edit Quiz
-                          </Link>
-                        </Button>
+                          </Button>
+                        ) : (
+                          <Button asChild size="sm" type="button" variant="outline">
+                            <Link
+                              href={`/dashboard/classroom/${props.classId}/quiz/${quizId}`}
+                            >
+                              <Pencil className="mr-2 h-4 w-4" />
+                              Edit Quiz
+                            </Link>
+                          </Button>
+                        )
                       ) : (
                         <Button disabled size="sm" type="button" variant="outline">
                           <Pencil className="mr-2 h-4 w-4" />
@@ -751,6 +818,7 @@ export const EditModule = (props: Props) => {
                       <Label>Judul Kuis</Label>
                       <IInput
                         control={quizForm.control}
+                        disabled={isReadOnlyDetail}
                         name="title"
                         placeholder="Judul kuis"
                       />
@@ -759,6 +827,7 @@ export const EditModule = (props: Props) => {
                       <Label>Skor Minimal</Label>
                       <IInput
                         control={quizForm.control}
+                        disabled={isReadOnlyDetail}
                         name="minimunScore"
                         type="number"
                         placeholder="70"
@@ -769,6 +838,7 @@ export const EditModule = (props: Props) => {
                       <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-2">
                         <IInput
                           control={quizForm.control}
+                          disabled={isReadOnlyDetail}
                           name="hour"
                           type="number"
                           placeholder="Jam"
@@ -778,6 +848,7 @@ export const EditModule = (props: Props) => {
                         </span>
                         <IInput
                           control={quizForm.control}
+                          disabled={isReadOnlyDetail}
                           name="minute"
                           type="number"
                           placeholder="Menit"
@@ -788,6 +859,7 @@ export const EditModule = (props: Props) => {
                       <Label>Percobaan</Label>
                       <IInput
                         control={quizForm.control}
+                        disabled={isReadOnlyDetail}
                         name="limitTrial"
                         type="number"
                         placeholder="3"
@@ -798,16 +870,25 @@ export const EditModule = (props: Props) => {
                         <Label>Pagination</Label>
                         <ISwitch
                           control={quizForm.control}
+                          disabled={isReadOnlyDetail}
                           name="pagination"
                         />
                       </div>
                       <div className="flex items-center justify-between gap-3 rounded-md border p-3">
                         <Label>Acak Soal</Label>
-                        <ISwitch control={quizForm.control} name="random" />
+                        <ISwitch
+                          control={quizForm.control}
+                          disabled={isReadOnlyDetail}
+                          name="random"
+                        />
                       </div>
                       <div className="flex items-center justify-between gap-3 rounded-md border p-3">
                         <Label>Publish</Label>
-                        <ISwitch control={quizForm.control} name="publish" />
+                        <ISwitch
+                          control={quizForm.control}
+                          disabled={isReadOnlyDetail}
+                          name="publish"
+                        />
                       </div>
                     </div>
                   </div>
@@ -825,14 +906,21 @@ export const EditModule = (props: Props) => {
                         </p>
                       </div>
                       {evaluationId ? (
-                        <Button asChild size="sm" type="button" variant="default">
-                          <Link
-                            href={`/dashboard/classroom/${props.classId}/evaluation/${props.moduleId}`}
-                          >
+                        isReadOnlyDetail ? (
+                          <Button disabled size="sm" type="button">
                             <Pencil className="mr-2 h-4 w-4" />
                             Edit Evaluasi
-                          </Link>
-                        </Button>
+                          </Button>
+                        ) : (
+                          <Button asChild size="sm" type="button" variant="default">
+                            <Link
+                              href={`/dashboard/classroom/${props.classId}/evaluation/${props.moduleId}`}
+                            >
+                              <Pencil className="mr-2 h-4 w-4" />
+                              Edit Evaluasi
+                            </Link>
+                          </Button>
+                        )
                       ) : (
                         <Button disabled size="sm" type="button">
                           <Pencil className="mr-2 h-4 w-4" />
@@ -857,6 +945,7 @@ export const EditModule = (props: Props) => {
                         <Label>Dapat Diedit</Label>
                         <ISwitch
                           control={assignmentForm.control}
+                          disabled={isReadOnlyDetail}
                           name="editable"
                         />
                       </div>
@@ -864,6 +953,7 @@ export const EditModule = (props: Props) => {
                         <Label>Boleh Terlambat</Label>
                         <ISwitch
                           control={assignmentForm.control}
+                          disabled={isReadOnlyDetail}
                           name="canLate"
                         />
                       </div>
@@ -871,6 +961,7 @@ export const EditModule = (props: Props) => {
                         <Label>Mulai</Label>
                         <IInput
                           control={assignmentForm.control}
+                          disabled={isReadOnlyDetail}
                           name="startAt"
                           type="datetime-local"
                         />
@@ -879,6 +970,7 @@ export const EditModule = (props: Props) => {
                         <Label>Selesai</Label>
                         <IInput
                           control={assignmentForm.control}
+                          disabled={isReadOnlyDetail}
                           name="endAt"
                           type="datetime-local"
                         />
@@ -901,6 +993,7 @@ export const EditModule = (props: Props) => {
                         <Label>Video ID</Label>
                         <IInput
                           control={liveForm.control}
+                          disabled={isReadOnlyDetail}
                           name="videoId"
                           placeholder="Pilih video melalui tombol Lihat Video"
                           readOnly
@@ -910,6 +1003,7 @@ export const EditModule = (props: Props) => {
                         <Label>Link</Label>
                         <IInput
                           control={liveForm.control}
+                          disabled={isReadOnlyDetail}
                           name="link"
                           placeholder="https://..."
                         />
@@ -918,6 +1012,7 @@ export const EditModule = (props: Props) => {
                         <Label>Mulai</Label>
                         <IInput
                           control={liveForm.control}
+                          disabled={isReadOnlyDetail}
                           name="startAt"
                           type="datetime-local"
                         />
@@ -926,6 +1021,7 @@ export const EditModule = (props: Props) => {
                         <Label>Selesai</Label>
                         <IInput
                           control={liveForm.control}
+                          disabled={isReadOnlyDetail}
                           name="endAt"
                           type="datetime-local"
                         />
@@ -955,6 +1051,7 @@ export const EditModule = (props: Props) => {
                       </div>
                       <Button
                         className="shrink-0"
+                        disabled={isReadOnlyDetail}
                         onClick={() => {
                           setVideoPage(1);
                           setShowVideoDialog(true);
@@ -1005,7 +1102,9 @@ export const EditModule = (props: Props) => {
                 >
                   Cancel
                 </Button>
-                <Button type="submit">Simpan</Button>
+                <Button type="submit">
+                  {isReadOnlyDetail ? "Simpan Pengaturan" : "Simpan"}
+                </Button>
               </div>
             </form>
           </Form>

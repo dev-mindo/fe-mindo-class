@@ -31,7 +31,7 @@ export const NavProvider = ({ children }: { children: ReactNode }) => {
   );
 
   const urlPathEvaluation = new RegExp(
-    /(\/[^/]+\/[^/]+\/[^/]+\/evaluation\/feedback-form\/\d+)$/
+    /(\/[^/]+\/[^/]+\/[^/]+\/[^/]+\/feedback-form\/[^/?]+)$/
   );
 
   useEffect(() => {    

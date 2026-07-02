@@ -1,9 +1,24 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import type { ApiResponse } from "@/lib/utils/fetchApi";
-import { CheckCircle2, CircleDashed, Download } from "lucide-react";
+import {
+  CheckCircle2,
+  CircleDashed,
+  Download,
+  Loader2,
+  Trash2,
+} from "lucide-react";
 import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -42,6 +57,8 @@ type Props = {
   isLoadingDiscussion: boolean;
   isLoadingDiscussionDetail: boolean;
   updatingTaskId: number | null;
+  updatingParticipantStatusId: number | null;
+  canManageParticipant: boolean;
   moduleParticipantFilter: ModuleParticipantFilter;
   setModuleParticipantFilter: (filter: ModuleParticipantFilter) => void;
   filteredModuleParticipants: ModuleParticipantProgress[];
@@ -97,6 +114,10 @@ type Props = {
     taskId: number,
     score: number,
   ) => Promise<ApiResponse>;
+  handleDeleteParticipantModuleStatus: (params: {
+    userId: number;
+    moduleId: number;
+  }) => Promise<boolean>;
 };
 
 const TaskScoreEditor = ({
@@ -173,6 +194,8 @@ export const ModuleParticipantPanel = ({
   isLoadingDiscussion,
   isLoadingDiscussionDetail,
   updatingTaskId,
+  updatingParticipantStatusId,
+  canManageParticipant,
   moduleParticipantFilter,
   setModuleParticipantFilter,
   filteredModuleParticipants,
@@ -201,7 +224,11 @@ export const ModuleParticipantPanel = ({
   handleCloseDiscussion,
   handleDeleteDiscussion,
   handleUpdateTaskScore,
+  handleDeleteParticipantModuleStatus,
 }: Props) => {
+  const [participantToResetStatus, setParticipantToResetStatus] =
+    useState<ModuleParticipantProgress | null>(null);
+
   if (!selectedModuleProgress) {
     return (
       <Card className="self-start overflow-hidden xl:sticky xl:top-4">
@@ -221,8 +248,10 @@ export const ModuleParticipantPanel = ({
     <Card className="self-start overflow-hidden xl:sticky xl:top-4">
       <div
         className={`flex flex-col ${
-          selectedQuizDetail || selectedEvaluationDetail
-            ? "max-h-[calc(100vh-96px)]"
+          isDiscussionModule(selectedModuleProgress.type)
+            ? "h-[calc(100vh-180px)] min-h-0"
+            : selectedQuizDetail || selectedEvaluationDetail
+            ? "h-[calc(100vh-96px)] min-h-0"
             : "max-h-[calc(100vh-180px)]"
         }`}
       >
@@ -306,7 +335,7 @@ export const ModuleParticipantPanel = ({
               </div>
             </CardHeader>
 
-            <CardContent className="min-h-0 space-y-2 overflow-y-auto p-3">
+            <CardContent className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3">
               {paginatedModuleParticipants.map((participant) => {
                 const isDone = participant.status === "DONE";
                 const isEvaluation = isEvaluationModule(
@@ -425,6 +454,26 @@ export const ModuleParticipantPanel = ({
                           Detail
                         </Button>
                       ) : null}
+                      {canManageParticipant && isDone ? (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="destructive"
+                          disabled={
+                            updatingParticipantStatusId === participant.userId
+                          }
+                          aria-label={`Hapus status ${participant.name}`}
+                          onClick={() =>
+                            setParticipantToResetStatus(participant)
+                          }
+                        >
+                          {updatingParticipantStatusId === participant.userId ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
+                        </Button>
+                      ) : null}
                       <Badge
                         variant={isDone ? "default" : "secondary"}
                         className="h-6 gap-1 px-2"
@@ -506,6 +555,60 @@ export const ModuleParticipantPanel = ({
                 setSelectedEvaluationDetail={setSelectedEvaluationDetail}
               />
             ) : null}
+            <AlertDialog
+              open={Boolean(participantToResetStatus)}
+              onOpenChange={(open) => {
+                if (!open && updatingParticipantStatusId === null) {
+                  setParticipantToResetStatus(null);
+                }
+              }}
+            >
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Hapus status selesai?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Status selesai milik{" "}
+                    {participantToResetStatus?.name || "peserta ini"} pada
+                    module {selectedModuleProgress.title} akan dikembalikan
+                    menjadi belum mengakses.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel
+                    disabled={updatingParticipantStatusId !== null}
+                  >
+                    Batal
+                  </AlertDialogCancel>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    disabled={updatingParticipantStatusId !== null}
+                    onClick={async () => {
+                      if (!participantToResetStatus) return;
+
+                      const isUpdated =
+                        await handleDeleteParticipantModuleStatus({
+                          userId: participantToResetStatus.userId,
+                          moduleId: selectedModuleProgress.moduleId,
+                        });
+
+                      if (isUpdated) {
+                        setParticipantToResetStatus(null);
+                      }
+                    }}
+                  >
+                    {updatingParticipantStatusId !== null ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Menyimpan...
+                      </>
+                    ) : (
+                      "Hapus"
+                    )}
+                  </Button>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </>
         ) : (
           <DiscussionPanel

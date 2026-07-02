@@ -20,6 +20,7 @@ const moduleSchema = z.object({
   step: z.coerce.number().min(1),
   hide: z.boolean(),
   isLocked: z.boolean(),
+  showAt: z.string().optional(),
 });
 
 export type ModuleFormValues = z.infer<typeof moduleSchema>;

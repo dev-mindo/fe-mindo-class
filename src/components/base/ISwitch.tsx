@@ -11,6 +11,7 @@ type Props = {
   control: Control<any>;
   name: string;
   label?: string;
+  disabled?: boolean;
 };
 
 const ISwitch = (props: Props) => {
@@ -22,7 +23,11 @@ const ISwitch = (props: Props) => {
         <FormItem className="flex flex-col">
           <FormLabel>{props.label}</FormLabel>
           <FormControl>
-            <Switch checked={field.value} onCheckedChange={field.onChange} />
+            <Switch
+              checked={field.value}
+              disabled={props.disabled}
+              onCheckedChange={field.onChange}
+            />
           </FormControl>
         </FormItem>
       )}

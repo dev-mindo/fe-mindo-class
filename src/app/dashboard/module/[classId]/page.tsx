@@ -21,6 +21,8 @@ import type {
   ModuleDropTarget,
   SectionItem,
 } from "./_component/moduleTypes";
+import { useDashboardContext } from "@/context/DashboardContext";
+import { canManageClassroom } from "@/lib/dashboard-permissions";
 
 const Page = () => {
   const [dataClassModule, setDataClassModule] =
@@ -78,6 +80,8 @@ const Page = () => {
   const params = useParams<{
     classId: string;
   }>();
+  const { user } = useDashboardContext();
+  const canManage = user ? canManageClassroom(user.role) : false;
 
   const totalModule =
     dataClassModule?.sections.reduce(
@@ -109,10 +113,14 @@ const Page = () => {
   };
 
   const handleAddModule = () => {
+    if (!canManage) return;
+
     setOpenDialogModule(true);
   };
 
   const handleAddSection = () => {
+    if (!canManage) return;
+
     const getLastPosition = dataClassModule?.sections.at(
       dataClassModule?.sections.length - 1
     );
@@ -144,6 +152,10 @@ const Page = () => {
     targetModuleId?: number,
     position: ModuleDropTarget["position"] = "before"
   ) => {
+    if (!canManage) {
+      return;
+    }
+
     if (!dataClassModule || dragItem?.type !== "module") {
       return;
     }
@@ -290,12 +302,12 @@ const Page = () => {
             Atur section dan modul untuk kelas ini.
           </p>
         </div>
-        <Button
-          onClick={handleAddSection}
-        >
-          <Plus />
-          Tambah Section
-        </Button>
+        {canManage ? (
+          <Button onClick={handleAddSection}>
+            <Plus />
+            Tambah Section
+          </Button>
+        ) : null}
       </div>
 
       <ClassModuleSummary dataClassModule={dataClassModule} />
@@ -321,6 +333,8 @@ const Page = () => {
           handleModuleDrop={handleModuleDrop}
           handleModuleDragOver={handleModuleDragOver}
           handleModuleListDragOver={handleModuleListDragOver}
+          readOnly={!canManage}
+          allowReadOnlyDetail
         />
 
         <EditModuleAside

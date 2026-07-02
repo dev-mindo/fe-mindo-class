@@ -733,6 +733,7 @@ const Page = () => {
               dragItem={dragItem}
               moduleDropTarget={moduleDropTarget}
               readOnly={!canManage}
+              allowReadOnlyDetail={!canManage}
               setDragItem={setDragItem}
               setModuleDropTarget={setModuleDropTarget}
               setDataSection={setDataSection}
@@ -750,15 +751,13 @@ const Page = () => {
               handleModuleListDragOver={handleModuleListDragOver}
             />
 
-            {canManage ? (
-              <EditModuleAside
-                classId={params.classId}
-                moduleId={moduleId}
-                showEditModule={showEditModule}
-                setShowEditModule={setShowEditModule}
-                getClassModule={getClassModule}
-              />
-            ) : null}
+            <EditModuleAside
+              classId={params.classId}
+              moduleId={moduleId}
+              showEditModule={showEditModule}
+              setShowEditModule={setShowEditModule}
+              getClassModule={getClassModule}
+            />
           </div>
         </TabsContent>
       </Tabs>

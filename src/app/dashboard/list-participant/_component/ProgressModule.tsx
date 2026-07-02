@@ -1,5 +1,7 @@
 import { ApiResponse, fetchApi } from "@/lib/utils/fetchApi";
 import { socket } from "@/lib/service/socket";
+import { useDashboardContext } from "@/context/DashboardContext";
+import { canManageClassroom } from "@/lib/dashboard-permissions";
 import {
   publishDiscussionEvent,
   subscribeModuleDiscussion,
@@ -27,6 +29,7 @@ import {
   isEvaluationModule,
   isTaskModule,
 } from "./progress-module/utils";
+import { toast } from "sonner";
 
 type Props = {
   selectedClass: string | null;
@@ -41,6 +44,8 @@ export const ProgressParticipantComponent = ({
   viewMode: controlledViewMode,
   onViewModeChange,
 }: Props) => {
+  const { user } = useDashboardContext();
+  const canManage = canManageClassroom(user?.role);
   const [dataProgress, setDataProgress] = useState<TDTModuleProgress[]>([]);
   const [dataModule, setDataModule] = useState<TListModuleBySection[]>([]);
   const [dataScoreParticipant, setDataScoreParticipant] = useState<
@@ -68,6 +73,8 @@ export const ProgressParticipantComponent = ({
   const [isLoadingDiscussionDetail, setIsLoadingDiscussionDetail] =
     useState(false);
   const [updatingTaskId, setUpdatingTaskId] = useState<number | null>(null);
+  const [updatingParticipantStatusId, setUpdatingParticipantStatusId] =
+    useState<number | null>(null);
   const [moduleDiscussions, setModuleDiscussions] = useState<
     Record<number, TModuleDiscussion>
   >({});
@@ -183,7 +190,7 @@ export const ProgressParticipantComponent = ({
       Record<
         string,
         {
-          id?: number | null;
+          id: number;
           taskId?: number;
           uploadUrl?: string | null;
           grade?: number | string | null;
@@ -928,6 +935,72 @@ export const ProgressParticipantComponent = ({
     }
   };
 
+  const handleDeleteParticipantModuleStatus = async ({
+    userId,
+    moduleId,
+  }: {
+    userId: number;
+    moduleId: number;
+  }) => {
+    if (!canManage) {
+      toast.error("Anda tidak memiliki akses untuk mengubah status peserta");
+      return false;
+    }
+
+    const productId = Number(selectedClass);
+
+    if (!Number.isInteger(productId) || productId < 1) {
+      toast.error("Product ID kelas tidak valid");
+      return false;
+    }
+
+    if (!Number.isInteger(userId) || userId < 1) {
+      toast.error("User ID peserta tidak valid");
+      return false;
+    }
+
+    if (!Number.isInteger(moduleId) || moduleId < 1) {
+      toast.error("Module ID tidak valid");
+      return false;
+    }
+
+    setUpdatingParticipantStatusId(userId);
+
+    try {
+      const response: ApiResponse = await fetchApi(
+        `/admin/module/${moduleId}/user-module`,
+        {
+          method: "DELETE",
+          body: {
+            productId,
+            userId,
+          },
+        },
+      );
+
+      if (
+        typeof response.statusCode !== "number" ||
+        response.statusCode < 200 ||
+        response.statusCode >= 300
+      ) {
+        toast.error(response.message || "Gagal mengubah status peserta");
+        return false;
+      }
+
+      toast.success(response.message || "Status peserta berhasil diperbarui");
+
+      await Promise.all([
+        fetchProgressByClassModule(),
+        fetchScoresByClassModule(),
+        fetchTaskByClassModule(),
+      ]);
+
+      return true;
+    } finally {
+      setUpdatingParticipantStatusId(null);
+    }
+  };
+
   if (!selectedClass || !selectedSetion) {
     return (
       <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
@@ -974,6 +1047,8 @@ export const ProgressParticipantComponent = ({
             isLoadingDiscussion={isLoadingDiscussion}
             isLoadingDiscussionDetail={isLoadingDiscussionDetail}
             updatingTaskId={updatingTaskId}
+            updatingParticipantStatusId={updatingParticipantStatusId}
+            canManageParticipant={canManage}
             moduleParticipantFilter={moduleParticipantFilter}
             setModuleParticipantFilter={setModuleParticipantFilter}
             filteredModuleParticipants={filteredModuleParticipants}
@@ -1002,6 +1077,9 @@ export const ProgressParticipantComponent = ({
             handleCloseDiscussion={handleCloseDiscussion}
             handleDeleteDiscussion={handleDeleteDiscussion}
             handleUpdateTaskScore={handleUpdateTaskScore}
+            handleDeleteParticipantModuleStatus={
+              handleDeleteParticipantModuleStatus
+            }
           />
         </div>
       ) : (

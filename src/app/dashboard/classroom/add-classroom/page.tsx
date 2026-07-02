@@ -36,6 +36,7 @@ import { fetchProductApi } from "@/lib/utils/fetchProductApi";
 import { useDashboardContext } from "@/context/DashboardContext";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Check,
   ChevronDown,
@@ -215,6 +216,7 @@ const isProductApiError = (
 };
 
 const Page = () => {
+  const router = useRouter();
   const { user } = useDashboardContext();
   const [dataProduct, setDataProduct] = useState<Product[]>([]);
   const [selectedProductId, setSelectedProductId] = useState("");
@@ -493,6 +495,7 @@ const Page = () => {
       );
       setSelectedPicAccounts([]);
       fetchProduct();
+      router.push("/dashboard/classroom");
       return;
     }
 

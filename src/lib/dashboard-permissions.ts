@@ -12,11 +12,16 @@ export const isLimitedClassroomRole = (role?: string | null) =>
 export const canManageClassroom = (role?: string | null) =>
   !isLimitedClassroomRole(role);
 
+export const isPicRole = (role?: string | null) =>
+  role?.trim().toUpperCase() === "PIC";
+
 export const canAccessDashboardPath = (
   role: string | null | undefined,
   pathname: string
 ) => {
-  if (!isLimitedClassroomRole(role)) {
+  const normalizedRole = role?.trim().toUpperCase() ?? "";
+
+  if (!isLimitedClassroomRole(normalizedRole)) {
     return true;
   }
 
@@ -28,6 +33,13 @@ export const canAccessDashboardPath = (
   }
 
   if (pathname === "/dashboard") {
+    return true;
+  }
+
+  if (
+    normalizedRole === "PIC" &&
+    (pathname === "/dashboard/module" || pathname.startsWith("/dashboard/module/"))
+  ) {
     return true;
   }
 
