@@ -478,6 +478,8 @@ declare global {
     description: string;
     hide: boolean;
     isLocked: boolean;
+    showAt: any;
+    hideAt: any;
     section: {
       id: number;
       title: string;

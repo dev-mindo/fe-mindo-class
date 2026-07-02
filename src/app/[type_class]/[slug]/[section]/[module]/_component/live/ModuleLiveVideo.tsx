@@ -1,7 +1,7 @@
 "use client";
 import QuillEditor from "@/components/base/EditorQuill";
 import { Button } from "@/components/ui/button";
-import { fetchApi } from "@/lib/utils/fetchApi";
+import { ApiResponse, fetchApi } from "@/lib/utils/fetchApi";
 import parse from "html-react-parser";
 import {
   CalendarClock,
@@ -12,7 +12,7 @@ import {
   UserRound,
 } from "lucide-react";
 import moment from "moment";
-import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -31,9 +31,16 @@ type LiveRecordingVideo = {
 };
 
 export const ModuleLiveVideo = ({ materialData }: Props) => {
+  const router = useRouter();
+  const params = useParams<{
+    slug?: string | string[];
+    section?: string | string[];
+    module?: string | string[];
+  }>();
   const [userNote, setUserNote] = useState<string>(
     materialData?.userNote || ""
   );
+  const [isJoiningLive, setIsJoiningLive] = useState(false);
   const liveData = materialData?.videoLive;
   const instructorName =
     materialData?.instructorName?.trim() ||
@@ -98,9 +105,77 @@ export const ModuleLiveVideo = ({ materialData }: Props) => {
           className: "bg-green-100 text-green-800",
         };
 
+  const getRouteParam = (value?: string | string[]) => {
+    if (Array.isArray(value)) {
+      return value.at(0) || "";
+    }
+
+    return value || "";
+  };
+
+  const handleJoinLive = async () => {
+    if (!canJoinLive) return;
+
+    const liveLink = liveData?.link || "";
+
+    if (!liveLink) {
+      toast.error("Link live belum tersedia");
+      return;
+    }
+
+    const liveWindow = window.open("about:blank", "_blank");
+    if (liveWindow) {
+      liveWindow.opener = null;
+    }
+    setIsJoiningLive(true);
+
+    try {
+      const response = await fetchApi<ApiResponse>(
+        "/classroom/access-video-live-link",
+        {
+          method: "POST",
+          body: {
+            videoLiveId: liveData?.id || "",
+            moduleId: materialData?.id || "",
+            sectionSlug: getRouteParam(params.section),
+            classSlug: getRouteParam(params.slug),
+            moduleSlug: getRouteParam(params.module),
+          },
+        }
+      );
+
+      if (!response?.success) {
+        liveWindow?.close();
+        toast.error(response?.message || "Gagal mengakses live");
+        return;
+      }
+
+      if (liveWindow) {
+        liveWindow.location.href = liveLink;
+      } else {
+        window.open(liveLink, "_blank", "noopener,noreferrer");
+      }
+    } catch (error) {
+      liveWindow?.close();
+      console.error("Gagal mengakses live:", error);
+      toast.error("Gagal mengakses live");
+    } finally {
+      setIsJoiningLive(false);
+    }
+  };
+
   useEffect(() => {
-    console.log(materialData);
-  }, []);
+    if (!endAt || isLiveEnded) {
+      return;
+    }
+
+    const timeUntilLiveEnds = Math.max(endAt.diff(moment()) + 1000, 0);
+    const timer = window.setTimeout(() => {
+      router.refresh();
+    }, Math.min(timeUntilLiveEnds, 2_147_483_647));
+
+    return () => window.clearTimeout(timer);
+  }, [endAt, isLiveEnded, router]);
 
   useEffect(() => {
     // Auto-save dengan debounce (1 detik setelah user berhenti mengetik)
@@ -223,23 +298,14 @@ export const ModuleLiveVideo = ({ materialData }: Props) => {
                   </div>
                 </div>
 
-                {canJoinLive ? (
-                  <Button className="w-full" asChild>
-                    <Link
-                      href={liveData?.link || "#"}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <ExternalLink className="mr-2 h-4 w-4" />
-                      Join Live
-                    </Link>
-                  </Button>
-                ) : (
-                  <Button className="w-full" disabled>
-                    <ExternalLink className="mr-2 h-4 w-4" />
-                    Join Live
-                  </Button>
-                )}
+                <Button
+                  className="w-full"
+                  disabled={!canJoinLive || isJoiningLive}
+                  onClick={handleJoinLive}
+                >
+                  <ExternalLink className="mr-2 h-4 w-4" />
+                  {isJoiningLive ? "Membuka Live..." : "Join Live"}
+                </Button>
               </div>
             </div>
           </>

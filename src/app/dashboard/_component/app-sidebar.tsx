@@ -39,7 +39,7 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useDashboardContext } from "@/context/DashboardContext";
-import { isLimitedClassroomRole } from "@/lib/dashboard-permissions";
+import { isLimitedClassroomRole, isPicRole } from "@/lib/dashboard-permissions";
 
 // Menu items.
 const items = [
@@ -118,10 +118,11 @@ export function AppSidebar() {
   // const { hideAll, hideSidebar, setHideSidebar } = useAppContext();
   const { hideSidebar, user } = useDashboardContext();
   const pathname = usePathname();
+  const limitedMenuTitles = isPicRole(user?.role)
+    ? ["Dashboard", "Kelas", "Modul", "Peserta", "Diskusi"]
+    : ["Dashboard", "Kelas", "Peserta", "Diskusi"];
   const visibleItems = isLimitedClassroomRole(user?.role)
-    ? items.filter((item) =>
-        ["Dashboard", "Kelas", "Peserta", "Diskusi"].includes(item.title)
-      )
+    ? items.filter((item) => limitedMenuTitles.includes(item.title))
     : items;
 
   useEffect(() => {

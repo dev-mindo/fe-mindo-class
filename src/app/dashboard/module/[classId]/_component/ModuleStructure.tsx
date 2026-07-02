@@ -16,6 +16,7 @@ type Props = {
   dragItem: DragItem | null;
   moduleDropTarget: ModuleDropTarget | null;
   readOnly?: boolean;
+  allowReadOnlyDetail?: boolean;
   setDragItem: (dragItem: DragItem | null) => void;
   setModuleDropTarget: (target: ModuleDropTarget | null) => void;
   setDataSection: (section: SectionData) => void;
@@ -50,6 +51,7 @@ export const ModuleStructure = ({
   dragItem,
   moduleDropTarget,
   readOnly = false,
+  allowReadOnlyDetail = false,
   setDragItem,
   setModuleDropTarget,
   setDataSection,
@@ -276,30 +278,33 @@ export const ModuleStructure = ({
                               </div>
                             </div>
                           </div>
-                          {!readOnly ? <div className="flex shrink-0 gap-1" data-no-drag>
+                          {!readOnly || allowReadOnlyDetail ? <div className="flex shrink-0 gap-1" data-no-drag>
                             <Button
                               onClick={() => {
                                 setModuleId(moduleItem.id);
                                 setShowEditModule(true);
                               }}
-                              size="icon"
-                              variant="ghost"
+                              size={readOnly ? "sm" : "icon"}
+                              variant={readOnly ? "outline" : "ghost"}
                             >
                               <SquarePen size={18} />
+                              {readOnly ? "Edit Module" : null}
                             </Button>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              onClick={() => {
-                                setDataDeleteModuleDialog({
-                                  id: moduleItem.id,
-                                  title: moduleItem.title,
-                                });
-                                setOpenDeleteModuleDialog(true);
-                              }}
-                            >
-                              <Trash size={18} />
-                            </Button>
+                            {!readOnly ? (
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                onClick={() => {
+                                  setDataDeleteModuleDialog({
+                                    id: moduleItem.id,
+                                    title: moduleItem.title,
+                                  });
+                                  setOpenDeleteModuleDialog(true);
+                                }}
+                              >
+                                <Trash size={18} />
+                              </Button>
+                            ) : null}
                           </div> : null}
                         </div>
                         {renderModuleDropPlaceholder(
