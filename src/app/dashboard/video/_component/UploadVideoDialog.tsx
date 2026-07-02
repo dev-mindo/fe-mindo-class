@@ -53,9 +53,12 @@ export const UploadVideoDialog = (props: Props) => {
   const handleSubmitForm = async (value: any) => {
     // e.preventDefault();
     // TODO: tambahkan logic upload video ke server di sini
+    if (!videoFile) {
+      return;
+    }
 
     const formData = new FormData();
-    formData.append("video", videoFile!);
+    formData.append("video", videoFile);
     formData.append("title", value.title);
 
     // const uploadVideoRes = await UploadVideo(videoFile!, value.title);
@@ -74,7 +77,7 @@ export const UploadVideoDialog = (props: Props) => {
 
     // handleUploadProgress(res)    
 
-    props.handleUploadProgress({
+    props.handleUploadProgress?.({
       id: dataBody.id,
       filename: dataBody.name,
       progress: 0,

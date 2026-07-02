@@ -1,5 +1,5 @@
 "use client";
-import IInput from "@/components/base/IInput";
+import { IInput } from "@/components/base/IInput";
 import ISelect from "@/components/base/ISelect";
 import ISwitch from "@/components/base/ISwitch";
 import { Button } from "@/components/ui/button";
@@ -136,7 +136,7 @@ const Page = () => {
                       <IInput
                         label="Question"
                         control={form.control}
-                        name={`question.${index}`}
+                        name={`questions.${index}.question`}
                       ></IInput>
                       <div className="mt-4">
                         <Label>Answer</Label>

@@ -11,9 +11,6 @@ const nextConfig = {
       }
     ],
   },
-  experimental: {
-    serverActions: true,
-  },
   // experimental: {
   //   authInterrupts: true,
   // },

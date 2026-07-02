@@ -6,14 +6,12 @@ type Props = {
   isOpen: boolean;
   setIsOpenDialog?: (isOpen: boolean) => void;
   setUploading?: () => void;
-  videoId: string
+  videoId: string;
+  videoUrl?: string;
 };
 
 export const PreviewVideo = (props: Props) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [videoUrl, setVideoUrl] = useState<string>()
-
-  
 
   useEffect(() => {
     setIsOpen(props.isOpen);

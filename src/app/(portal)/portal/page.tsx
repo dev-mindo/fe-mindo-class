@@ -1,9 +1,6 @@
 import { Metadata } from "next";
 import { Portal } from "./_component/Portal";
 import { ApiResponse, fetchApi } from "@/lib/utils/fetchApi";
-import { notFound } from "next/navigation";
-import { getAuthToken, setAuthToken, setCookieToken } from "@/lib/action/auth";
-import { cookies } from "next/headers";
 import { convertSnakeToKebab } from "@/lib/utils";
 import { IAlertDialog } from "@/components/base/IAlertDialog";
 import { ISonnerServerError } from "@/components/base/ISonnerServerError";

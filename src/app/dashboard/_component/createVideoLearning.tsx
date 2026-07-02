@@ -1,4 +1,4 @@
-import IInput from "@/components/base/IInput";
+import { IInput } from "@/components/base/IInput";
 import ISelect from "@/components/base/ISelect";
 import { Button } from "@/components/ui/button";
 import {
@@ -36,6 +36,8 @@ const CreateVideoLearning = () => {
   const form = useForm({
     defaultValues: {
       product: "",
+      uploadVideo: "",
+      uploadMateri: "",
     },
   });
 
@@ -61,13 +63,13 @@ const CreateVideoLearning = () => {
                 }))}
               ></ISelect>
               <IInput
-                name="title"
+                name="uploadVideo"
                 control={form.control}
                 label="Upload Video"
                 type="file"
               ></IInput>
               <IInput
-                name="title"
+                name="uploadMateri"
                 control={form.control}
                 label="Upload Materi"
                 type="file"
