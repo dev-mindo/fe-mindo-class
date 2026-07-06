@@ -27,6 +27,8 @@ export async function fetchApi<ApiResponse>(
   let adminAuthToken = await getAdminAuthToken();
   const normalizedAdminAuthToken = adminAuthToken?.replace(/^Bearer\s+/i, "");
 
+  console.log('authToken ', authToken)
+
   try {
     const response = await fetch(`${API_URL}${endpoint}`, {
       method: options.method || "GET",
