@@ -71,6 +71,9 @@ type UserApiResponse = {
   };
 };
 
+const normalizeParticipantId = (participant: any) =>
+  String(participant.userId ?? participant.id);
+
 const getPaginationPages = (currentPage: number, totalPage: number) => {
   const maxVisiblePage = 5;
   const halfVisiblePage = Math.floor(maxVisiblePage / 2);
@@ -129,14 +132,17 @@ export const ParticipantComponent = ({ selectedClass }: Props) => {
   const fetchParticipantByClassModule = async () => {
     if (!selectedClass) {
       setDataParticipant([]);
-      return;
+      return [];
     }
 
     const getAllParticipant: ApiResponse = await fetchApi(
       `/admin/classroom/show-list-participant/${selectedClass}`
     );
     console.log(getAllParticipant);
-    setDataParticipant(getAllParticipant.data ?? []);
+    const participants = getAllParticipant.data ?? [];
+
+    setDataParticipant(participants);
+    return participants;
   };
 
   useEffect(() => {
@@ -316,9 +322,45 @@ export const ParticipantComponent = ({ selectedClass }: Props) => {
       return;
     }
 
+    const addedParticipants = selectedParticipants.map((participant) => ({
+      userId: Number(participant.id),
+      name: participant.name,
+      progress: 0,
+      totalScore: 0,
+      isCertificateEligible: false,
+    }));
+
+    setSearch("");
+    setCertificateFilter("all");
+    setCurrentPage(1);
+    setDataParticipant((current) => {
+      const existingIds = new Set(current.map(normalizeParticipantId));
+      const newParticipants = addedParticipants.filter(
+        (participant) => !existingIds.has(normalizeParticipantId(participant))
+      );
+
+      return [...newParticipants, ...current];
+    });
+
     toast.success(response.message || "Peserta berhasil ditambahkan ke kelas");
     handleAddParticipantDialogChange(false);
-    fetchParticipantByClassModule();
+    const latestParticipants = await fetchParticipantByClassModule();
+    const latestIds = new Set(latestParticipants.map(normalizeParticipantId));
+
+    if (
+      addedParticipants.some(
+        (participant) => !latestIds.has(normalizeParticipantId(participant))
+      )
+    ) {
+      setDataParticipant((current) => {
+        const existingIds = new Set(current.map(normalizeParticipantId));
+        const missingParticipants = addedParticipants.filter(
+          (participant) => !existingIds.has(normalizeParticipantId(participant))
+        );
+
+        return [...missingParticipants, ...current];
+      });
+    }
   };
 
   const handleAddParticipantDialogChange = (open: boolean) => {
