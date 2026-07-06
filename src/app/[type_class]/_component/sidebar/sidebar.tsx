@@ -46,6 +46,7 @@ export const Sidebar = ({ dataSection, baseUrl }: Props) => {
 
   useEffect(() => {
     console.log(dataSection);
+    console.log('time zone', Intl.DateTimeFormat().resolvedOptions().timeZone)
   }, []);
 
   if (hideAll || hideSidebar) {
