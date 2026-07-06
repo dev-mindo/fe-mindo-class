@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/table";
 import { ApiResponse, fetchApi } from "@/lib/utils/fetchApi";
 import { fetchProductApi } from "@/lib/utils/fetchProductApi";
+import { toOffsetDateTime } from "@/lib/utils";
 import { useDashboardContext } from "@/context/DashboardContext";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
@@ -459,7 +460,7 @@ const Page = () => {
       productType: value.productType,
       publish: value.publish ?? true,
       ...(value.publishTime
-        ? { publishTime: value.publishTime.toISOString() }
+        ? { publishTime: toOffsetDateTime(value.publishTime) }
         : {}),
       thumbnail: value.thumbnail ?? "",
       isAutoGetCertificate: value.isAutoGetCertificate ?? false,

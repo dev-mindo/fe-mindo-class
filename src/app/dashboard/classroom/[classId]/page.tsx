@@ -43,6 +43,7 @@ import { ProgressParticipantComponent } from "../../list-participant/_component/
 import { ProgressViewSelect } from "../../list-participant/_component/progress-module/ProgressViewSelect";
 import type { ViewMode } from "../../list-participant/_component/progress-module/types";
 import { canManageClassroom } from "@/lib/dashboard-permissions";
+import { toOffsetDateTime } from "@/lib/utils";
 
 type ClassSectionWithModules = TClassModuleDetail["sections"][number] & {
   modules?: TClassModuleDetail["sections"][number]["module"];
@@ -362,7 +363,7 @@ const Page = () => {
         productType: values.productType,
         publish: values.publish,
         publishTime: values.publishTime
-          ? new Date(values.publishTime).toISOString()
+          ? toOffsetDateTime(values.publishTime) ?? undefined
           : dataClassModule?.publishTime,
         title: values.title,
         isAutoGetCertificate: values.isAutoGetCertificate,

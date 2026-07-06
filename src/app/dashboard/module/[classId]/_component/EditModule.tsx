@@ -43,6 +43,7 @@ import {
 } from "lucide-react";
 import { useDashboardContext } from "@/context/DashboardContext";
 import { canManageClassroom } from "@/lib/dashboard-permissions";
+import { toOffsetDateTime } from "@/lib/utils";
 
 type VideoItem = {
   guid: string;
@@ -250,15 +251,15 @@ export const EditModule = (props: Props) => {
       .slice(0, 16);
   };
 
-  const formatOptionalDateTimeIso = (value?: string) => {
-    return value ? new Date(value).toISOString() : null;
+  const formatOptionalDateTimeOffset = (value?: string) => {
+    return toOffsetDateTime(value);
   };
 
   const handleUpdateModule = async (value: any) => {
     const basePayload = {
       hide: value.hide,
       isLocked: value.isLocked,
-      showAt: formatOptionalDateTimeIso(value.showAt),
+      showAt: formatOptionalDateTimeOffset(value.showAt),
     };
 
     if (isReadOnlyDetail) {
@@ -335,8 +336,8 @@ export const EditModule = (props: Props) => {
             ? {
                 task: {
                   ...assignmentValue,
-                  startAt: new Date(assignmentValue.startAt).toISOString(),
-                  endAt: new Date(assignmentValue.endAt).toISOString(),
+                  startAt: toOffsetDateTime(assignmentValue.startAt),
+                  endAt: toOffsetDateTime(assignmentValue.endAt),
                 },
               }
             : {}),
@@ -359,8 +360,8 @@ export const EditModule = (props: Props) => {
                 live: {
                   videoId: liveValue.videoId || null,
                   link: liveValue.link,
-                  startAt: formatOptionalDateTimeIso(liveValue.startAt),
-                  endAt: formatOptionalDateTimeIso(liveValue.endAt),
+                  startAt: formatOptionalDateTimeOffset(liveValue.startAt),
+                  endAt: formatOptionalDateTimeOffset(liveValue.endAt),
                 },
               }
             : {}),

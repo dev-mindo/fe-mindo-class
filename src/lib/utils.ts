@@ -10,6 +10,33 @@ export function convertToMidnight(datetime: string): string {
   return moment(datetime).startOf("day").format("YYYY-MM-DD HH:mm:ss");
 }
 
+export function toOffsetDateTime(value?: string | Date | null): string | null {
+  if (!value) {
+    return null;
+  }
+
+  const date = value instanceof Date ? value : new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  const timezoneOffset = -date.getTimezoneOffset();
+  const sign = timezoneOffset >= 0 ? "+" : "-";
+  const offsetHours = String(Math.floor(Math.abs(timezoneOffset) / 60)).padStart(
+    2,
+    "0"
+  );
+  const offsetMinutes = String(Math.abs(timezoneOffset) % 60).padStart(2, "0");
+  const localDateTime = new Date(
+    date.getTime() - date.getTimezoneOffset() * 60000
+  )
+    .toISOString()
+    .slice(0, 19);
+
+  return `${localDateTime}${sign}${offsetHours}:${offsetMinutes}`;
+}
+
 export function getDurationTimeNow(timeLimit: string) {
   // Waktu target
   const targetTime = moment(timeLimit);

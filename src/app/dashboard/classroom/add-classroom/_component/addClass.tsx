@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/table";
 import { ApiResponse, fetchApi } from "@/lib/utils/fetchApi";
 import { fetchProductApi } from "@/lib/utils/fetchProductApi";
+import { toOffsetDateTime } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -213,7 +214,7 @@ export const AddClass = ({
       body: {
         ...value,
         productId: Number(value.productId),
-        publishTime: new Date(value.publishTime).toISOString(),
+        publishTime: toOffsetDateTime(value.publishTime),
       },
     });
 
