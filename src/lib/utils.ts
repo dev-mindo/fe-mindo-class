@@ -34,7 +34,20 @@ export function toOffsetDateTime(value?: string | Date | null): string | null {
     .toISOString()
     .slice(0, 19);
 
-  return `${localDateTime}${sign}${offsetHours}:${offsetMinutes}`;
+  const offsetDateTime = `${localDateTime}${sign}${offsetHours}:${offsetMinutes}`;
+
+  console.log("[timezone]", {
+    timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    currentTime: new Date().toLocaleString("id-ID", {
+      dateStyle: "medium",
+      timeStyle: "medium",
+      timeZoneName: "short",
+    }),
+    input: value,
+    output: offsetDateTime,
+  });
+
+  return offsetDateTime;
 }
 
 export function getDurationTimeNow(timeLimit: string) {
