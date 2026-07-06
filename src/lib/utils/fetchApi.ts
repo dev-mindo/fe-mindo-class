@@ -32,7 +32,7 @@ export async function fetchApi<ApiResponse>(
       method: options.method || "GET",
       headers: {
         "Content-Type": "application/json",
-        ...(authToken ? { authorization: `Bearer ${authToken}` } : {}),
+        ...(authToken ? { auth_token: `Bearer ${authToken}` } : {}),
         ...(normalizedAdminAuthToken
           ? {
               authorization: `Bearer ${normalizedAdminAuthToken}`,
