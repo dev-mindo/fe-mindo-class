@@ -27,6 +27,7 @@ import {
 import { ApiResponse, fetchApi } from "@/lib/utils/fetchApi";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useState } from "react";
+import type { FieldErrors } from "react-hook-form";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -97,6 +98,16 @@ export const AddClassDialog = ({
     toast.error(store.message);
   };
 
+  const onInvalidSubmit = (errors: FieldErrors<ClassFormValues>) => {
+    const firstError = Object.values(errors)[0];
+    const message =
+      typeof firstError?.message === "string"
+        ? firstError.message
+        : "Lengkapi data kelas terlebih dahulu.";
+
+    toast.error(message);
+  };
+
   useEffect(() => {
     setIsOpen(isOpenProps);
   }, [isOpenProps]);
@@ -116,7 +127,7 @@ export const AddClassDialog = ({
           <DialogTitle>Tambah Kelas</DialogTitle>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onFinish)}>
+          <form onSubmit={form.handleSubmit(onFinish, onInvalidSubmit)}>
             <div className="grid gap-4">
               <div className="grid gap-3">
                 <IInput
@@ -183,7 +194,9 @@ export const AddClassDialog = ({
               >
                 Cancel
               </Button>
-              <Button type="submit">Simpan</Button>
+              <Button type="submit" disabled={form.formState.isSubmitting}>
+                {form.formState.isSubmitting ? "Menyimpan..." : "Simpan"}
+              </Button>
             </div>
           </form>
         </Form>

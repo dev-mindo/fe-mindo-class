@@ -38,11 +38,7 @@ export function toOffsetDateTime(value?: string | Date | null): string | null {
 
   console.log("[timezone]", {
     timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-    currentTime: new Date().toLocaleString("id-ID", {
-      dateStyle: "medium",
-      timeStyle: "medium",
-      timeZoneName: "short",
-    }),
+    currentTime: new Date().toISOString(),
     input: value,
     output: offsetDateTime,
   });

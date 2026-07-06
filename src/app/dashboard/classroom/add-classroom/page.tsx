@@ -47,6 +47,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { UIEvent } from "react";
+import type { FieldErrors } from "react-hook-form";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -503,6 +504,16 @@ const Page = () => {
     toast.error(store.message);
   };
 
+  const onInvalidSubmit = (errors: FieldErrors<ClassFormValues>) => {
+    const firstError = Object.values(errors)[0];
+    const message =
+      typeof firstError?.message === "string"
+        ? firstError.message
+        : "Lengkapi data kelas terlebih dahulu.";
+
+    toast.error(message);
+  };
+
   useEffect(() => {
     fetchProduct();
   }, [currentPage, orderByDate, searchProduct]);
@@ -744,7 +755,7 @@ const Page = () => {
       <div className="grid gap-8">
         <div className="rounded-lg border p-4">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onFinish)}>
+            <form onSubmit={form.handleSubmit(onFinish, onInvalidSubmit)}>
               <div className="grid gap-4 md:grid-cols-2">
                 <FormField
                   control={form.control}
@@ -1156,7 +1167,9 @@ const Page = () => {
               />
 
               <div className="mt-6 flex justify-end">
-                <Button type="submit">Simpan</Button>
+                <Button type="submit" disabled={form.formState.isSubmitting}>
+                  {form.formState.isSubmitting ? "Menyimpan..." : "Simpan"}
+                </Button>
               </div>
             </form>
           </Form>
