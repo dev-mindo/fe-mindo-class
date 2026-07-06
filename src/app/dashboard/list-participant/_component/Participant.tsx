@@ -61,13 +61,94 @@ type UserApiResponse = {
   message: string;
   error: unknown;
   statusCode: number;
-  data: {
-    results: AvailableParticipant[];
-    total: number;
-    page: number;
-    limit: number;
-    hasNext: boolean;
-    hasPrevious: boolean;
+  data:
+    | {
+        results: AvailableParticipant[];
+        total: number;
+        page: number;
+        limit: number;
+        hasNext: boolean;
+        hasPrevious: boolean;
+      }
+    | AvailableParticipant[];
+  results?: AvailableParticipant[];
+  total?: number;
+  page?: number;
+  limit?: number;
+  hasNext?: boolean;
+  hasPrevious?: boolean;
+};
+
+type NormalizedUserApiResponse = {
+  results: AvailableParticipant[];
+  total: number;
+  hasNext: boolean;
+  hasPrevious: boolean;
+};
+
+const normalizeAvailableParticipant = (participant: any): AvailableParticipant => ({
+  id: String(participant.id ?? participant.userId ?? ""),
+  name: participant.name ?? "-",
+  username: participant.username ?? "",
+  email: participant.email ?? "",
+  role: participant.role ?? "",
+  status: participant.status ?? "",
+});
+
+const normalizeUserApiResponse = (
+  result: UserApiResponse
+): NormalizedUserApiResponse => {
+  if (Array.isArray(result.data)) {
+    const participants = result.data.map(normalizeAvailableParticipant);
+
+    return {
+      results: participants,
+      total: result.total ?? participants.length,
+      hasNext: Boolean(result.hasNext),
+      hasPrevious: Boolean(result.hasPrevious),
+    };
+  }
+
+  if (Array.isArray(result.data?.results)) {
+    const participants = result.data.results.map(normalizeAvailableParticipant);
+
+    return {
+      results: participants,
+      total: result.data.total ?? participants.length,
+      hasNext: Boolean(result.data.hasNext),
+      hasPrevious: Boolean(result.data.hasPrevious),
+    };
+  }
+
+  if (Array.isArray(result.results)) {
+    const participants = result.results.map(normalizeAvailableParticipant);
+
+    return {
+      results: participants,
+      total: result.total ?? participants.length,
+      hasNext: Boolean(result.hasNext),
+      hasPrevious: Boolean(result.hasPrevious),
+    };
+  }
+
+  const nestedData = (result.data as any)?.data;
+
+  if (Array.isArray(nestedData?.results)) {
+    const participants = nestedData.results.map(normalizeAvailableParticipant);
+
+    return {
+      results: participants,
+      total: nestedData.total ?? participants.length,
+      hasNext: Boolean(nestedData.hasNext),
+      hasPrevious: Boolean(nestedData.hasPrevious),
+    };
+  }
+
+  return {
+    results: [],
+    total: 0,
+    hasNext: false,
+    hasPrevious: false,
   };
 };
 
@@ -210,10 +291,18 @@ export const ParticipantComponent = ({ selectedClass }: Props) => {
           throw new Error(result.message || "Gagal mengambil daftar peserta");
         }
 
-        setAvailableParticipants(result.data?.results ?? []);
-        setParticipantTotal(result.data?.total ?? 0);
-        setParticipantHasNext(Boolean(result.data?.hasNext));
-        setParticipantHasPrevious(Boolean(result.data?.hasPrevious));
+        const normalized = normalizeUserApiResponse(result);
+
+        console.log("[available-participants]", {
+          total: normalized.total,
+          shown: normalized.results.length,
+          first: normalized.results[0],
+        });
+
+        setAvailableParticipants(normalized.results);
+        setParticipantTotal(normalized.total);
+        setParticipantHasNext(normalized.hasNext);
+        setParticipantHasPrevious(normalized.hasPrevious);
       } catch (error) {
         if (error instanceof DOMException && error.name === "AbortError") {
           return;
@@ -365,6 +454,14 @@ export const ParticipantComponent = ({ selectedClass }: Props) => {
   const handleAddParticipantDialogChange = (open: boolean) => {
     setShowAddParticipantDialog(open);
 
+    if (open) {
+      setAvailableParticipants([]);
+      setParticipantSearch("");
+      setParticipantOrderBy("latest");
+      setParticipantPage(1);
+      setParticipantError("");
+    }
+
     if (!open) {
       setSelectedParticipants([]);
       setParticipantSearch("");
@@ -455,7 +552,7 @@ export const ParticipantComponent = ({ selectedClass }: Props) => {
           </Select>
           {canManage ? (
             <Button
-              onClick={() => setShowAddParticipantDialog(true)}
+              onClick={() => handleAddParticipantDialogChange(true)}
               type="button"
             >
               <UserPlus className="mr-2 h-4 w-4" />
@@ -597,7 +694,7 @@ export const ParticipantComponent = ({ selectedClass }: Props) => {
                         setParticipantSearch(event.target.value);
                         setParticipantPage(1);
                       }}
-                      placeholder="Cari nama atau email..."
+                      placeholder="Cari nama, username, atau email..."
                       value={participantSearch}
                     />
                     <Select
@@ -654,7 +751,10 @@ export const ParticipantComponent = ({ selectedClass }: Props) => {
                                   {participant.name}
                                 </p>
                                 <p className="text-xs text-muted-foreground">
-                                  {participant.email}
+                                  {participant.username || participant.email}
+                                  {participant.username && participant.email
+                                    ? ` - ${participant.email}`
+                                    : ""}
                                 </p>
                               </TableCell>
                               <TableCell className="text-center">
