@@ -255,16 +255,15 @@ export const ParticipantComponent = ({ selectedClass }: Props) => {
     participantTotalPages
   );
 
+  const selectedParticipantIds = new Set(
+    selectedParticipants.map(normalizeParticipantId)
+  );
+  const registeredParticipantIds = new Set(
+    dataParticipant.map(normalizeParticipantId)
+  );
   const filteredAvailableParticipants = availableParticipants.filter(
     (participant) =>
-      !selectedParticipants.some(
-        (selected) => selected.id === participant.id
-      ) &&
-      !dataParticipant.some(
-        (classParticipant) =>
-          String(classParticipant.userId ?? classParticipant.id) ===
-          participant.id
-      )
+      !selectedParticipantIds.has(normalizeParticipantId(participant))
   );
   const addParticipant = (participant: AvailableParticipant) => {
     setSelectedParticipants((current) => [...current, participant]);
@@ -643,26 +642,46 @@ export const ParticipantComponent = ({ selectedClass }: Props) => {
                         </TableRow>
                       ) : null}
                       {!isLoadingAvailableParticipants &&
-                        filteredAvailableParticipants.map((participant) => (
-                          <TableRow key={participant.id}>
-                            <TableCell>
-                              <p className="font-medium">{participant.name}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {participant.email}
-                              </p>
-                            </TableCell>
-                            <TableCell className="text-center">
-                              <Button
-                                aria-label={`Tambah ${participant.name}`}
-                                onClick={() => addParticipant(participant)}
-                                size="icon"
-                                type="button"
-                              >
-                                <Plus className="h-4 w-4" />
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
+                        filteredAvailableParticipants.map((participant) => {
+                          const isRegistered = registeredParticipantIds.has(
+                            normalizeParticipantId(participant)
+                          );
+
+                          return (
+                            <TableRow key={participant.id}>
+                              <TableCell>
+                                <p className="font-medium">
+                                  {participant.name}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {participant.email}
+                                </p>
+                              </TableCell>
+                              <TableCell className="text-center">
+                                <Button
+                                  aria-label={
+                                    isRegistered
+                                      ? `${participant.name} sudah terdaftar`
+                                      : `Tambah ${participant.name}`
+                                  }
+                                  disabled={isRegistered}
+                                  onClick={() => addParticipant(participant)}
+                                  size={isRegistered ? "sm" : "icon"}
+                                  type="button"
+                                  variant={
+                                    isRegistered ? "secondary" : "default"
+                                  }
+                                >
+                                  {isRegistered ? (
+                                    "Terdaftar"
+                                  ) : (
+                                    <Plus className="h-4 w-4" />
+                                  )}
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
                       {!isLoadingAvailableParticipants &&
                       filteredAvailableParticipants.length === 0 ? (
                         <TableRow>
@@ -670,8 +689,7 @@ export const ParticipantComponent = ({ selectedClass }: Props) => {
                             className="h-24 text-center text-muted-foreground"
                             colSpan={2}
                           >
-                            {participantError ||
-                              "Peserta tidak ditemukan atau sudah terdaftar"}
+                            {participantError || "Peserta tidak ditemukan"}
                           </TableCell>
                         </TableRow>
                       ) : null}
