@@ -86,7 +86,7 @@ export default async function Page({ searchParams }: Props) {
     getDataCurrentPage?.module.slug
   }`;
 
-  await fetchApi(`/user-class/save-timezone`, {
+  await fetchApi(`/user-class/save-timezone/${getDataCurrentPage?.classSlug}`, {
     method: "POST",
     headers: {
       authorization: `Bearer ${createToken.data?.accessToken}`,
