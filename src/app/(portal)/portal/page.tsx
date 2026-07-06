@@ -86,16 +86,6 @@ export default async function Page({ searchParams }: Props) {
     getDataCurrentPage?.module.slug
   }`;
 
-  await fetchApi(`/user-class/save-timezone/${getDataCurrentPage?.classSlug}`, {
-    method: "POST",
-    headers: {
-      authorization: `Bearer ${createToken.data?.accessToken}`,
-    },
-    body: {
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-    },
-  });
-
   await fetchApi(
     `/user-class/sync-module-progress`,
     {
@@ -108,7 +98,11 @@ export default async function Page({ searchParams }: Props) {
 
   return (
     <div>
-      <Portal redirectUrl={url} token={createToken.data?.accessToken} />
+      <Portal
+        classSlug={getDataCurrentPage?.classSlug}
+        redirectUrl={url}
+        token={createToken.data?.accessToken}
+      />
     </div>
   );
 }
