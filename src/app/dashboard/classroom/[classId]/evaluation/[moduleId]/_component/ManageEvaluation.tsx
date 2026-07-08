@@ -17,11 +17,11 @@ import { ApiResponse, fetchApi } from "@/lib/utils/fetchApi";
 import { ArrowLeft, Loader2, Plus, Save, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 type EvaluationOption = {
-  id: string;
+  id?: string;
   label: string;
 };
 
@@ -29,7 +29,6 @@ type EvaluationQuestionType = "RADIO" | "CHECKBOX" | "TEXT" | "RATING";
 
 type EvaluationQuestion = {
   evaluationId: number;
-  name: string;
   position: number;
   title: string;
   required: boolean;
@@ -64,7 +63,7 @@ const QUESTION_TYPES: EvaluationQuestionType[] = [
 const parseOptions = (value: unknown): EvaluationOption[] => {
   if (Array.isArray(value)) {
     return value.map((option) => ({
-      id: String(option?.id ?? ""),
+      id: option?.id ? String(option.id) : undefined,
       label: String(option?.label ?? ""),
     }));
   }
@@ -90,7 +89,6 @@ const normalizeQuestion = (
 
   return {
     evaluationId: Number(question.evaluationId ?? evaluationId),
-    name: question.name || `pertanyaan_${index + 1}`,
     position: Number(question.position ?? index + 1),
     title: question.title || "",
     required: Boolean(question.required),
@@ -113,7 +111,7 @@ export const ManageEvaluation = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
-  const fetchEvaluation = async () => {
+  const fetchEvaluation = useCallback(async () => {
     setIsLoading(true);
 
     const response: ApiResponse<EvaluationDetail> = await fetchApi(
@@ -136,11 +134,11 @@ export const ManageEvaluation = () => {
         )
         .sort((current, next) => current.position - next.position)
     );
-  };
+  }, [params.moduleId]);
 
   useEffect(() => {
     fetchEvaluation();
-  }, [params.moduleId]);
+  }, [fetchEvaluation]);
 
   const updateQuestion = (
     index: number,
@@ -158,7 +156,6 @@ export const ManageEvaluation = () => {
       ...current,
       {
         evaluationId,
-        name: `pertanyaan_${current.length + 1}`,
         position: current.length + 1,
         title: "",
         required: true,
@@ -188,7 +185,6 @@ export const ManageEvaluation = () => {
         value: [
           ...options,
           {
-            id: `option_${options.length + 1}`,
             label: "",
           },
         ],
@@ -199,8 +195,7 @@ export const ManageEvaluation = () => {
   const updateOption = (
     questionIndex: number,
     optionIndex: number,
-    field: keyof EvaluationOption,
-    value: string
+    label: string
   ) => {
     updateQuestion(questionIndex, (question) => {
       const options = Array.isArray(question.value) ? question.value : [];
@@ -209,7 +204,7 @@ export const ManageEvaluation = () => {
         ...question,
         value: options.map((option, currentOptionIndex) =>
           currentOptionIndex === optionIndex
-            ? { ...option, [field]: value }
+            ? { ...option, label }
             : option
         ),
       };
@@ -233,12 +228,10 @@ export const ManageEvaluation = () => {
       return false;
     }
 
-    const invalidQuestion = questions.find(
-      (question) => !question.name.trim() || !question.title.trim()
-    );
+    const invalidQuestion = questions.find((question) => !question.title.trim());
 
     if (invalidQuestion) {
-      toast.error("Nama field dan pertanyaan wajib diisi");
+      toast.error("Pertanyaan wajib diisi");
       return false;
     }
 
@@ -250,13 +243,12 @@ export const ManageEvaluation = () => {
       const options = Array.isArray(question.value) ? question.value : [];
 
       return (
-        !options.length ||
-        options.some((option) => !option.id.trim() || !option.label.trim())
+        !options.length || options.some((option) => !option.label.trim())
       );
     });
 
     if (invalidOptionQuestion) {
-      toast.error("Pertanyaan RADIO/CHECKBOX wajib memiliki opsi lengkap");
+      toast.error("Pertanyaan RADIO/CHECKBOX wajib memiliki label opsi");
       return false;
     }
 
@@ -282,13 +274,14 @@ export const ManageEvaluation = () => {
           .slice()
           .sort((current, next) => current.position - next.position)
           .map((question) => ({
-            name: question.name,
             position: question.position,
             title: question.title,
             required: question.required,
             value:
               question.type === "RADIO" || question.type === "CHECKBOX"
-                ? question.value
+                ? Array.isArray(question.value)
+                  ? question.value.map((option) => ({ label: option.label }))
+                  : []
                 : "",
             type: question.type,
           })),
@@ -423,7 +416,7 @@ export const ManageEvaluation = () => {
               <div className="max-h-[calc(100vh-330px)] space-y-2 overflow-y-auto pr-1">
                 {questions.map((question, questionIndex) => (
                   <a
-                    key={`${question.name}-nav-${questionIndex}`}
+                    key={`evaluation-nav-${questionIndex}`}
                     className="flex min-w-0 items-center gap-3 rounded-md border px-3 py-2 text-sm transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     href={`#${getQuestionAnchorId(questionIndex)}`}
                   >
@@ -457,7 +450,7 @@ export const ManageEvaluation = () => {
                 return (
                   <Card
                     id={getQuestionAnchorId(questionIndex)}
-                    key={`${question.name}-${questionIndex}`}
+                    key={`evaluation-question-${questionIndex}`}
                     className="scroll-mt-4"
                   >
                     <CardHeader className="gap-3 sm:flex-row sm:items-start sm:justify-between sm:space-y-0">
@@ -479,7 +472,7 @@ export const ManageEvaluation = () => {
                       </Button>
                     </CardHeader>
                     <CardContent className="grid gap-4">
-                      <div className="grid gap-3 md:grid-cols-[120px_1fr]">
+                      <div className="grid gap-2 md:max-w-40">
                         <div className="grid gap-2">
                           <Label>Posisi</Label>
                           <Input
@@ -492,22 +485,6 @@ export const ManageEvaluation = () => {
                                 (currentQuestion) => ({
                                   ...currentQuestion,
                                   position: Number(event.target.value) || 1,
-                                })
-                              )
-                            }
-                          />
-                        </div>
-                        <div className="grid gap-2">
-                          <Label>Nama Field</Label>
-                          <Input
-                            placeholder="alasanTidakMengikutiLiveClass10"
-                            value={question.name}
-                            onChange={(event) =>
-                              updateQuestion(
-                                questionIndex,
-                                (currentQuestion) => ({
-                                  ...currentQuestion,
-                                  name: event.target.value,
                                 })
                               )
                             }
@@ -602,7 +579,7 @@ export const ManageEvaluation = () => {
                                 Pilihan Jawaban
                               </p>
                               <p className="text-xs text-muted-foreground">
-                                Isi id dan label untuk value pertanyaan.
+                                Isi label opsi. ID akan dibuat otomatis dari backend.
                               </p>
                             </div>
                             <Button
@@ -620,21 +597,9 @@ export const ManageEvaluation = () => {
                             <div className="grid gap-2">
                               {options.map((option, optionIndex) => (
                                 <div
-                                  className="grid gap-2 sm:grid-cols-[1fr_1.4fr_auto]"
-                                  key={`${option.id}-${optionIndex}`}
+                                  className="grid gap-2 sm:grid-cols-[1fr_auto]"
+                                  key={`option-${questionIndex}-${optionIndex}`}
                                 >
-                                  <Input
-                                    placeholder="idOpsi"
-                                    value={option.id}
-                                    onChange={(event) =>
-                                      updateOption(
-                                        questionIndex,
-                                        optionIndex,
-                                        "id",
-                                        event.target.value
-                                      )
-                                    }
-                                  />
                                   <Input
                                     placeholder="Label opsi"
                                     value={option.label}
@@ -642,7 +607,6 @@ export const ManageEvaluation = () => {
                                       updateOption(
                                         questionIndex,
                                         optionIndex,
-                                        "label",
                                         event.target.value
                                       )
                                     }
