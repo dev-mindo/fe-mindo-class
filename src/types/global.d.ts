@@ -471,6 +471,7 @@ declare global {
 
   type TDetailModule = {
     id: number;
+    certificateId?: number | null;
     type: string;
     step: number;
     title: string;

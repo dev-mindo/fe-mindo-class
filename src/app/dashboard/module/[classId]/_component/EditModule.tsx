@@ -31,6 +31,7 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  Award,
   Film,
   FileText,
   ImageOff,
@@ -181,6 +182,7 @@ export const EditModule = (props: Props) => {
     useState<boolean>(false);
   const [descriptionEditorKey, setDescriptionEditorKey] = useState<number>(0);
   const [evaluationId, setEvaluationId] = useState<number>(0);
+  const [certificateId, setCertificateId] = useState<number | null>(null);
   const form = useForm<ModuleFormValues>({
     resolver: zodResolver(moduleSchema),
     defaultValues: {
@@ -231,6 +233,7 @@ export const EditModule = (props: Props) => {
   const showLiveForm = selectedModuleType === ModuleType.LIVE;
   const showVideoForm = selectedModuleType === ModuleType.VIDEO;
   const showEvaluationForm = selectedModuleType === ModuleType.EVALUATION;
+  const showCertificateTemplate = selectedModuleType === ModuleType.CERTIFICATE;
   const showVideoPicker = showVideoForm || showLiveForm;
   const isSuccessResponse = (response?: ApiResponse) =>
     response?.statusCode === 200 || response?.statusCode === 201;
@@ -402,6 +405,7 @@ export const EditModule = (props: Props) => {
           setDescription(dataModule.description || "");
           setDescriptionDraft(dataModule.description || "");
           setEvaluationId(dataModule.evaluationData?.id ?? 0);
+          setCertificateId(dataModule.certificateId ?? null);
 
           const legacyModuleData = dataModule as TDetailModule & {
             videoId?: string;
@@ -781,6 +785,52 @@ export const EditModule = (props: Props) => {
                     </div>
                   )}
                 </div>
+                {showCertificateTemplate ? (
+                  <div className="grid gap-4 rounded-lg border bg-muted/20 p-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex items-start gap-3">
+                        <div className="rounded-md bg-primary/10 p-2 text-primary">
+                          <Award className="h-4 w-4" />
+                        </div>
+                        <div>
+                          <h2 className="text-sm font-semibold">
+                            Template Sertifikat
+                          </h2>
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            Atur posisi nama, pelatihan, ID, tanggal, dan TTD.
+                          </p>
+                        </div>
+                      </div>
+                      {isReadOnlyDetail || !certificateId ? (
+                        <Button
+                          className="shrink-0"
+                          disabled
+                          size="sm"
+                          type="button"
+                          variant="outline"
+                        >
+                          <Award className="mr-2 h-4 w-4" />
+                          Edit Template
+                        </Button>
+                      ) : (
+                        <Button
+                          asChild
+                          className="shrink-0"
+                          size="sm"
+                          type="button"
+                          variant="outline"
+                        >
+                          <Link
+                            href={`/dashboard/module/${props.classId}/template/${certificateId}`}
+                          >
+                            <Award className="mr-2 h-4 w-4" />
+                            Edit Template
+                          </Link>
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ) : null}
                 {showQuizForm ? (
                   <div className="grid gap-4 border-t pt-4">
                     <div className="flex items-start justify-between gap-4">
