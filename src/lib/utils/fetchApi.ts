@@ -23,9 +23,15 @@ export async function fetchApi<ApiResponse>(
   options: FetchOptions = {}
 ): Promise<ApiResponse> {
   const API_URL = process.env.API_URL;
+  const templateCertificateApiKey = process.env.API_KEY;
   let authToken = await getAuthToken();
   let adminAuthToken = await getAdminAuthToken();
   const normalizedAdminAuthToken = adminAuthToken?.replace(/^Bearer\s+/i, "");
+  const isPdfCoordinateBoundsEndpoint = endpoint.startsWith(
+    "/pdf-lib/coordinate-bounds"
+  );
+  const isFormDataBody =
+    typeof FormData !== "undefined" && options.body instanceof FormData;
 
   console.log('authToken ', authToken)
 
@@ -33,7 +39,7 @@ export async function fetchApi<ApiResponse>(
     const response = await fetch(`${API_URL}${endpoint}`, {
       method: options.method || "GET",
       headers: {
-        "Content-Type": "application/json",
+        ...(!isFormDataBody ? { "Content-Type": "application/json" } : {}),
         ...(authToken ? { authorization: `Bearer ${authToken}` } : {}),
         ...(normalizedAdminAuthToken
           ? {
@@ -41,9 +47,16 @@ export async function fetchApi<ApiResponse>(
               admin_authorization: `Bearer ${normalizedAdminAuthToken}`,
             }
           : {}),
+        ...(isPdfCoordinateBoundsEndpoint && templateCertificateApiKey
+          ? { "aws-api-key": templateCertificateApiKey }
+          : {}),
         ...options.headers,
       },
-      body: options.body ? JSON.stringify(options.body) : undefined,
+      body: isFormDataBody
+        ? options.body
+        : options.body
+          ? JSON.stringify(options.body)
+          : undefined,
       cache: "no-store",
     });
 
