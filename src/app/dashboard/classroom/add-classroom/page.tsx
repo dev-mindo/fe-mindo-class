@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/table";
 import { ApiResponse, fetchApi } from "@/lib/utils/fetchApi";
 import { fetchProductApi } from "@/lib/utils/fetchProductApi";
+import type { ProductOrderByDate } from "@/lib/utils/fetchProductApi";
 import { toOffsetDateTime } from "@/lib/utils";
 import { useDashboardContext } from "@/context/DashboardContext";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -163,7 +164,7 @@ const productTypeOptions = [
   },
 ];
 
-const pageSize = 5;
+const pageSize = 10;
 
 const loadingRows = Array.from({ length: pageSize });
 
@@ -224,7 +225,8 @@ const Page = () => {
   const [selectedProductId, setSelectedProductId] = useState("");
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [searchProduct, setSearchProduct] = useState("");
-  const [orderByDate, setOrderByDate] = useState("desc");
+  const [orderByDate, setOrderByDate] =
+    useState<ProductOrderByDate>("desc");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalProduct, setTotalProduct] = useState(0);
   const [hasNextProduct, setHasNextProduct] = useState(false);
@@ -359,7 +361,7 @@ const Page = () => {
     setIsLoadingProduct(true);
 
     try {
-      const product = await fetchProductApi<ProductResponse>("/product", {
+      const product = await fetchProductApi<ProductResponse>("/products", {
         query: {
           page: currentPage,
           limit: pageSize,
@@ -612,7 +614,7 @@ const Page = () => {
     setCurrentPage(1);
   };
 
-  const handleOrderByDate = (value: string) => {
+  const handleOrderByDate = (value: ProductOrderByDate) => {
     setOrderByDate(value);
     setCurrentPage(1);
   };

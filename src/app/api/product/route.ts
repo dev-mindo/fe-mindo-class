@@ -4,14 +4,37 @@ import { NextResponse } from "next/server";
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const search = searchParams.get("search")?.trim();
+  const productIds = searchParams
+    .get("productIds")
+    ?.split(",")
+    .map(Number)
+    .filter((id) => Number.isInteger(id) && id >= 1);
+
+  const getPositiveInteger = (key: string, fallback?: number) => {
+    const value = searchParams.get(key);
+
+    if (value === null) return fallback;
+
+    const parsedValue = Number(value);
+    return Number.isInteger(parsedValue) && parsedValue >= 1
+      ? parsedValue
+      : fallback;
+  };
+
+  const orderByDate = searchParams.get("orderByDate");
 
   try {
-    const product = await fetchProductApi("/product", {
+    const product = await fetchProductApi("/products", {
       query: {
-        page: searchParams.get("page") ?? 1,
-        limit: searchParams.get("limit") ?? 5,
-        orderByDate: searchParams.get("orderByDate") ?? "desc",
+        page: getPositiveInteger("page", 1),
+        limit: getPositiveInteger("limit", 10),
+        id: getPositiveInteger("id"),
+        userId: getPositiveInteger("userId"),
+        productIds: productIds?.length ? productIds : undefined,
         search: search || undefined,
+        startDate: searchParams.get("startDate") || undefined,
+        endDate: searchParams.get("endDate") || undefined,
+        orderByDate: orderByDate === "asc" ? "asc" : "desc",
       },
     });
 

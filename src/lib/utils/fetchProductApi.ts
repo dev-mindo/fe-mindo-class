@@ -2,10 +2,19 @@
 
 export type ProductFetchMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
 
-export type ProductApiQuery = Record<
-  string,
-  string | number | boolean | null | undefined
->;
+export type ProductOrderByDate = "asc" | "desc";
+
+export type ProductApiQuery = {
+  page?: number;
+  limit?: number;
+  id?: number;
+  userId?: number;
+  productIds?: number[];
+  search?: string;
+  startDate?: string;
+  endDate?: string;
+  orderByDate?: ProductOrderByDate;
+};
 
 export interface ProductApiErrorResponse {
   success: false;
@@ -43,7 +52,10 @@ export async function fetchProductApi<T>(
 
     Object.entries(options.query ?? {}).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== "") {
-        url.searchParams.set(key, String(value));
+        url.searchParams.set(
+          key,
+          Array.isArray(value) ? value.join(",") : String(value)
+        );
       }
     });
 
