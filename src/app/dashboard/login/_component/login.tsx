@@ -64,6 +64,7 @@ export const Login = () => {
 
   useEffect(() => {
     setMounted(true);
+    console.log('test')
   }, []);
 
   const showLoginError = (title: string, message: string) => {
@@ -74,11 +75,15 @@ export const Login = () => {
   const onFinish = async (value: LoginFormValues) => {
     setLoading(true);
 
+    console.log('onFinishLogin')
+
     try {
       const login: ApiResponse<TUserToken> = await fetchApi("/auth/login", {
         body: value,
         method: "POST",
       });
+
+      console.log('login', login)
 
       if (login.statusCode !== 200 || !login.data) {
         showLoginError(

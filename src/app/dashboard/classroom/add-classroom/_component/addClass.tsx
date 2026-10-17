@@ -35,6 +35,7 @@ import {
 import { ApiResponse, fetchApi } from "@/lib/utils/fetchApi";
 import { fetchProductApi } from "@/lib/utils/fetchProductApi";
 import type { ProductOrderByDate } from "@/lib/utils/fetchProductApi";
+import type { Product, ProductApiResponse } from "@/types/product";
 import { toOffsetDateTime } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
@@ -55,27 +56,7 @@ const classSchema = z.object({
 
 type ClassFormValues = z.infer<typeof classSchema>;
 
-type Product = {
-  id: number;
-  name: string;
-  type: string;
-  status: string;
-  time_start: string;
-  category?: {
-    id: number;
-    name: string;
-    created_at: string | null;
-  };
-};
-
-export type ProductResponse = {
-  results: Product[];
-  total: number;
-  page: number;
-  limit: number;
-  hasNext: boolean;
-  hasPrevious: boolean;
-};
+export type ProductResponse = ProductApiResponse;
 
 export type ProductApiError = {
   success: false;
@@ -144,7 +125,7 @@ export const AddClass = ({
   const router = useRouter();
   const isInitialRender = useRef(true);
   const [dataProduct, setDataProduct] = useState<Product[]>(
-    initialProduct?.results ?? []
+    initialProduct?.data.results ?? []
   );
   const [selectedProductId, setSelectedProductId] = useState("");
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -152,12 +133,14 @@ export const AddClass = ({
   const [orderByDate, setOrderByDate] =
     useState<ProductOrderByDate>("desc");
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalProduct, setTotalProduct] = useState(initialProduct?.total ?? 0);
+  const [totalProduct, setTotalProduct] = useState(
+    initialProduct?.data.total ?? 0
+  );
   const [hasNextProduct, setHasNextProduct] = useState(
-    initialProduct?.hasNext ?? false
+    initialProduct?.data.hasNext ?? false
   );
   const [hasPreviousProduct, setHasPreviousProduct] = useState(
-    initialProduct?.hasPrevious ?? false
+    initialProduct?.data.hasPrevious ?? false
   );
   const [isLoadingProduct, setIsLoadingProduct] = useState(false);
 
@@ -177,6 +160,18 @@ export const AddClass = ({
     setIsLoadingProduct(true);
 
     try {
+      const productQuery = new URLSearchParams({
+        page: String(currentPage),
+        limit: String(pageSize),
+        orderByDate,
+      });
+
+      if (searchProduct.trim()) {
+        productQuery.set("search", searchProduct.trim());
+      }
+
+      console.log(`[add-class] Product URL: /products?${productQuery}`);
+
       const product = await fetchProductApi<ProductResponse>("/products", {
         query: {
           page: currentPage,
@@ -185,6 +180,8 @@ export const AddClass = ({
           search: searchProduct,
         },
       });
+
+      console.log('product', product)
 
       if (isProductApiError(product)) {
         toast.error(product.message);
@@ -195,10 +192,19 @@ export const AddClass = ({
         return;
       }
 
-      setDataProduct(product.results ?? []);
-      setTotalProduct(product.total ?? 0);
-      setHasNextProduct(product.hasNext ?? false);
-      setHasPreviousProduct(product.hasPrevious ?? false);
+      if (product.statusCode !== 200 || !product.data) {
+        toast.error(product.message || "Gagal mengambil data produk");
+        setDataProduct([]);
+        setTotalProduct(0);
+        setHasNextProduct(false);
+        setHasPreviousProduct(false);
+        return;
+      }
+
+      setDataProduct(product.data.results ?? []);
+      setTotalProduct(product.data.total ?? 0);
+      setHasNextProduct(product.data.hasNext ?? false);
+      setHasPreviousProduct(product.data.hasPrevious ?? false);
     } catch (error) {
       toast.error("Gagal mengambil data produk");
       setDataProduct([]);

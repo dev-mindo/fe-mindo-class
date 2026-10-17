@@ -34,6 +34,7 @@ import {
 import { ApiResponse, fetchApi } from "@/lib/utils/fetchApi";
 import { fetchProductApi } from "@/lib/utils/fetchProductApi";
 import type { ProductOrderByDate } from "@/lib/utils/fetchProductApi";
+import type { Product, ProductApiResponse } from "@/types/product";
 import { toOffsetDateTime } from "@/lib/utils";
 import { useDashboardContext } from "@/context/DashboardContext";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -79,27 +80,7 @@ const classSchema = z.object({
 
 type ClassFormValues = z.infer<typeof classSchema>;
 
-type Product = {
-  id: number;
-  name: string;
-  type: string;
-  status: string;
-  time_start: string;
-  category?: {
-    id: number;
-    name: string;
-    created_at: string | null;
-  };
-};
-
-type ProductResponse = {
-  results: Product[];
-  total: number;
-  page: number;
-  limit: number;
-  hasNext: boolean;
-  hasPrevious: boolean;
-};
+type ProductResponse = ProductApiResponse;
 
 type ProductApiError = {
   success: false;
@@ -361,6 +342,18 @@ const Page = () => {
     setIsLoadingProduct(true);
 
     try {
+      const productQuery = new URLSearchParams({
+        page: String(currentPage),
+        limit: String(pageSize),
+        orderByDate,
+      });
+
+      if (searchProduct.trim()) {
+        productQuery.set("search", searchProduct.trim());
+      }
+
+      console.log(`[add-class] Product URL: /products?${productQuery}`);
+
       const product = await fetchProductApi<ProductResponse>("/products", {
         query: {
           page: currentPage,
@@ -369,6 +362,8 @@ const Page = () => {
           search: searchProduct,
         },
       });      
+
+      console.log('product', product)
 
       if (isProductApiError(product)) {
         toast.error(product.message);
@@ -379,10 +374,19 @@ const Page = () => {
         return;
       }
 
-      setDataProduct(product.results ?? []);
-      setTotalProduct(product.total ?? 0);
-      setHasNextProduct(product.hasNext ?? false);
-      setHasPreviousProduct(product.hasPrevious ?? false);
+      if (product.statusCode !== 200 || !product.data) {
+        toast.error(product.message || "Gagal mengambil data produk");
+        setDataProduct([]);
+        setTotalProduct(0);
+        setHasNextProduct(false);
+        setHasPreviousProduct(false);
+        return;
+      }
+
+      setDataProduct(product.data.results ?? []);
+      setTotalProduct(product.data.total ?? 0);
+      setHasNextProduct(product.data.hasNext ?? false);
+      setHasPreviousProduct(product.data.hasPrevious ?? false);
     } catch (error) {
       toast.error("Gagal mengambil data produk");
       setDataProduct([]);
@@ -517,6 +521,7 @@ const Page = () => {
   };
 
   useEffect(() => {
+    console.log('test tampil product')
     fetchProduct();
   }, [currentPage, orderByDate, searchProduct]);
 

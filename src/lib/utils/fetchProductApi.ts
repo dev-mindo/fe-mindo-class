@@ -59,6 +59,8 @@ export async function fetchProductApi<T>(
       }
     });
 
+    console.log("[fetchProductApi] Product URL:", url.toString());
+
     const response = await fetch(url.toString(), {
       method: options.method ?? "GET",
       headers: {
@@ -69,9 +71,16 @@ export async function fetchProductApi<T>(
       cache: "no-store",
     });
 
-    const data = await response.json().catch(async () => ({
-      message: await response.text(),
-    }));
+    const responseText = await response.text();
+    let data: any = {};
+
+    if (responseText) {
+      try {
+        data = JSON.parse(responseText);
+      } catch {
+        data = { message: responseText };
+      }
+    }
 
     if (!response.ok) {
       return {
