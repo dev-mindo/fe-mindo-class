@@ -1,20 +1,9 @@
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 
-const DEFAULT_USER_API_URL = "http://localhost:3004";
+const DEFAULT_USER_API_URL = "https://api-v2.mindoeducation.co.id/api/v1";
 const DEFAULT_USER_API_KEY =
   "630272a0cce694b7cde179c214de148185753e42102ca6bddee92ccebda8cc76";
-
-const getResultCount = (data: any) => {
-  if (Array.isArray(data?.data?.results)) return data.data.results.length;
-  if (Array.isArray(data?.data)) return data.data.length;
-  if (Array.isArray(data?.results)) return data.results.length;
-  if (Array.isArray(data?.data?.data?.results)) {
-    return data.data.data.results.length;
-  }
-
-  return 0;
-};
 
 export async function GET(request: NextRequest) {
   const userApiUrl =
@@ -25,11 +14,17 @@ export async function GET(request: NextRequest) {
   const page = Math.max(1, Number(searchParams.get("page")) || 1);
   const limit = Math.min(
     100,
-    Math.max(1, Number(searchParams.get("limit")) || 5)
+    Math.max(1, Number(searchParams.get("limit")) || 10)
   );
   const search = searchParams.get("search")?.trim() ?? "";
+  const role = searchParams.get("role")?.trim() ?? "";
+  const status = searchParams.get("status")?.trim() ?? "";
+  const startDate = searchParams.get("startDate")?.trim() ?? "";
+  const endDate = searchParams.get("endDate")?.trim() ?? "";
   const requestedOrderBy = searchParams.get("orderBy");
   const orderBy = requestedOrderBy === "oldest" ? "oldest" : "latest";
+  const orderByDate =
+    searchParams.get("orderByDate") === "asc" ? "asc" : "desc";
   const adminToken = cookies().get("admin_auth_token")?.value;
   const normalizedAdminToken = adminToken?.replace(/^Bearer\s+/i, "");
   const userApiKey = process.env.USER_API_KEY ?? DEFAULT_USER_API_KEY;
@@ -46,91 +41,49 @@ export async function GET(request: NextRequest) {
         : {}),
     };
 
-    const buildUrl = (options?: {
-      queryKey?: "search" | "username";
-      includeRole?: boolean;
-      includeStatus?: boolean;
-    }) => {
-      const upstreamUrl = new URL("/v1/user", userApiUrl);
+    const baseUrl = userApiUrl.replace(/\/$/, "");
+    const upstreamUrl = new URL(`${baseUrl}/users`);
 
-      upstreamUrl.searchParams.set("page", String(page));
-      upstreamUrl.searchParams.set("limit", String(limit));
-      upstreamUrl.searchParams.set("orderBy", orderBy);
+    upstreamUrl.searchParams.set("page", String(page));
+    upstreamUrl.searchParams.set("limit", String(limit));
+    upstreamUrl.searchParams.set("orderBy", orderBy);
+    upstreamUrl.searchParams.set("orderByDate", orderByDate);
 
-      if (options?.includeRole ?? true) {
-        upstreamUrl.searchParams.set("role", "peserta");
-      }
+    if (search) upstreamUrl.searchParams.set("search", search);
+    if (role) upstreamUrl.searchParams.set("role", role);
+    if (status) upstreamUrl.searchParams.set("status", status);
+    if (startDate) upstreamUrl.searchParams.set("startDate", startDate);
+    if (endDate) upstreamUrl.searchParams.set("endDate", endDate);
 
-      if (options?.includeStatus ?? true) {
-        upstreamUrl.searchParams.set("status", "mahasiswa");
-      }
+    const response = await fetch(upstreamUrl, {
+      headers,
+      cache: "no-store",
+    });
+    const responseText = await response.text();
+    let data: any;
 
-      if (search && options?.queryKey) {
-        upstreamUrl.searchParams.set(options.queryKey, search);
-      }
-
-      return upstreamUrl;
-    };
-
-    const fetchUsers = async (url: URL) => {
-      const response = await fetch(url, {
-        headers,
-        cache: "no-store",
-      });
-      const data = await response.json();
-
-      return { response, data, url };
-    };
-
-    const attempts = search
-      ? [
-          buildUrl({ queryKey: "search", includeRole: true, includeStatus: true }),
-          buildUrl({
-            queryKey: "search",
-            includeRole: true,
-            includeStatus: false,
-          }),
-          buildUrl({
-            queryKey: "search",
-            includeRole: false,
-            includeStatus: false,
-          }),
-          buildUrl({
-            queryKey: "username",
-            includeRole: true,
-            includeStatus: true,
-          }),
-          buildUrl({
-            queryKey: "username",
-            includeRole: true,
-            includeStatus: false,
-          }),
-          buildUrl({
-            queryKey: "username",
-            includeRole: false,
-            includeStatus: false,
-          }),
-        ]
-      : [buildUrl({ includeRole: true, includeStatus: true })];
-
-    let latestResult = await fetchUsers(attempts[0]);
-
-    for (const attempt of attempts.slice(1)) {
-      if (!latestResult.response.ok || getResultCount(latestResult.data) > 0) {
-        break;
-      }
-
-      latestResult = await fetchUsers(attempt);
+    try {
+      data = responseText ? JSON.parse(responseText) : {};
+    } catch {
+      data = {
+        errorCode: response.status,
+        message: responseText || "User API returned an invalid response",
+        error: "Invalid JSON response",
+        statusCode: response.status,
+        data: null,
+      };
     }
 
     console.log("[api/users]", {
       search,
-      upstreamUrl: latestResult.url.toString(),
-      resultCount: getResultCount(latestResult.data),
+      upstreamUrl: upstreamUrl.toString(),
+      resultCount: Array.isArray(data?.data)
+        ? data.data.length
+        : (data?.data?.results?.length ?? 0),
     });
 
-    return NextResponse.json(latestResult.data, {
-      status: latestResult.response.status,
+    return NextResponse.json(data, {
+      status: response.status,
     });
   } catch (error) {
     console.error("[api/users]", error);

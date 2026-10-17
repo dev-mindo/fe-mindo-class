@@ -40,12 +40,17 @@ import { Loader2, Minus, Plus, UserPlus, Users } from "lucide-react";
 import { toast } from "sonner";
 import { useDashboardContext } from "@/context/DashboardContext";
 import { canManageClassroom } from "@/lib/dashboard-permissions";
+import type {
+  ClassParticipant,
+  User,
+  UserApiResponse,
+} from "@/types/user";
 
 type Props = {
   selectedClass: string | null;
 };
 
-const pageSize = 5;
+const pageSize = 10;
 
 type AvailableParticipant = {
   id: string;
@@ -56,29 +61,6 @@ type AvailableParticipant = {
   status: string;
 };
 
-type UserApiResponse = {
-  errorCode: number;
-  message: string;
-  error: unknown;
-  statusCode: number;
-  data:
-    | {
-        results: AvailableParticipant[];
-        total: number;
-        page: number;
-        limit: number;
-        hasNext: boolean;
-        hasPrevious: boolean;
-      }
-    | AvailableParticipant[];
-  results?: AvailableParticipant[];
-  total?: number;
-  page?: number;
-  limit?: number;
-  hasNext?: boolean;
-  hasPrevious?: boolean;
-};
-
 type NormalizedUserApiResponse = {
   results: AvailableParticipant[];
   total: number;
@@ -86,13 +68,16 @@ type NormalizedUserApiResponse = {
   hasPrevious: boolean;
 };
 
-const normalizeAvailableParticipant = (participant: any): AvailableParticipant => ({
-  id: String(participant.id ?? participant.userId ?? ""),
+const normalizeAvailableParticipant = (
+  participant: User | ClassParticipant
+): AvailableParticipant => ({
+  id: String("userId" in participant ? participant.userId : participant.id),
   name: participant.name ?? "-",
-  username: participant.username ?? "",
-  email: participant.email ?? "",
-  role: participant.role ?? "",
-  status: participant.status ?? "",
+  username: "username" in participant ? participant.username : "",
+  email: "email" in participant ? participant.email : "",
+  role: "role" in participant ? participant.role : "",
+  status:
+    "status" in participant && participant.status ? participant.status : "",
 });
 
 const normalizeUserApiResponse = (
@@ -103,9 +88,9 @@ const normalizeUserApiResponse = (
 
     return {
       results: participants,
-      total: result.total ?? participants.length,
-      hasNext: Boolean(result.hasNext),
-      hasPrevious: Boolean(result.hasPrevious),
+      total: participants.length,
+      hasNext: false,
+      hasPrevious: false,
     };
   }
 
@@ -117,30 +102,6 @@ const normalizeUserApiResponse = (
       total: result.data.total ?? participants.length,
       hasNext: Boolean(result.data.hasNext),
       hasPrevious: Boolean(result.data.hasPrevious),
-    };
-  }
-
-  if (Array.isArray(result.results)) {
-    const participants = result.results.map(normalizeAvailableParticipant);
-
-    return {
-      results: participants,
-      total: result.total ?? participants.length,
-      hasNext: Boolean(result.hasNext),
-      hasPrevious: Boolean(result.hasPrevious),
-    };
-  }
-
-  const nestedData = (result.data as any)?.data;
-
-  if (Array.isArray(nestedData?.results)) {
-    const participants = nestedData.results.map(normalizeAvailableParticipant);
-
-    return {
-      results: participants,
-      total: nestedData.total ?? participants.length,
-      hasNext: Boolean(nestedData.hasNext),
-      hasPrevious: Boolean(nestedData.hasPrevious),
     };
   }
 
@@ -179,7 +140,9 @@ export const ParticipantComponent = ({ selectedClass }: Props) => {
   const router = useRouter();
   const { user } = useDashboardContext();
   const canManage = canManageClassroom(user?.role);
-  const [dataParticipant, setDataParticipant] = useState<any[]>([]);
+  const [dataParticipant, setDataParticipant] = useState<ClassParticipant[]>(
+    []
+  );
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState("");
   const [certificateFilter, setCertificateFilter] = useState<
@@ -205,9 +168,8 @@ export const ParticipantComponent = ({ selectedClass }: Props) => {
     useState(false);
   const [isSavingParticipants, setIsSavingParticipants] = useState(false);
   const [participantError, setParticipantError] = useState("");
-  const [deletingParticipant, setDeletingParticipant] = useState<any | null>(
-    null
-  );
+  const [deletingParticipant, setDeletingParticipant] =
+    useState<ClassParticipant | null>(null);
   const [isDeletingParticipant, setIsDeletingParticipant] = useState(false);
 
   const fetchParticipantByClassModule = async () => {
@@ -216,7 +178,7 @@ export const ParticipantComponent = ({ selectedClass }: Props) => {
       return [];
     }
 
-    const getAllParticipant: ApiResponse = await fetchApi(
+    const getAllParticipant: ApiResponse<ClassParticipant[]> = await fetchApi(
       `/admin/classroom/show-list-participant/${selectedClass}`
     );
     console.log(getAllParticipant);
@@ -273,7 +235,9 @@ export const ParticipantComponent = ({ selectedClass }: Props) => {
       const query = new URLSearchParams({
         page: String(participantPage),
         limit: String(pageSize),
+        role: "peserta",
         orderBy: participantOrderBy,
+        orderByDate: "desc",
       });
 
       if (participantSearch.trim()) {
@@ -413,7 +377,7 @@ export const ParticipantComponent = ({ selectedClass }: Props) => {
     const addedParticipants = selectedParticipants.map((participant) => ({
       userId: Number(participant.id),
       name: participant.name,
-      progress: 0,
+      progress: "0%",
       totalScore: 0,
       isCertificateEligible: false,
     }));
@@ -478,9 +442,7 @@ export const ParticipantComponent = ({ selectedClass }: Props) => {
     }
 
     const productId = Number(selectedClass);
-    const userId = Number(
-      deletingParticipant?.userId ?? deletingParticipant?.id
-    );
+    const userId = Number(deletingParticipant?.userId);
 
     if (!Number.isInteger(productId) || productId < 1) {
       toast.error("Product ID kelas tidak valid");
@@ -573,7 +535,7 @@ export const ParticipantComponent = ({ selectedClass }: Props) => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {paginatedParticipant?.map((item: any) => (
+          {paginatedParticipant.map((item) => (
             <TableRow key={item.userId}>
               <TableCell>{item.name}</TableCell>
               <TableCell>{item.progress}</TableCell>
